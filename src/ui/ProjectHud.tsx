@@ -35,8 +35,8 @@ export function ProjectHud() {
         {lead ? (
           <div className="mb-3 rounded-lg border border-[var(--line)] p-2.5">
             <div className="text-[10px] tracking-[0.14em] text-[var(--muted)]">Lead</div>
-            <div className="mt-1">{lead.leadName}</div>
-            <div className="font-num mt-1 break-all text-[10px] text-[var(--muted)]">{lead.agentId}</div>
+            <div className="mt-1 text-[13px]">{lead.leadName}</div>
+            <div className="font-num mt-1.5 break-all text-[11px] text-[var(--text)]">{lead.agentId}</div>
           </div>
         ) : null}
         <div className="space-y-1 text-[var(--muted)]">

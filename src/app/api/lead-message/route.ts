@@ -19,26 +19,24 @@ export async function POST(request: Request) {
   }
 
   const webhook = process.env.LEAD_MESSAGE_WEBHOOK_URL;
-  const apiKey = process.env.GROK_BOT_API_KEY;
-  const secret = process.env.LEAD_MESSAGE_WEBHOOK_SECRET;
+  const secret = process.env.LEAD_MESSAGE_WEBHOOK_SECRET || process.env.GROK_BOT_API_KEY;
 
   if (!webhook) {
     return NextResponse.json({
       status: 'queued',
       demo: true,
       lead,
-      reason: secret || apiKey
-        ? 'Lead webhook auth is set but LEAD_MESSAGE_WEBHOOK_URL is missing — queued, not delivered'
+      reason: secret
+        ? 'Webhook secret is set but LEAD_MESSAGE_WEBHOOK_URL is missing — queued, not delivered'
         : 'No LEAD_MESSAGE_WEBHOOK_URL — queued in the deck',
     });
   }
 
+  // Hub-locked body — no extra fields.
   const payload = {
-    projectSlug,
     agentId: lead.agentId,
-    leadName: lead.leadName,
     message,
-    comingSoon: Boolean(lead.comingSoon),
+    projectSlug,
   };
 
   try {
@@ -46,8 +44,12 @@ export async function POST(request: Request) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
-        ...(secret ? { 'X-Webhook-Secret': secret } : {}),
+        ...(secret
+          ? {
+              Authorization: `Bearer ${secret}`,
+              'X-Webhook-Secret': secret,
+            }
+          : {}),
       },
       body: JSON.stringify(payload),
     });
