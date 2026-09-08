@@ -86,9 +86,9 @@ export function fillNormalFromHeight(out: Uint8Array, height: Uint8Array, size: 
 export function fillFloorRoughness(out: Uint8Array, size: number): void {
   for (let y = 0; y < size; y += 1) {
     for (let x = 0; x < size; x += 1) {
-      const n = hash21(x * 0.11, y * 0.11, 9.2);
-      const tile = Math.abs(Math.sin((x / size) * Math.PI * 8) * Math.sin((y / size) * Math.PI * 8));
-      const v = Math.min(255, Math.max(0, (0.34 + n * 0.28 + tile * 0.12) * 255));
+      const n = hash21(x * 0.17, y * 0.15, 9.2);
+      const streak = hash21(Math.floor(x / 4), y * 0.09, 11.4);
+      const v = Math.min(255, Math.max(0, (0.3 + n * 0.22 + streak * 0.2) * 255));
       const i = (y * size + x) * 4;
       out[i] = v;
       out[i + 1] = v;

@@ -53,7 +53,7 @@ function Workstation({ accent, kind }: { accent: string; kind: WorldNode['kind']
       </mesh>
       <mesh position={[0, 0.72, 0.08]}>
         <boxGeometry args={[w, 0.07, 0.72]} />
-        <Brushed roughness={0.22} />
+        <Graphite roughness={0.24} metalness={0.86} />
       </mesh>
       {[-0.28, 0.28].map((x) => (
         <group key={x} position={[x * (w / 1.55), 1.12, -0.28]}>

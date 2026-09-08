@@ -10,15 +10,15 @@ export function Graphite({ roughness = 0.38, metalness = 0.72 }: { roughness?: n
   const suite = usePbrSuite();
   return (
     <meshStandardMaterial
-      color="#2C333C"
+      color="#3A424C"
       map={suite?.graphiteAlbedo}
       roughnessMap={low ? undefined : suite?.graphiteRough}
       metalnessMap={low ? undefined : suite?.graphiteMetal}
       normalMap={low ? undefined : suite?.graphiteNormal}
-      metalness={low ? Math.min(0.55, metalness) : metalness}
-      roughness={roughness}
-      envMapIntensity={1.95}
-      normalScale={new THREE.Vector2(0.42, 0.42)}
+      metalness={low ? Math.min(0.55, metalness) : Math.max(0.82, metalness)}
+      roughness={Math.min(roughness, 0.32)}
+      envMapIntensity={2.25}
+      normalScale={new THREE.Vector2(0.7, 0.7)}
     />
   );
 }
@@ -28,13 +28,13 @@ export function Brushed({ roughness = 0.22 }: { roughness?: number }) {
   const suite = usePbrSuite();
   return (
     <meshStandardMaterial
-      color="#D5DBE3"
+      color="#9AA3AE"
       roughnessMap={suite?.brushRough}
       normalMap={suite?.brushNormal}
-      metalness={0.94}
-      roughness={roughness}
-      envMapIntensity={2.05}
-      normalScale={new THREE.Vector2(0.55, 0.55)}
+      metalness={0.96}
+      roughness={Math.min(roughness, 0.2)}
+      envMapIntensity={2.35}
+      normalScale={new THREE.Vector2(0.85, 0.85)}
     />
   );
 }

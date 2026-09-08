@@ -25,7 +25,7 @@ export function ContraxisDress({ accent }: { accent: string }) {
       ))}
       <mesh position={[0, 0.025, 0]}>
         <boxGeometry args={[29.5, 0.03, 2.05]} />
-        <Brushed roughness={0.28} />
+        <Graphite roughness={0.28} metalness={0.88} />
       </mesh>
       <mesh position={[0, 0.04, 0]}>
         <boxGeometry args={[28.2, 0.012, 0.05]} />
