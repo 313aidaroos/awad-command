@@ -36,36 +36,30 @@ function handleCreated({ gl }: { gl: WebGLRenderer }) {
   );
 }
 
-function EffectsGate() {
-  const level = useCommandStore((s) => s.quality.level);
-  const [Fx, setFx] = useState<ComponentType | null>(null);
-
-  useEffect(() => {
-    if (isSafariLike() || level === 'low') {
-      setFx(null);
-      return;
-    }
-    let live = true;
-    import('@/scene/Environment/Effects')
-      .then((mod) => {
-        if (live) setFx(() => mod.Effects);
-      })
-      .catch(() => {
-        if (live) setFx(null);
-      });
-    return () => {
-      live = false;
-    };
-  }, [level]);
-
-  if (isSafariLike() || !Fx) return null;
-  return <Fx />;
-}
-
 export function CommandCanvas() {
   const level = useCommandStore((s) => s.quality.level);
   const safari = isSafariLike();
   const dpr = safari || level === 'low' ? DPR_LOW : level === 'medium' ? DPR_MED : DPR_HIGH;
+  const [Gate, setGate] = useState<ComponentType | null>(null);
+  // Safari still mounts the universe; only EffectComposer stays off.
+
+  useEffect(() => {
+    if (safari) {
+      setGate(null);
+      return;
+    }
+    let live = true;
+    import('@/scene/Environment/EffectsGate')
+      .then((mod) => {
+        if (live) setGate(() => mod.EffectsGate);
+      })
+      .catch(() => {
+        if (live) setGate(null);
+      });
+    return () => {
+      live = false;
+    };
+  }, [safari]);
 
   return (
     <Canvas
@@ -76,12 +70,13 @@ export function CommandCanvas() {
       onCreated={handleCreated}
       style={CANVAS_STYLE}
     >
+      <fog attach="fog" args={['#07080A', 26, 95]} />
       <Lighting />
       <Starfield />
       <Universe />
       <ProjectWorld />
       <CameraRig />
-      {safari ? null : <EffectsGate />}
+      {safari || !Gate ? null : <Gate />}
     </Canvas>
   );
 }

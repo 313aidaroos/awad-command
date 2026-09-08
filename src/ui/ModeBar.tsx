@@ -13,7 +13,7 @@ export function ModeBar() {
   const mode = useCommandStore((s) => s.mode);
   const setMode = useCommandStore((s) => s.setMode);
   const view = useCommandStore((s) => s.view);
-  if (view === 'boot') return null;
+  if (view !== 'universe') return null;
   return (
     <div className="pointer-events-auto fixed top-2.5 left-1/2 z-20 -translate-x-1/2 hidden md:flex gap-1 rounded-full bg-[rgba(23,26,31,0.45)] p-[3px]">
       {MODES.map((item) => (

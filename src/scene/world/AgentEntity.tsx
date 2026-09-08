@@ -65,6 +65,10 @@ export function AgentEntity({
           emissiveIntensity={following ? 0.45 : 0.18}
         />
       </mesh>
+      <mesh position={[0, -0.08, -0.16]}>
+        <octahedronGeometry args={[0.08, 0]} />
+        <meshBasicMaterial color={color} transparent opacity={0.28} />
+      </mesh>
       {following ? (
         <mesh rotation={[1.4, 0, 0]}>
           <torusGeometry args={[0.28, 0.012, 8, 24]} />

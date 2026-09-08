@@ -30,8 +30,8 @@ void main() {
   float sp = 0.4 + uAct * 1.2;
   float n = n3(vP * 1.4 + vec3(uT * 0.05 * sp));
   n = n * 0.6 + n3(vP * 3.2 - vec3(0.0, uT * 0.08 * sp, 0.0)) * 0.4;
-  vec3 col = uA * (0.08 + 0.32 * n * (0.22 + uAct)) + uA * fr * (1.05 + uH * 0.3) + uS * fr * 0.2 + vec3(0.03, 0.035, 0.04);
-  float a = uAlpha * (0.38 + 0.5 * fr);
+  vec3 col = uA * (0.03 + 0.16 * n * (0.15 + uAct)) + uA * fr * (1.25 + uH * 0.35) + uS * fr * 0.28 + vec3(0.02, 0.022, 0.026);
+  float a = uAlpha * (0.12 + 0.72 * fr);
   gl_FragColor = vec4(col, a);
 }
 `;

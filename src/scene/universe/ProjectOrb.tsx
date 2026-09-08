@@ -63,12 +63,14 @@ export function ProjectOrb({ project }: { project: ProjectDefinition }) {
         status={status}
         activity={activity}
         hovered={hovered}
-        radius={1.18}
+        radius={1.02}
         onClick={() => enterProject(project.slug)}
         onPointerOver={() => hoverProject(project.slug)}
         onPointerOut={() => hoverProject(undefined)}
       />
-      <EntitySilhouette kind={identity.kind} accent={project.accent} segs={segs} />
+      <group scale={1.28}>
+        <EntitySilhouette kind={identity.kind} accent={project.accent} segs={segs} />
+      </group>
       <EntityField accent={project.accent} />
       <EntityRings count={identity.rings} accent={project.accent} />
       {!focused && (

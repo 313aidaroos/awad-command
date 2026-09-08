@@ -60,8 +60,7 @@ export function ShellRecovery({ onRetry }: { onRetry?: () => void }) {
       <div className="glass max-w-sm px-5 py-4 text-center text-[13px] text-[var(--muted)]">
         <p className="text-[var(--text)]">Command recovered</p>
         <p className="mt-2">
-          A client exception was caught. The HUD can continue after a reload. The 3D canvas stays
-          off on Safari/WebKit.
+          A client exception was caught. The HUD can continue after a reload.
         </p>
         <div className="mt-4 flex justify-center gap-2">
           {onRetry ? (

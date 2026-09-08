@@ -30,18 +30,21 @@ export function CommandShell() {
   const [CanvasSlot, setCanvasSlot] = useState<ComponentType | null>(null);
 
   useEffect(() => {
-    setCanvasEnabled(true);
     let live = true;
-    setWebgl(isWebGLAvailable());
+    const available = isWebGLAvailable();
+    setWebgl(available);
+    setCanvasEnabled(true);
     useCommandStore.getState().setQuality(detectQuality(), true);
-    void import('@/ui/EnabledCanvas')
-      .then((mod) => {
-        if (live) setCanvasSlot(() => mod.EnabledCanvas);
-      })
-      .catch((error: unknown) => {
-        console.warn('[awad-command] canvas loader failed', error);
-        if (live) setWebgl(false);
-      });
+    if (available) {
+      void import('@/ui/EnabledCanvas')
+        .then((mod) => {
+          if (live) setCanvasSlot(() => mod.EnabledCanvas);
+        })
+        .catch((error: unknown) => {
+          console.warn('[awad-command] canvas loader failed', error);
+          if (live) setWebgl(false);
+        });
+    }
     return () => {
       live = false;
     };

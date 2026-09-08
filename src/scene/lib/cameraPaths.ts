@@ -17,21 +17,21 @@ export function projectEnterSequence(pos: [number, number, number]): CameraTarge
   const [dx, , dz] = dirOf(pos);
   return [
     {
-      position: [x + dx * 16, y + 5.4, z + dz * 16],
+      position: [x + dx * 20, y + 6.8, z + dz * 20],
       lookAt: [x, y, z],
-      duration: 1.55,
+      duration: 1.7,
       phase: 'approach',
     },
     {
-      position: [x + dx * 5.2, y + 1.9, z + dz * 5.2],
+      position: [x + dx * 3.4, y + 1.35, z + dz * 3.4],
       lookAt: [x, y, z],
-      duration: 1.15,
+      duration: 1.2,
       phase: 'shell',
     },
     {
-      position: [x - dx * 0.6, y + 2.8, z - dz * 0.6],
-      lookAt: [x, y - 0.15, z],
-      duration: 1.35,
+      position: [x - dx * 2.1, y + 2.55, z - dz * 2.1],
+      lookAt: [x, y - 0.2, z],
+      duration: 1.45,
       phase: 'interior',
     },
   ];
