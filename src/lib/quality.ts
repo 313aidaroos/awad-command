@@ -1,7 +1,15 @@
 import { isSafariLike } from '@/lib/safari';
 import type { QualityLevel } from '@/store/types';
 
+export function qualityFromSearch(search = typeof window === 'undefined' ? '' : window.location.search): QualityLevel | undefined {
+  const raw = new URLSearchParams(search).get('quality')?.toLowerCase();
+  if (raw === 'low' || raw === 'medium' || raw === 'high') return raw;
+  return undefined;
+}
+
 export function detectQuality(): QualityLevel {
+  const forced = qualityFromSearch();
+  if (forced) return forced;
   if (typeof window === 'undefined') return 'medium';
   if (isSafariLike()) return 'medium';
   const cores = navigator.hardwareConcurrency ?? 4;

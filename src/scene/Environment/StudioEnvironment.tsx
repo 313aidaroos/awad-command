@@ -5,7 +5,7 @@ import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 
-/** Offline studio room probe — Apple product-film lighting without a CDN HDRI. */
+/** Offline studio probe — intensity high enough for MEDIUM metals to spec. */
 export function StudioEnvironment() {
   const { gl, scene } = useThree();
 
@@ -14,7 +14,7 @@ export function StudioEnvironment() {
     const envScene = new RoomEnvironment();
     const texture = pmrem.fromScene(envScene, 0.04).texture;
     scene.environment = texture;
-    scene.environmentIntensity = 1.95;
+    scene.environmentIntensity = 2.85;
     return () => {
       if (scene.environment === texture) scene.environment = null;
       texture.dispose();

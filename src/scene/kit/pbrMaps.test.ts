@@ -8,7 +8,7 @@ describe('procedural PBR maps', () => {
     expect(hash21(3, 7, 1.2)).toBeLessThan(1);
   });
 
-  it('brush roughness varies instead of painting a flat slab', () => {
+  it('brush roughness stays in a glossy metal band', () => {
     const size = 32;
     const data = new Uint8Array(size * size * 4);
     fillBrushRoughness(data, size);
@@ -18,7 +18,9 @@ describe('procedural PBR maps', () => {
       min = Math.min(min, data[i]!);
       max = Math.max(max, data[i]!);
     }
-    expect(max - min).toBeGreaterThan(40);
+    expect(min).toBeGreaterThan(15);
+    expect(max).toBeLessThan(120);
+    expect(max - min).toBeGreaterThan(18);
   });
 
   it('graphite albedo stays in a dark metal range', () => {

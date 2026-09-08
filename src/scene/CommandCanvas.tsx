@@ -20,13 +20,13 @@ function SceneAtmosphere() {
   useEffect(() => {
     if (interior) {
       scene.fog = null;
-      gl.setClearColor('#1C222A', 1);
+      gl.setClearColor('#1E242C', 1);
       return;
     }
-    gl.setClearColor('#12151A', 1);
+    gl.setClearColor('#161A20', 1);
   }, [gl, interior, scene]);
   if (interior) return null;
-  return <fog attach="fog" args={['#12151A', 48, 92]} />;
+  return <fog attach="fog" args={['#161A20', 58, 120]} />;
 }
 
 const CAMERA_INIT = { position: [0, 2.4, 11] as [number, number, number], fov: 32, near: 0.1, far: 220 };
@@ -44,9 +44,9 @@ const DPR_MED: [number, number] = [1, 1.5];
 const DPR_HIGH: [number, number] = [1, 2];
 
 function handleCreated({ gl }: { gl: WebGLRenderer }) {
-  gl.setClearColor('#12151A', 1);
-  gl.toneMapping = THREE.ACESFilmicToneMapping;
-  gl.toneMappingExposure = 1.38;
+  gl.setClearColor('#161A20', 1);
+  gl.toneMapping = THREE.NeutralToneMapping;
+  gl.toneMappingExposure = 1.48;
   gl.outputColorSpace = THREE.SRGBColorSpace;
   gl.domElement.addEventListener(
     'webglcontextlost',

@@ -27,8 +27,8 @@ export function fillBrushRoughness(out: Uint8Array, size: number, seed = 1.7): v
         const band = hash21(Math.floor(x / (2 + o)), Math.floor((y / size) * (14 + o * 10)), seed + o);
         streak += band * (0.5 / (o + 1));
       }
-      const grain = hash21(x * 0.37, y * 1.9, seed) * 0.16;
-      const v = Math.min(255, Math.max(0, (0.22 + streak * 0.62 + grain) * 255));
+      const grain = hash21(x * 0.37, y * 1.9, seed) * 0.05;
+      const v = Math.min(255, Math.max(0, (0.1 + streak * 0.2 + grain) * 255));
       const i = (y * size + x) * 4;
       out[i] = v;
       out[i + 1] = v;
