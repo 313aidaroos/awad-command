@@ -15,7 +15,7 @@ import { Universe } from '@/scene/universe/Universe';
 import { ProjectWorld } from '@/scene/world/ProjectWorld';
 import { useCommandStore } from '@/store/useCommandStore';
 
-const CAMERA_INIT = { position: [0, 3.15, UNIVERSE_ZOOM] as [number, number, number], fov: 40, near: 0.1, far: 220 };
+const CAMERA_INIT = { position: [0, 4.4, UNIVERSE_ZOOM] as [number, number, number], fov: 40, near: 0.1, far: 220 };
 const GL_INIT = {
   antialias: true,
   alpha: false,

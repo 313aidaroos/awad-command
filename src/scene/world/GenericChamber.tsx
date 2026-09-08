@@ -27,9 +27,9 @@ export function GenericChamber({ accent }: { accent: string }) {
   return (
     <group>
       <ChamberBackdrop />
-      <KitModel name="roomSmall" metalize tint="#98a1ab" />
+      <KitModel name="roomSmall" />
       <KitModel name="computer" position={[-1.6, 0, -1.1]} />
-      <KitModel name="deskComputer" metalize tint={accent} position={[1.4, 0, 0.8]} scale={2.4} />
+      <KitModel name="deskComputer" metalize position={[1.4, 0, 0.8]} scale={2.4} />
       <KitModel name="columnSupport" position={[-3.6, 0, -3.4]} scale={0.7} />
       <KitModel name="columnSupport" position={[3.6, 0, 3.4]} scale={0.7} />
       <pointLight color="#f2f4f7" intensity={1.4} distance={12} position={[0, 2.4, 1.2]} />

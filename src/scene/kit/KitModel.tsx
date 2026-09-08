@@ -20,15 +20,15 @@ function treatMaterial(mat: THREE.Material, metalize: boolean, tint?: string): T
   const map = 'map' in std ? std.map : null;
   const unlit = mat.type === 'MeshBasicMaterial' || Boolean(mat.userData?.gltfExtensions?.KHR_materials_unlit);
   if (metalize || unlit) {
-    const color = std.color ? std.color.clone() : new THREE.Color('#c5cad2');
-    if (tint) color.multiply(new THREE.Color(tint));
-    else color.multiplyScalar(0.72);
+    // Keep authored colormap/PBR maps. Never wash a kit piece into a flat accent slab.
+    const color = std.color ? std.color.clone() : new THREE.Color('#ffffff');
+    if (tint && !map) color.multiply(new THREE.Color(tint));
     const next = new THREE.MeshStandardMaterial({
       map,
       color,
-      metalness: 0.78,
-      roughness: 0.28,
-      envMapIntensity: 1.22,
+      metalness: map ? 0.55 : 0.78,
+      roughness: map ? 0.38 : 0.28,
+      envMapIntensity: 1.15,
       emissive: std.emissive?.clone?.() ?? new THREE.Color('#000000'),
       emissiveMap: std.emissiveMap ?? null,
       emissiveIntensity: std.emissiveIntensity ?? 0,
@@ -41,8 +41,8 @@ function treatMaterial(mat: THREE.Material, metalize: boolean, tint?: string): T
   }
   if (std.isMeshStandardMaterial) {
     const next = std.clone();
-    next.envMapIntensity = Math.max(next.envMapIntensity ?? 1, 1.18);
-    if (tint) next.color.multiply(new THREE.Color(tint));
+    next.envMapIntensity = Math.max(next.envMapIntensity ?? 1, 1.12);
+    if (tint && !next.map) next.color.multiply(new THREE.Color(tint));
     return next;
   }
   return mat;

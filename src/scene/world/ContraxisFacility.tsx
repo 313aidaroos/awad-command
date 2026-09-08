@@ -32,8 +32,8 @@ export function ContraxisFacility({ accent }: { accent: string }) {
   return (
     <group>
       <HallBackdrop />
-      <KitModel name="roomLarge" metalize tint="#9aa3ae" />
-      <KitModel name="cables" metalize tint="#7d868f" position={[0, 0.02, 0]} scale={0.92} />
+      <KitModel name="roomLarge" />
+      <KitModel name="cables" position={[0, 0.02, 0]} scale={0.92} />
       {([-6.4, 0, 6.4] as const).map((x) => (
         <group key={`col-${x}`}>
           <KitModel name="columnPipes" position={[x, 0, -5.4]} scale={0.72} />
@@ -56,7 +56,7 @@ export function ContraxisFacility({ accent }: { accent: string }) {
       <KitModel name="lightWide" position={[-4, 3.6, 0]} sit={false} />
       <KitModel name="lightWide" position={[2, 3.6, 0]} sit={false} />
       <KitModel name="lightWide" position={[6.4, 3.6, 0]} sit={false} />
-      <KitModel name="machineGen" metalize tint={accent} position={[5.4, 0, -5.5]} scale={1.6} />
+      <KitModel name="machineGen" metalize position={[5.4, 0, -5.5]} scale={1.6} />
       <KitModel name="machineBarrel" metalize position={[5.6, 0, 5.4]} scale={1.5} />
       <KitModel name="barrelLarge" position={[-8.1, 0, -3.4]} />
       <KitModel name="crate" position={[-8.0, 0, 3.2]} />

@@ -7,14 +7,14 @@ import { WorldName } from '@/scene/ui/WorldName';
 import { useCommandStore } from '@/store/useCommandStore';
 import type { WorldNode } from '@/types/world';
 
-function Station({ accent, kind }: { accent: string; kind: WorldNode['kind'] }) {
+function Station({ kind }: { kind: WorldNode['kind'] }) {
   const sink = kind === 'sink';
   const source = kind === 'source';
   return (
     <group>
-      <KitModel name="deskComputer" metalize tint={accent} scale={2.15} />
+      <KitModel name="deskComputer" metalize scale={2.15} />
       <KitModel name="computer" position={[0.02, 0, -0.42]} scale={0.85} />
-      <KitModel name="deskChair" metalize tint="#8A909A" position={[0.15, 0, 0.55]} scale={1.8} rotation={[0, Math.PI, 0]} />
+      <KitModel name="deskChair" metalize position={[0.15, 0, 0.55]} scale={1.8} rotation={[0, Math.PI, 0]} />
       {source ? <KitModel name="accessPoint" position={[-0.72, 0, -0.15]} scale={0.9} /> : null}
       {sink ? <KitModel name="chest" position={[0.85, 0, 0.1]} scale={0.85} /> : null}
       {!source && !sink ? <KitModel name="crate" position={[-0.78, 0, 0.22]} scale={0.7} /> : null}
@@ -41,7 +41,8 @@ export function WorldNodeMesh({ node, accent }: { node: WorldNode; accent: strin
       }}
       onPointerOut={() => setHovered(false)}
     >
-      <Station accent={accent} kind={node.kind} />
+      <Station kind={node.kind} />
+      <pointLight color={accent} intensity={0.35} distance={4.5} position={[0, 1.4, 0]} />
       {showLabel ? (
         <FloatingLabel
           id={`node-${node.id}`}
