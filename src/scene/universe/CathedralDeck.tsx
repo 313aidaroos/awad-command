@@ -1,26 +1,26 @@
 'use client';
 
-import { Brushed } from '@/scene/kit/materials';
+import { Brushed, FloorMetal } from '@/scene/kit/materials';
 
-/** Quiet plaza disc — no colonnade, no contact-shadow tabletop, no tick field. */
+/** Quiet plaza disc — PBR floor, no colonnade, no tick field. */
 export function CathedralDeck() {
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]} receiveShadow>
-        <circleGeometry args={[24, 80]} />
-        <meshStandardMaterial color="#14181F" metalness={0.42} roughness={0.58} />
+        <circleGeometry args={[22, 80]} />
+        <FloorMetal roughness={0.5} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.03, 0]}>
-        <ringGeometry args={[10.2, 10.38, 80]} />
-        <meshStandardMaterial color="#2E353E" metalness={0.7} roughness={0.28} />
+        <ringGeometry args={[9.6, 9.78, 80]} />
+        <meshStandardMaterial color="#3A424C" metalness={0.74} roughness={0.26} envMapIntensity={1.8} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]}>
-        <circleGeometry args={[6.2, 72]} />
-        <meshStandardMaterial color="#1A1F26" metalness={0.62} roughness={0.34} />
+        <circleGeometry args={[5.6, 72]} />
+        <FloorMetal roughness={0.38} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
-        <ringGeometry args={[6.05, 6.22, 72]} />
-        <Brushed roughness={0.18} />
+        <ringGeometry args={[5.42, 5.6, 72]} />
+        <Brushed roughness={0.16} />
       </mesh>
     </group>
   );

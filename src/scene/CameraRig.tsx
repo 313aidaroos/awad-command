@@ -19,9 +19,9 @@ export function CameraRig() {
   const gl = useThree((s) => s.gl);
   const look = useRef(new THREE.Vector3());
   const lookT = useRef(new THREE.Vector3());
-  const posT = useRef(new THREE.Vector3(0, 3.15, 15));
+  const posT = useRef(new THREE.Vector3(0, 2.4, 11));
   const follow = useRef(new THREE.Vector3());
-  const rot = useRef({ x: 0, y: 0, tx: 0, ty: 0, zoom: 15, tZoom: 15 });
+  const rot = useRef({ x: 0, y: 0, tx: 0, ty: 0, zoom: 11, tZoom: 11 });
   const drag = useRef({ on: false, x: 0, y: 0, moved: 0, pan: false });
   const flying = useRef(false);
   const followBias = useRef(0);
@@ -70,8 +70,8 @@ export function CameraRig() {
         rot.current.x = rot.current.tx;
       }
       if (state.view === 'universe') {
-        rot.current.tZoom = 15;
-        rot.current.zoom = 15;
+        rot.current.tZoom = 11;
+        rot.current.zoom = 11;
       }
     }, target.duration * 1000);
     return () => window.clearTimeout(id);
@@ -114,8 +114,8 @@ export function CameraRig() {
     const wheel = (e: WheelEvent) => {
       if (flying.current || useCommandStore.getState().followingAgent) return;
       const projectView = useCommandStore.getState().view !== 'universe';
-      const min = projectView ? 7 : 11;
-      const max = projectView ? 18 : 24;
+      const min = projectView ? 7 : 8;
+      const max = projectView ? 18 : 18;
       rot.current.tZoom = Math.max(min, Math.min(max, rot.current.tZoom + e.deltaY * 0.02));
     };
     el.addEventListener('pointerdown', down);
@@ -176,8 +176,8 @@ export function CameraRig() {
       wasFollow.current = false;
       followBias.current = 0;
       followDrop.current = 0;
-      posT.current.set(Math.sin(r.y) * r.zoom, 3.15 + r.x * 2.4, Math.cos(r.y) * r.zoom);
-      lookT.current.set(0, 1.35, 0);
+      posT.current.set(Math.sin(r.y) * r.zoom, 2.4 + r.x * 1.6, Math.cos(r.y) * r.zoom);
+      lookT.current.set(0, 1.25, 0);
     } else if (project && !flying.current && view !== 'universe') {
       wasFollow.current = false;
       followBias.current = 0;

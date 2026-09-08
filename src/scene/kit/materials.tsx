@@ -1,48 +1,82 @@
 'use client';
 
+import * as THREE from 'three';
+import { usePbrSuite } from '@/scene/kit/pbrMaps';
 import { useCommandStore } from '@/store/useCommandStore';
 
-/** Graphite chassis — the cathedral mass. */
-export function Graphite({ roughness = 0.42, metalness = 0.62 }: { roughness?: number; metalness?: number }) {
+/** Graphite chassis — brushed PBR, not a matte slab. */
+export function Graphite({ roughness = 0.38, metalness = 0.72 }: { roughness?: number; metalness?: number }) {
   const low = useCommandStore((s) => s.quality.level === 'low');
+  const suite = usePbrSuite();
   return (
     <meshStandardMaterial
-      color="#1C2128"
-      metalness={low ? Math.min(0.6, metalness) : metalness}
+      color="#2C333C"
+      map={suite?.graphiteAlbedo}
+      roughnessMap={low ? undefined : suite?.graphiteRough}
+      metalnessMap={low ? undefined : suite?.graphiteMetal}
+      normalMap={low ? undefined : suite?.graphiteNormal}
+      metalness={low ? Math.min(0.55, metalness) : metalness}
       roughness={roughness}
-      envMapIntensity={1.35}
+      envMapIntensity={1.95}
+      normalScale={new THREE.Vector2(0.42, 0.42)}
     />
   );
 }
 
-/** Brushed silver trim, frames, capitals. */
-export function Brushed({ roughness = 0.28 }: { roughness?: number }) {
+/** Brushed silver trim. */
+export function Brushed({ roughness = 0.22 }: { roughness?: number }) {
+  const suite = usePbrSuite();
   return (
     <meshStandardMaterial
-      color="#D8DDE4"
-      metalness={0.92}
-      roughness={roughness}
-      envMapIntensity={1.25}
-    />
-  );
-}
-
-/** Darker anodized metal for inner mechanisms. */
-export function Anodized({ roughness = 0.22 }: { roughness?: number }) {
-  return (
-    <meshStandardMaterial
-      color="#171B21"
+      color="#D5DBE3"
+      roughnessMap={suite?.brushRough}
+      normalMap={suite?.brushNormal}
       metalness={0.94}
       roughness={roughness}
-      envMapIntensity={1.1}
+      envMapIntensity={2.05}
+      normalScale={new THREE.Vector2(0.55, 0.55)}
     />
   );
 }
 
-/** Architectural glass — tinted, not toy transparency. */
+/** Darker anodized metal. */
+export function Anodized({ roughness = 0.18 }: { roughness?: number }) {
+  const suite = usePbrSuite();
+  return (
+    <meshStandardMaterial
+      color="#161A20"
+      map={suite?.graphiteAlbedo}
+      roughnessMap={suite?.brushRough}
+      normalMap={suite?.brushNormal}
+      metalness={0.96}
+      roughness={roughness}
+      envMapIntensity={1.7}
+      normalScale={new THREE.Vector2(0.28, 0.28)}
+    />
+  );
+}
+
+/** Plaza / hall floor plate with larger grain. */
+export function FloorMetal({ roughness = 0.46 }: { roughness?: number }) {
+  const suite = usePbrSuite();
+  return (
+    <meshStandardMaterial
+      color="#2A313A"
+      map={suite?.graphiteAlbedo}
+      roughnessMap={suite?.floorRough}
+      normalMap={suite?.graphiteNormal}
+      metalness={0.58}
+      roughness={roughness}
+      envMapIntensity={1.7}
+      normalScale={new THREE.Vector2(0.3, 0.3)}
+    />
+  );
+}
+
+/** Architectural glass — reads on MEDIUM without relying on HIGH transmission. */
 export function GlassPanel({
   accent = '#8A909A',
-  opacity = 0.22,
+  opacity = 0.28,
 }: {
   accent?: string;
   opacity?: number;
@@ -52,29 +86,29 @@ export function GlassPanel({
     return (
       <meshStandardMaterial
         color="#1C222C"
-        metalness={0.55}
-        roughness={0.18}
+        metalness={0.72}
+        roughness={0.12}
         transparent
-        opacity={0.72}
-        envMapIntensity={0.7}
+        opacity={0.78}
+        envMapIntensity={1.1}
       />
     );
   }
   return (
     <meshPhysicalMaterial
-      color="#1B2028"
-      metalness={0.12}
-      roughness={0.08}
-      transmission={level === 'high' ? 0.42 : 0}
-      thickness={0.35}
+      color="#1A2028"
+      metalness={0.08}
+      roughness={0.045}
+      transmission={level === 'high' ? 0.46 : 0.26}
+      thickness={0.4}
       ior={1.48}
       transparent
       opacity={opacity}
-      envMapIntensity={1.15}
+      envMapIntensity={2.1}
       clearcoat={1}
-      clearcoatRoughness={0.08}
+      clearcoatRoughness={0.06}
       attenuationColor={accent}
-      attenuationDistance={2.4}
+      attenuationDistance={2.2}
     />
   );
 }

@@ -29,7 +29,7 @@ function SceneAtmosphere() {
   return <fog attach="fog" args={['#12151A', 48, 92]} />;
 }
 
-const CAMERA_INIT = { position: [0, 3.15, 15] as [number, number, number], fov: 34, near: 0.1, far: 220 };
+const CAMERA_INIT = { position: [0, 2.4, 11] as [number, number, number], fov: 32, near: 0.1, far: 220 };
 const GL_INIT = {
   antialias: true,
   alpha: false,
@@ -46,7 +46,7 @@ const DPR_HIGH: [number, number] = [1, 2];
 function handleCreated({ gl }: { gl: WebGLRenderer }) {
   gl.setClearColor('#12151A', 1);
   gl.toneMapping = THREE.ACESFilmicToneMapping;
-  gl.toneMappingExposure = 1.22;
+  gl.toneMappingExposure = 1.38;
   gl.outputColorSpace = THREE.SRGBColorSpace;
   gl.domElement.addEventListener(
     'webglcontextlost',

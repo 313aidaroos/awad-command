@@ -14,7 +14,7 @@ export function StudioEnvironment() {
     const envScene = new RoomEnvironment();
     const texture = pmrem.fromScene(envScene, 0.04).texture;
     scene.environment = texture;
-    scene.environmentIntensity = 1.45;
+    scene.environmentIntensity = 1.95;
     return () => {
       if (scene.environment === texture) scene.environment = null;
       texture.dispose();

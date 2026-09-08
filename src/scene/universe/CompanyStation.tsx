@@ -15,10 +15,11 @@ export function CompanyStation({ project }: { project: ProjectDefinition }) {
   const hoverProject = useCommandStore((s) => s.hoverProject);
   const identity = identityOf(project.slug);
   if (focused && focused !== project.slug) return null;
+  const pos = identity.plazaPosition ?? project.universePosition;
 
   return (
     <group
-      position={project.universePosition}
+      position={pos}
       scale={identity.scale}
       onClick={(e) => {
         e.stopPropagation();
@@ -36,8 +37,8 @@ export function CompanyStation({ project }: { project: ProjectDefinition }) {
       }}
     >
       <Vessel kind={identity.kind} accent={project.accent} />
-      <mesh position={[0, 1.1, 0]} visible={false}>
-        <boxGeometry args={[2.2, 2.6, 2.2]} />
+      <mesh position={[0, 1.2, 0]} visible={false}>
+        <boxGeometry args={[3.2, 3.2, 2.6]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
       {hovered ? (
@@ -46,7 +47,7 @@ export function CompanyStation({ project }: { project: ProjectDefinition }) {
           priority={5}
           maxDist={48}
           fadeFrom={36}
-          position={[0, 2.2, 0]}
+          position={[0, 2.55, 0]}
         >
           <WorldName primary>{project.name}</WorldName>
         </FloatingLabel>
