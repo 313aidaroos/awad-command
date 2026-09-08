@@ -1,0 +1,27 @@
+---
+description: AWAD COMMAND project rules — always apply
+alwaysApply: true
+---
+
+You are building AWAD COMMAND, a private 3D AI command center for one user (Awad).
+Read docs/MASTER_HANDOFF.md before large changes.
+
+## Non-negotiables
+- The home screen is a 3D universe rendered with React Three Fiber. Never replace it with a card grid, sidebar dashboard, or list view.
+- Navigation is camera movement. Clicking an orb flies the camera; it never opens a modal or routes to a new page. Panels are translucent overlays on top of the persistent canvas.
+- Every visual (particles, agent movement, flows) is driven by store state, which is driven by events from an EventSource. Never animate business activity from random timers inside a component.
+- All displayed business numbers go through the <Metric> component. In demo mode they carry the DEMO tag. Never hardcode a number into JSX.
+- Never put secrets in client code. Anthropic, Grok bot, and Supabase service keys live only in route handlers and server code. NEXT_PUBLIC_ vars are for the anon key and URL only.
+- No real-money trading, no destructive agent actions without an approval record.
+- Do not invent OAuth to Grok Bot Chat. Lead messaging is a server-side webhook/API-key bridge.
+
+## Architecture
+- One Zustand store: src/store/useCommandStore.ts. Slices: view, camera, projects, agents, events, ui, quality.
+- Projects are plug-ins: src/projects/<slug>/index.ts exports a ProjectDefinition. src/projects/registry.ts lists them. Lead wiring lives in src/config/orbLeads.ts.
+- Camera moves are requested through store actions (flyTo, returnToUniverse). CameraRig is the only component that touches the camera.
+- 3D code lives in src/scene. 2D overlay code lives in src/ui. They communicate only through the store.
+
+## Visual language
+- Palette: base #07080A (void), #0E1013 (graphite), #171A1F (glass fill), #E6E8EC (silver text), #8A909A (muted), accent #3D8BFF (electric blue).
+- Glass panels: rgba(23,26,31,0.55), backdrop-blur 18px, 1px border rgba(255,255,255,0.08), radius 14px.
+- Restraint over spectacle: bloom intensity ≤ 0.9, motion is slow (damping 0.15–0.35).
