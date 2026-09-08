@@ -4,7 +4,7 @@ import { Bloom, EffectComposer, Vignette } from '@react-three/postprocessing';
 import { isSafariLike } from '@/lib/safari';
 import { useCommandStore } from '@/store/useCommandStore';
 
-/** Never mounted on Safari/WebKit — EffectsGate and supportsPostprocessing keep EffectComposer off. */
+/** Never mounted on Safari/WebKit — CommandCanvas never loads EffectsGate there. */
 export function Effects() {
   const level = useCommandStore((s) => s.quality.level);
   if (isSafariLike() || level === 'low') return null;
