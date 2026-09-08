@@ -44,17 +44,26 @@ Click an orb → ProjectWorld HUD shows the lead name + agent id and a **Message
 
 ## Live lead messaging (hub keys)
 
-`POST /api/lead-message` `{ projectSlug, message }` runs **server-side only**.
+`POST /api/lead-message` `{ projectSlug, message }` runs **server-side only**. The Message lead panel on each ProjectWorld HUD still works in demo without these vars.
+
+**Live lead chat needs both `LEAD_MESSAGE_WEBHOOK_URL` and `LEAD_MESSAGE_WEBHOOK_SECRET`.**
 
 1. Set `LEAD_MESSAGE_WEBHOOK_URL` to the hub ingest URL.
-2. Optionally set `GROK_BOT_API_KEY` — sent as `Authorization: Bearer …`.
-3. The route POSTs `{ projectSlug, agentId, leadName, message }`.
-4. Delivery is claimed **only** after the webhook returns 2xx.
-5. If the webhook is unset, the message is queued in the deck and tagged DEMO. No OAuth to Grok Bot Chat is invented.
+2. Set `LEAD_MESSAGE_WEBHOOK_SECRET` — sent as `X-Webhook-Secret`.
+3. Optionally set `GROK_BOT_API_KEY` — sent as `Authorization: Bearer …`.
+4. The route POSTs `{ projectSlug, agentId, leadName, message }`.
+5. Delivery is claimed **only** after the webhook returns 2xx.
+6. If the webhook is unset, the message is queued in the deck and tagged DEMO. No OAuth to Grok Bot Chat is invented.
 
-## CEO
+## CEO (text + voice)
 
-`POST /api/ceo` — Anthropic only when `ANTHROPIC_API_KEY` **and** `AI_PROVIDER=anthropic`. Otherwise the demo responder answers from the store snapshot (including who owns each company).
+`POST /api/ceo` — **live CEO needs `AI_PROVIDER=anthropic` and `ANTHROPIC_API_KEY`** (optional `ANTHROPIC_MODEL`). Otherwise the demo responder answers from the store snapshot (including who owns each company).
+
+Voice (Chrome / Safari Web Speech API):
+
+- Tap the mic on the CEO console to start/stop listening. Interim speech shows in the input; a final phrase is submitted to `/api/ceo`.
+- Spoken replies use `speechSynthesis` and are **on by default**. Mute with the speaker control (store `voiceMuted`) or ⌘K → Mute CEO voice.
+- If `SpeechRecognition` is missing (Firefox, old Safari, insecure origin), the shell stays up and a short HUD hint says to type instead.
 
 ## Supabase
 

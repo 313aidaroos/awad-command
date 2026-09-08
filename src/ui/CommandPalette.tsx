@@ -14,6 +14,8 @@ export function CommandPalette() {
   const setQuality = useCommandStore((s) => s.setQuality);
   const openPanel = useCommandStore((s) => s.openPanel);
   const finishBoot = useCommandStore((s) => s.finishBoot);
+  const voiceMuted = useCommandStore((s) => s.voiceMuted);
+  const setVoiceMuted = useCommandStore((s) => s.setVoiceMuted);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -94,6 +96,15 @@ export function CommandPalette() {
             </Command.Item>
             <Command.Item className="cursor-pointer rounded-md px-2 py-1.5" onSelect={() => { finishBoot(); toggle(false); }}>
               Rerun boot
+            </Command.Item>
+            <Command.Item
+              className="cursor-pointer rounded-md px-2 py-1.5"
+              onSelect={() => {
+                setVoiceMuted(!voiceMuted);
+                toggle(false);
+              }}
+            >
+              {voiceMuted ? 'Unmute CEO voice' : 'Mute CEO voice'}
             </Command.Item>
           </Command.Group>
         </Command.List>
