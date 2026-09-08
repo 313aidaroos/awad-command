@@ -1,5 +1,6 @@
 import { ALL_LEADS, getLeadBySlug, SYSTEM_CONTACTS } from '@/config/orbLeads';
 import { attentionItems } from '@/ceo/buildContext';
+import { parseLeadDirective } from '@/ceo/leadDirective';
 import { money } from '@/lib/format';
 import { projects } from '@/projects/registry';
 import type { ProposeApprovalArgs } from '@/ceo/tools';
@@ -8,6 +9,7 @@ import type { CommandState } from '@/store/types';
 export interface DemoAnswer {
   text: string;
   approval?: ProposeApprovalArgs;
+  toolCalls?: Array<{ name: string; input: Record<string, unknown> }>;
 }
 
 export function demoResponder(
@@ -16,6 +18,11 @@ export function demoResponder(
 ): DemoAnswer {
   const q = message.toLowerCase();
   const caveat = state.dataMode === 'demo' ? 'Figures are DEMO until live sources connect. ' : '';
+
+  // Lead sends are executed by runCeoTurn — do not answer as if they already happened.
+  if (parseLeadDirective(message)) {
+    return { text: '' };
+  }
 
   if (/deploy|landing page/.test(q)) {
     return {
