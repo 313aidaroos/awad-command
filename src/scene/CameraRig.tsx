@@ -6,7 +6,8 @@ import * as THREE from 'three';
 import { useCommandStore } from '@/store/useCommandStore';
 
 export function CameraRig() {
-  const { camera, gl } = useThree();
+  const camera = useThree((s) => s.camera);
+  const gl = useThree((s) => s.gl);
   const look = useRef(new THREE.Vector3());
   const lookT = useRef(new THREE.Vector3());
   const posT = useRef(new THREE.Vector3(0, 4, 22));

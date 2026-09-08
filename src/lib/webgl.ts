@@ -1,4 +1,5 @@
 import type { WebGLRenderer } from 'three';
+import { isSafariLike } from '@/lib/safari';
 
 export function isWebGLAvailable(): boolean {
   if (typeof document === 'undefined') return false;
@@ -15,8 +16,9 @@ export function isWebGLAvailable(): boolean {
   }
 }
 
-/** True when the live renderer can host a WebGL2 composer (bloom/vignette). */
-export function supportsPostprocessing(gl: WebGLRenderer): boolean {
+/** Bloom/composer is never used on Safari/WebKit. */
+export function supportsPostprocessing(gl?: WebGLRenderer): boolean {
+  if (isSafariLike()) return false;
   try {
     if (!gl?.capabilities?.isWebGL2) return false;
     return Boolean(gl.getContext());

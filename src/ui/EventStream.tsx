@@ -8,7 +8,8 @@ import { useCommandStore } from '@/store/useCommandStore';
 export function EventStream() {
   const open = useCommandStore((s) => s.eventStreamOpen);
   const view = useCommandStore((s) => s.view);
-  const events = useCommandStore((s) => s.events.buffer.slice(0, 6));
+  const buffer = useCommandStore((s) => s.events.buffer);
+  const events = buffer.slice(0, 6);
   if (!open || view === 'boot') return null;
   return (
     <Glass className="fixed left-4 bottom-24 z-20 hidden md:block w-[280px] p-3.5 text-[11px]">

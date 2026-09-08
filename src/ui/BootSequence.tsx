@@ -7,23 +7,22 @@ import { useCommandStore } from '@/store/useCommandStore';
 
 export function BootSequence() {
   const booted = useCommandStore((s) => s.booted);
-  const finishBoot = useCommandStore((s) => s.finishBoot);
   const runtimes = useCommandStore((s) => s.projects);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const t = window.setTimeout(() => setReady(true), 4200);
-    const skip = () => finishBoot();
+    const skip = () => useCommandStore.getState().finishBoot();
     window.addEventListener('keydown', skip);
     return () => {
       window.clearTimeout(t);
       window.removeEventListener('keydown', skip);
     };
-  }, [finishBoot]);
+  }, []);
 
   useEffect(() => {
-    if (ready && !booted) finishBoot();
-  }, [ready, booted, finishBoot]);
+    if (ready && !booted) useCommandStore.getState().finishBoot();
+  }, [ready, booted]);
 
   return (
     <AnimatePresence>
@@ -33,7 +32,7 @@ export function BootSequence() {
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.7 }}
-          onClick={() => finishBoot()}
+          onClick={() => useCommandStore.getState().finishBoot()}
         >
           <motion.h1
             className="font-light tracking-[0.4em] text-[clamp(22px,5vw,44px)]"

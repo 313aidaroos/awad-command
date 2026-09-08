@@ -111,7 +111,10 @@ export const useCommandStore = create<CommandState & CommandActions>((set, get) 
   togglePalette: (open) => set({ paletteOpen: open ?? !get().paletteOpen }),
   toggleNews: (open) => set({ newsOpen: open ?? !get().newsOpen }),
   toggleEventStream: (open) => set({ eventStreamOpen: open ?? !get().eventStreamOpen }),
-  setQuality: (level, auto = false) => set({ quality: { level, auto } }),
+  setQuality: (level, auto = false) =>
+    set((state) =>
+      state.quality.level === level && state.quality.auto === auto ? state : { quality: { level, auto } },
+    ),
   applyEvent: (event) =>
     set((state) => {
       const next = {
@@ -157,14 +160,15 @@ export const useCommandStore = create<CommandState & CommandActions>((set, get) 
   setVoiceMuted: (muted) => set({ voiceMuted: muted }),
   tick: (dt) =>
     set((state) => {
-      const projectsNext = { ...state.projects };
+      let changed = false;
+      const projectsNext: CommandState['projects'] = { ...state.projects };
       for (const [slug, runtime] of Object.entries(projectsNext)) {
         const floor = runtime.status === 'idle' ? 0.12 : 0.15;
-        projectsNext[slug] = {
-          ...runtime,
-          activity: Math.max(floor, runtime.activity - 0.03 * dt),
-        };
+        const activity = Math.max(floor, runtime.activity - 0.03 * dt);
+        if (Math.abs(activity - runtime.activity) < 0.0008) continue;
+        projectsNext[slug] = { ...runtime, activity };
+        changed = true;
       }
-      return { projects: projectsNext };
+      return changed ? { projects: projectsNext } : state;
     }),
 }));

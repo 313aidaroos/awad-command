@@ -1,21 +1,47 @@
 'use client';
 
-import { useEffect, useState, type ComponentType } from 'react';
+import { useEffect, useState, type ComponentType, type CSSProperties } from 'react';
 import { Canvas } from '@react-three/fiber';
+import type { WebGLRenderer } from 'three';
+import { isSafariLike } from '@/lib/safari';
 import { CameraRig } from '@/scene/CameraRig';
 import { Lighting } from '@/scene/Environment/Lighting';
 import { Starfield } from '@/scene/Environment/Starfield';
 import { Universe } from '@/scene/universe/Universe';
 import { ProjectWorld } from '@/scene/world/ProjectWorld';
 import { useCommandStore } from '@/store/useCommandStore';
-import { ClientErrorBoundary } from '@/ui/CanvasErrorBoundary';
+
+const CAMERA_INIT = { position: [0, 4, 22] as [number, number, number], fov: 45, near: 0.1, far: 300 };
+const GL_INIT = {
+  antialias: true,
+  alpha: false,
+  stencil: false,
+  powerPreference: 'default' as const,
+  failIfMajorPerformanceCaveat: false,
+};
+const CANVAS_STYLE: CSSProperties = { width: '100%', height: '100%', display: 'block' };
+const RESIZE = { scroll: false, debounce: { scroll: 50, resize: 75 } };
+const DPR_LOW = 1;
+const DPR_MED: [number, number] = [1, 1.5];
+const DPR_HIGH: [number, number] = [1, 2];
+
+function handleCreated({ gl }: { gl: WebGLRenderer }) {
+  gl.setClearColor('#07080A', 1);
+  gl.domElement.addEventListener(
+    'webglcontextlost',
+    (event) => {
+      event.preventDefault();
+    },
+    false,
+  );
+}
 
 function EffectsGate() {
   const level = useCommandStore((s) => s.quality.level);
   const [Fx, setFx] = useState<ComponentType | null>(null);
 
   useEffect(() => {
-    if (level === 'low') {
+    if (isSafariLike() || level === 'low') {
       setFx(null);
       return;
     }
@@ -32,45 +58,30 @@ function EffectsGate() {
     };
   }, [level]);
 
-  if (!Fx) return null;
+  if (isSafariLike() || !Fx) return null;
   return <Fx />;
 }
 
 export function CommandCanvas() {
   const level = useCommandStore((s) => s.quality.level);
-  const dpr: number | [number, number] = level === 'low' ? 1 : level === 'medium' ? [1, 1.5] : [1, 2];
+  const safari = isSafariLike();
+  const dpr = safari || level === 'low' ? DPR_LOW : level === 'medium' ? DPR_MED : DPR_HIGH;
 
   return (
     <Canvas
-      camera={{ position: [0, 4, 22], fov: 45, near: 0.1, far: 300 }}
+      camera={CAMERA_INIT}
       dpr={dpr}
-      gl={{
-        antialias: true,
-        alpha: false,
-        stencil: false,
-        powerPreference: 'default',
-        failIfMajorPerformanceCaveat: false,
-      }}
-      onCreated={({ gl }) => {
-        gl.setClearColor('#07080A', 1);
-        gl.domElement.addEventListener(
-          'webglcontextlost',
-          (event) => {
-            event.preventDefault();
-          },
-          false,
-        );
-      }}
-      style={{ position: 'fixed', inset: 0 }}
+      gl={GL_INIT}
+      resize={RESIZE}
+      onCreated={handleCreated}
+      style={CANVAS_STYLE}
     >
       <Lighting />
       <Starfield />
       <Universe />
       <ProjectWorld />
       <CameraRig />
-      <ClientErrorBoundary fallback={null}>
-        <EffectsGate />
-      </ClientErrorBoundary>
+      {safari ? null : <EffectsGate />}
     </Canvas>
   );
 }
