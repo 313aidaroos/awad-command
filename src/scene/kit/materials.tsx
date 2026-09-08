@@ -7,10 +7,10 @@ export function Graphite({ roughness = 0.42, metalness = 0.62 }: { roughness?: n
   const low = useCommandStore((s) => s.quality.level === 'low');
   return (
     <meshStandardMaterial
-      color="#1A1E24"
-      metalness={low ? Math.min(0.45, metalness) : metalness}
+      color="#22272E"
+      metalness={low ? Math.min(0.55, metalness) : metalness}
       roughness={roughness}
-      envMapIntensity={0.85}
+      envMapIntensity={1.15}
     />
   );
 }
@@ -19,10 +19,10 @@ export function Graphite({ roughness = 0.42, metalness = 0.62 }: { roughness?: n
 export function Brushed({ roughness = 0.28 }: { roughness?: number }) {
   return (
     <meshStandardMaterial
-      color="#C5CAD3"
-      metalness={0.88}
+      color="#D8DDE4"
+      metalness={0.92}
       roughness={roughness}
-      envMapIntensity={1.05}
+      envMapIntensity={1.25}
     />
   );
 }
@@ -31,10 +31,10 @@ export function Brushed({ roughness = 0.28 }: { roughness?: number }) {
 export function Anodized({ roughness = 0.22 }: { roughness?: number }) {
   return (
     <meshStandardMaterial
-      color="#0F1216"
-      metalness={0.92}
+      color="#171B21"
+      metalness={0.94}
       roughness={roughness}
-      envMapIntensity={0.95}
+      envMapIntensity={1.1}
     />
   );
 }

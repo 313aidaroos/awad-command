@@ -50,11 +50,20 @@ export function CeoCore() {
         document.body.style.cursor = 'grab';
       }}
     >
-      <Plinth size={[2.35, 0.18, 2.35]} steps={3} />
+      <Plinth size={[2.55, 0.2, 2.55]} steps={3} />
       <mesh position={[0, 0.42, 0]}>
-        <cylinderGeometry args={[0.92, 1.05, 0.72, 8]} />
+        <cylinderGeometry args={[0.98, 1.12, 0.78, 8]} />
         <Anodized roughness={0.26} />
       </mesh>
+      {[0, 1, 2, 3, 4, 5].map((i) => {
+        const a = (i / 6) * Math.PI * 2;
+        return (
+          <mesh key={i} position={[Math.cos(a) * 1.18, 1.05, Math.sin(a) * 1.18]}>
+            <boxGeometry args={[0.08, 1.35, 0.08]} />
+            <Brushed roughness={0.22} />
+          </mesh>
+        );
+      })}
       <mesh position={[0, 0.8, 0]}>
         <cylinderGeometry args={[0.78, 0.82, 0.12, 8]} />
         <Brushed roughness={0.22} />

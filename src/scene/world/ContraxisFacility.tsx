@@ -83,9 +83,25 @@ export function ContraxisFacility({ accent }: { accent: string }) {
         <boxGeometry args={[36.2, 5.4, 0.18]} />
         <Graphite roughness={0.5} />
       </mesh>
-      <pointLight color="#f2f4f7" intensity={1.15} distance={22} position={[-8, 4.2, 0]} />
-      <pointLight color="#e8edf4" intensity={1.05} distance={20} position={[4, 4.0, 0]} />
-      <pointLight color={accent} intensity={0.28} distance={16} position={[12, 3.2, 0]} />
+      {BAY_XS.slice(0, -1).map((x, i) => (
+        <group key={`alcove-${x}`}>
+          <mesh position={[(x + BAY_XS[i + 1]!) / 2, 2.2, -3.35]}>
+            <boxGeometry args={[0.1, 4.2, 2.4]} />
+            <Graphite roughness={0.42} />
+          </mesh>
+          <mesh position={[(x + BAY_XS[i + 1]!) / 2, 2.2, 3.35]}>
+            <boxGeometry args={[0.1, 4.2, 2.4]} />
+            <Graphite roughness={0.42} />
+          </mesh>
+        </group>
+      ))}
+      {BAY_XS.map((x) => (
+        <Slit key={`bay-slit-${x}`} position={[x, 2.4, -4.55]} size={[1.4, 0.04, 0.03]} accent={accent} intensity={0.65} />
+      ))}
+      <pointLight color="#f7f8fb" intensity={2.1} distance={24} position={[-10, 4.4, 0]} />
+      <pointLight color="#f2f4f8" intensity={1.85} distance={22} position={[-2, 4.2, 1]} />
+      <pointLight color="#eef1f5" intensity={1.7} distance={22} position={[6, 4.1, -1]} />
+      <pointLight color={accent} intensity={0.45} distance={16} position={[13, 3.4, 0]} />
       <ContactShadows position={[0, -0.05, 0]} opacity={0.48} scale={48} blur={2.2} far={10} color="#000000" />
     </group>
   );

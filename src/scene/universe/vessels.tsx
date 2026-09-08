@@ -52,7 +52,15 @@ function Hall({ accent }: { accent: string }) {
       <group position={[0, 0.95, -0.64]}>
         <FramedPanel width={1.28} height={1.35} accent={accent} />
       </group>
+      <group position={[0.72, 0.95, 0]} rotation={[0, Math.PI / 2, 0]}>
+        <FramedPanel width={1.05} height={1.35} accent={accent} />
+      </group>
+      <mesh position={[0, 0.08, 0]}>
+        <boxGeometry args={[1.35, 0.06, 1.15]} />
+        <Brushed roughness={0.3} />
+      </mesh>
       <Slit position={[0, 0.08, 0.7]} size={[0.7, 0.02, 0.02]} accent={accent} />
+      <Slit position={[0, 1.88, 0]} size={[0.9, 0.02, 0.02]} accent={accent} intensity={0.55} />
     </group>
   );
 }

@@ -53,19 +53,35 @@ export function CathedralDeck() {
           <Column height={4.4} width={0.32} />
         </group>
       ))}
+      {[
+        [16.4, 0, 16.4, 6.8],
+        [16.4, 6.8, 11.6, 11.6],
+        [11.6, 11.6, 6.8, 16.4],
+        [6.8, 16.4, 0, 16.4],
+        [0, 16.4, -6.8, 16.4],
+        [-6.8, 16.4, -11.6, 11.6],
+        [-11.6, 11.6, -16.4, 6.8],
+        [-16.4, 6.8, -16.4, 0],
+      ].map(([ax, az, bx, bz]) => (
+        <mesh key={`lintel-${ax}:${az}`} position={[(ax + bx) / 2, 4.28, (az + bz) / 2]} rotation={[0, Math.atan2(bx - ax, bz - az), 0]}>
+          <boxGeometry args={[0.2, 0.12, Math.hypot(bx - ax, bz - az)]} />
+          <Graphite roughness={0.38} />
+        </mesh>
+      ))}
       {level === 'low'
         ? null
-        : cols.map(([x, z], i) =>
-            i % 2 === 0 ? (
-              <Slit
-                key={`slit-${x}:${z}`}
-                position={[x * 0.42, 0.04, z * 0.42]}
-                size={[0.9, 0.02, 0.04]}
-                accent="#3D8BFF"
-                intensity={0.35}
-              />
-            ) : null,
-          )}
+        : cols.map(([x, z], i) => (
+            <group key={`cable-${x}:${z}`}>
+              {i % 2 === 0 ? (
+                <Slit
+                  position={[x * 0.42, 0.04, z * 0.42]}
+                  size={[0.9, 0.02, 0.04]}
+                  accent="#3D8BFF"
+                  intensity={0.45}
+                />
+              ) : null}
+            </group>
+          ))}
       <mesh position={[0, 2.15, 16.4]}>
         <boxGeometry args={[8.4, 0.12, 0.22]} />
         <Graphite roughness={0.4} />
