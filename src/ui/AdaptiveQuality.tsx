@@ -22,13 +22,10 @@ export function AdaptiveQuality() {
         last = now;
         const { quality, setQuality } = useCommandStore.getState();
         if (!quality.auto) return;
-        if (fps < 28) {
+        if (fps < 28 && quality.level === 'high') {
           low += 1;
-          if (low >= 2 && quality.level === 'high') {
+          if (low >= 2) {
             setQuality('medium', true);
-            low = 0;
-          } else if (low >= 2 && quality.level === 'medium') {
-            setQuality('low', true);
             low = 0;
           }
         } else {
