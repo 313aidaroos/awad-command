@@ -28,15 +28,15 @@ export function projectEnterSequence(pos: [number, number, number]): CameraTarge
       phase: 'approach',
     },
     {
-      position: [x + dx * 8.2, y + 2.4, z + dz * 8.2],
-      lookAt: [x, y - 0.2, z],
-      duration: 1.15,
+      position: [x - 9.8, y + 1.7, z],
+      lookAt: [x + 3.2, y - 1.1, z],
+      duration: 1.2,
       phase: 'shell',
     },
     {
       position: [x - 9.2, y + 1.45, z],
       lookAt: [x + 4.4, y - 1.25, z],
-      duration: 1.45,
+      duration: 1.25,
       phase: 'interior',
     },
   ];
