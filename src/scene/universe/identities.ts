@@ -8,11 +8,11 @@ export interface EntityIdentity {
 }
 
 const IDENTITIES: Record<string, EntityIdentity> = {
-  contraxis: { kind: 'hall', scale: 2.05, plaza: true, plazaPosition: [7.8, 0, 5.4] },
-  socixis: { kind: 'mast', scale: 1.72, plaza: true, plazaPosition: [-7.2, 0, 5.6] },
-  rawixis: { kind: 'stack', scale: 1.68, plaza: true, plazaPosition: [7.4, 0, -5.2] },
-  awadbot: { kind: 'cabinet', scale: 1.7, plaza: true, plazaPosition: [-0.2, 0, 8.8] },
-  apixis: { kind: 'spire', scale: 1.74, plaza: true, plazaPosition: [-0.4, 0, -8.4] },
+  contraxis: { kind: 'hall', scale: 1.78, plaza: true, plazaPosition: [8.6, 0, 2.2] },
+  socixis: { kind: 'mast', scale: 1.62, plaza: true, plazaPosition: [-8.6, 0, 2.2] },
+  rawixis: { kind: 'stack', scale: 1.58, plaza: true, plazaPosition: [6.8, 0, -7.2] },
+  awadbot: { kind: 'cabinet', scale: 1.6, plaza: true, plazaPosition: [0, 0, -8.8] },
+  apixis: { kind: 'spire', scale: 1.64, plaza: true, plazaPosition: [-6.8, 0, -7.2] },
   lyrixis: { kind: 'mast', scale: 1.05, plaza: false },
   halaxis: { kind: 'spire', scale: 1.12, plaza: false },
   publishing: { kind: 'stack', scale: 0.92, plaza: false },
