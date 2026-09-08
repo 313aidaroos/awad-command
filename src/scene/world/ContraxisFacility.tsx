@@ -18,8 +18,8 @@ for (let x = -10; x <= 10; x += 4) {
 const SOUTH_X = [-8, -4, 0, 4, 8] as const;
 const EAST_Z = [-4, 0, 4] as const;
 const DIVIDER_Z = [-4.15, 4.15] as const;
-const GRAPHITE = '#8A909A';
-const WALL = '#B4B8BE';
+const GRAPHITE = '#4A4F56';
+const WALL = '#6A7078';
 
 function HallBackdrop() {
   const { scene, gl } = useThree();

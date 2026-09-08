@@ -8,7 +8,7 @@ export function Lighting() {
       <ambientLight intensity={0.07} color="#8A909A" />
       <directionalLight
         color="#C9D0DA"
-        intensity={0.7}
+        intensity={0.88}
         position={[-7, 11, 6]}
         castShadow
         shadow-mapSize-width={1024}
