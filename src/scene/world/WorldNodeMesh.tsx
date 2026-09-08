@@ -136,8 +136,8 @@ export function WorldNodeMesh({ node, accent }: { node: WorldNode; accent: strin
       <group scale={1.7}>
         <Station shape={shape} color={accent} />
       </group>
-      <Html distanceFactor={32} position={[0, 0.82, 0]} style={{ pointerEvents: 'none' }}>
-        <div className="text-[9px] tracking-[0.12em] text-[rgba(230,232,236,0.72)] whitespace-nowrap">{node.label}</div>
+      <Html distanceFactor={52} position={[0, 0.95, 0]} style={{ pointerEvents: 'none' }}>
+        <div className="text-[8px] tracking-[0.16em] text-[rgba(230,232,236,0.62)] whitespace-nowrap">{node.label}</div>
       </Html>
     </group>
   );

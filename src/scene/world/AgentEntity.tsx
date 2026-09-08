@@ -102,11 +102,11 @@ export function AgentEntity({
           <meshBasicMaterial color={color} transparent opacity={0.75} />
         </mesh>
       ) : null}
-      <Html distanceFactor={28} position={[0, 0.5, 0]} style={{ pointerEvents: 'none' }}>
-        <div className={`text-[9px] tracking-[0.08em] whitespace-nowrap ${workforce || following ? 'text-[var(--text)]' : 'text-[var(--muted)]'}`}>
-          {agent.name}
-        </div>
-      </Html>
+      {workforce || following ? (
+        <Html distanceFactor={48} position={[0, 0.52, 0]} style={{ pointerEvents: 'none' }}>
+          <div className="text-[8px] tracking-[0.1em] text-[var(--text)] whitespace-nowrap">{agent.name}</div>
+        </Html>
+      ) : null}
     </group>
   );
 }
