@@ -1,5 +1,5 @@
-import { CommandShell } from '@/ui/CommandShell';
+import { CommandApp } from '@/ui/CommandApp';
 
 export default function HomePage() {
-  return <CommandShell />;
+  return <CommandApp />;
 }

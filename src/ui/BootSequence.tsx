@@ -7,7 +7,6 @@ import { useCommandStore } from '@/store/useCommandStore';
 
 export function BootSequence() {
   const booted = useCommandStore((s) => s.booted);
-  const runtimes = useCommandStore((s) => s.projects);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -36,8 +35,8 @@ export function BootSequence() {
         >
           <motion.h1
             className="font-light tracking-[0.4em] text-[clamp(22px,5vw,44px)]"
-            initial={{ opacity: 0, letterSpacing: '0.4em' }}
-            animate={{ opacity: 1, letterSpacing: '0.3em' }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             transition={{ duration: 1.2, delay: 0.2 }}
           >
             AWAD COMMAND
@@ -52,7 +51,7 @@ export function BootSequence() {
           </motion.p>
           <div className="font-num w-60 text-xs text-[var(--muted)] space-y-1">
             {projects.map((project, i) => {
-              const status = runtimes[project.slug]?.status ?? project.initialStatus;
+              const status = project.initialStatus;
               const color =
                 status === 'attention'
                   ? 'text-[var(--s-attention)]'

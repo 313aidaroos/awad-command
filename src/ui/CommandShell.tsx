@@ -1,14 +1,13 @@
 'use client';
 
-import dynamic from 'next/dynamic';
-import { useEffect, useLayoutEffect, useState } from 'react';
+import { useEffect, useState, type ComponentType } from 'react';
 import { startDataLayer, stopDataLayer } from '@/data';
 import { detectQuality } from '@/lib/quality';
 import { isSafariLike } from '@/lib/safari';
 import { isWebGLAvailable } from '@/lib/webgl';
 import { ApprovalCard } from '@/ui/ApprovalCard';
 import { BootSequence } from '@/ui/BootSequence';
-import { ClientErrorBoundary, WebGLFallback } from '@/ui/CanvasErrorBoundary';
+import { BootFallback, ClientErrorBoundary, WebGLFallback } from '@/ui/CanvasErrorBoundary';
 import { CeoConsole } from '@/ui/CeoConsole';
 import { CommandPalette } from '@/ui/CommandPalette';
 import { ComputerPanel } from '@/ui/ComputerPanel';
@@ -22,22 +21,30 @@ import { ProjectHud } from '@/ui/ProjectHud';
 import { TopBar } from '@/ui/TopBar';
 import { useCommandStore } from '@/store/useCommandStore';
 
-const CommandCanvas = dynamic(
-  () =>
-    import('@/scene/CommandCanvas')
-      .then((m) => m.CommandCanvas)
-      .catch(() => WebGLFallback),
-  { ssr: false },
-);
-
 export function CommandShell() {
+  // Closed until after hydration so SSR and Safari never mount R3F/three.
+  const [canvasEnabled, setCanvasEnabled] = useState(false);
   const [webgl, setWebgl] = useState<boolean | null>(null);
-  const [canvasReady, setCanvasReady] = useState(false);
+  const [CanvasSlot, setCanvasSlot] = useState<ComponentType | null>(null);
 
-  useLayoutEffect(() => {
-    const next = isSafariLike() ? 'low' : detectQuality();
-    useCommandStore.getState().setQuality(next, true);
+  useEffect(() => {
+    const canvasEnabled = !isSafariLike();
+    setCanvasEnabled(canvasEnabled);
+    if (!canvasEnabled) return;
+    let live = true;
     setWebgl(isWebGLAvailable());
+    useCommandStore.getState().setQuality(detectQuality(), true);
+    void import('@/ui/EnabledCanvas')
+      .then((mod) => {
+        if (live) setCanvasSlot(() => mod.EnabledCanvas);
+      })
+      .catch((error: unknown) => {
+        console.warn('[awad-command] canvas loader failed', error);
+        if (live) setWebgl(false);
+      });
+    return () => {
+      live = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -45,34 +52,21 @@ export function CommandShell() {
     return () => stopDataLayer();
   }, []);
 
-  useEffect(() => {
-    if (webgl !== true) return;
-    if (!isSafariLike()) {
-      setCanvasReady(true);
-      return;
-    }
-    let inner = 0;
-    const outer = window.requestAnimationFrame(() => {
-      inner = window.requestAnimationFrame(() => setCanvasReady(true));
-    });
-    return () => {
-      window.cancelAnimationFrame(outer);
-      window.cancelAnimationFrame(inner);
-    };
-  }, [webgl]);
+  const mountCanvas = canvasEnabled && webgl === true && CanvasSlot;
 
   return (
     <div className="relative h-svh w-full overflow-hidden bg-[var(--void)]">
-      {webgl === false ? (
+      <div className="absolute inset-0 bg-[var(--void)]" aria-hidden />
+      {mountCanvas && CanvasSlot ? (
+        <ClientErrorBoundary fallback={<WebGLFallback />}>
+          <CanvasSlot />
+        </ClientErrorBoundary>
+      ) : canvasEnabled && webgl === false ? (
         <WebGLFallback />
-      ) : webgl && canvasReady ? (
-        <div className="absolute inset-0">
-          <ClientErrorBoundary fallback={<WebGLFallback />}>
-            <CommandCanvas />
-          </ClientErrorBoundary>
-        </div>
       ) : null}
-      <BootSequence />
+      <ClientErrorBoundary fallback={<BootFallback />}>
+        <BootSequence />
+      </ClientErrorBoundary>
       <TopBar />
       <ModeBar />
       <HoverHud />
