@@ -34,8 +34,7 @@ export default function GlobalError({ reset }: { error: Error; reset: () => void
           >
             <p style={{ margin: 0, color: '#e6e8ec' }}>Command recovered</p>
             <p style={{ margin: '8px 0 0' }}>
-              A client exception was caught. Reload to continue. Safari/WebKit never mounts the 3D
-              canvas.
+              A client exception was caught. Reload to continue.
             </p>
             <button
               type="button"
