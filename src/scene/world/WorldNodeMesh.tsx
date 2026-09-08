@@ -117,6 +117,7 @@ function Station({ shape, color }: { shape: Shape; color: string }) {
 
 export function WorldNodeMesh({ node, accent }: { node: WorldNode; accent: string }) {
   const [hovered, setHovered] = useState(false);
+  const following = useCommandStore((s) => Boolean(s.followingAgent));
   const tracked = useCommandStore((s) => {
     const id = s.followingAgent;
     if (!id) return false;
@@ -125,6 +126,7 @@ export function WorldNodeMesh({ node, accent }: { node: WorldNode; accent: strin
   });
   if (node.kind === 'screen') return null;
   const shape = SHAPE[node.label] ?? (node.kind === 'sink' ? 'crystal' : node.kind === 'source' ? 'cluster' : 'generic');
+  const showLabel = hovered || tracked || !following;
   const priority = hovered ? 5 : tracked ? 4 : 1;
   return (
     <group
@@ -138,15 +140,17 @@ export function WorldNodeMesh({ node, accent }: { node: WorldNode; accent: strin
       <group scale={1.7}>
         <Station shape={shape} color={accent} />
       </group>
-      <FloatingLabel
-        id={`node-${node.id}`}
-        priority={priority}
-        maxDist={hovered || tracked ? 28 : 16}
-        fadeFrom={hovered || tracked ? 18 : 9}
-        position={[0, 0.92, 0]}
-      >
-        <div className="text-[8px] tracking-[0.14em] text-[rgba(230,232,236,0.72)]">{node.label}</div>
-      </FloatingLabel>
+      {showLabel ? (
+        <FloatingLabel
+          id={`node-${node.id}`}
+          priority={priority}
+          maxDist={hovered || tracked ? 28 : 16}
+          fadeFrom={hovered || tracked ? 18 : 9}
+          position={[0, 0.92, 0]}
+        >
+          <div className="text-[8px] tracking-[0.14em] text-[rgba(230,232,236,0.72)]">{node.label}</div>
+        </FloatingLabel>
+      ) : null}
     </group>
   );
 }

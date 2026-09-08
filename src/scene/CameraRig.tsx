@@ -131,10 +131,10 @@ export function CameraRig() {
       _away.copy(follow.current).sub(_core);
       if (_away.lengthSq() < 0.25) _away.set(1, 0.35, 1);
       _away.normalize();
-      posT.current.copy(follow.current).addScaledVector(_away, 9.4);
-      posT.current.y = follow.current.y + 5.5;
-      lookT.current.copy(follow.current).lerp(_core, 0.18);
-      lookT.current.y += 0.2;
+      posT.current.copy(follow.current).addScaledVector(_away, 6.8);
+      posT.current.y = follow.current.y + 3.9;
+      lookT.current.copy(follow.current).lerp(_core, 0.1);
+      lookT.current.y += 0.15;
     } else if (view === 'universe' && !flying.current) {
       posT.current.set(Math.sin(r.y) * r.zoom, 9 + r.x * 8, Math.cos(r.y) * r.zoom);
       lookT.current.set(0, 0, 0);

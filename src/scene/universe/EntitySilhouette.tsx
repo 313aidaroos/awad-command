@@ -62,7 +62,6 @@ const GRAPH: [number, number, number][] = [
 export function EntitySilhouette({ kind, accent, segs }: Props) {
   const hex = Math.max(8, Math.min(16, Math.round(segs / 2.4)));
   const radial = Math.max(16, segs);
-  const smooth = segs >= 28 ? 1 : 0;
 
   if (kind === 'lattice') {
     return (
@@ -198,8 +197,8 @@ export function EntitySilhouette({ kind, accent, segs }: Props) {
           <GlassMaterial accent="#E6E8EC" opacity={0.7} />
         </mesh>
         <mesh>
-          <icosahedronGeometry args={[0.92, smooth]} />
-          <GlassMaterial accent={accent} opacity={0.48} emissive={0.06} />
+          <sphereGeometry args={[0.88, radial, hex]} />
+          <GlassMaterial accent={accent} opacity={0.52} emissive={0.06} />
         </mesh>
         <mesh rotation={[Math.PI / 2, 0, 0]}>
           <torusGeometry args={[0.72, 0.038, 10, radial]} />

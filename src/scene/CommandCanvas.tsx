@@ -7,6 +7,7 @@ import type { WebGLRenderer } from 'three';
 import { isSafariLike } from '@/lib/safari';
 import { CameraRig } from '@/scene/CameraRig';
 import { Lighting } from '@/scene/Environment/Lighting';
+import { StudioEnvironment } from '@/scene/Environment/StudioEnvironment';
 import { Starfield } from '@/scene/Environment/Starfield';
 import { Universe } from '@/scene/universe/Universe';
 import { ProjectWorld } from '@/scene/world/ProjectWorld';
@@ -76,6 +77,7 @@ export function CommandCanvas() {
     >
       <fog attach="fog" args={['#07080A', 26, 92]} />
       <Lighting />
+      <StudioEnvironment />
       <Starfield />
       <Universe />
       <ProjectWorld />
