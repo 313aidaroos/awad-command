@@ -74,7 +74,7 @@ export function ProjectOrb({ project }: { project: ProjectDefinition }) {
       <EntityField accent={project.accent} />
       <EntityRings count={identity.rings} accent={project.accent} />
       {!focused && (
-        <Html center distanceFactor={16} position={[0, -1.85, 0]} style={{ pointerEvents: 'none' }}>
+        <Html center position={[0, -1.85, 0]} style={{ pointerEvents: 'none' }}>
           <div className="text-center whitespace-nowrap">
             <div className="text-[11px] tracking-[0.22em] font-light text-[rgba(230,232,236,0.88)]">
               {project.name}

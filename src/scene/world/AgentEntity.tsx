@@ -103,7 +103,7 @@ export function AgentEntity({
         </mesh>
       ) : null}
       {workforce || following ? (
-        <Html distanceFactor={48} position={[0, 0.52, 0]} style={{ pointerEvents: 'none' }}>
+        <Html center position={[0, 0.52, 0]} style={{ pointerEvents: 'none' }}>
           <div className="text-[8px] tracking-[0.1em] text-[var(--text)] whitespace-nowrap">{agent.name}</div>
         </Html>
       ) : null}
