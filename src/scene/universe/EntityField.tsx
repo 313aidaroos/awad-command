@@ -45,7 +45,7 @@ export function EntityField({
           color={accent}
           size={0.028}
           transparent
-          opacity={0.38}
+          opacity={0.22}
           depthWrite={false}
           sizeAttenuation
         />

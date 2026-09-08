@@ -2,21 +2,22 @@
 
 import { useCommandStore } from '@/store/useCommandStore';
 
-const GRAPHITE = '#14181E';
+/** Graphite that still reads as a solid on a void background — not chrome, not candy glass. */
+const GRAPHITE = '#3A414C';
 
-export function ChassisMaterial({ roughness = 0.28 }: { roughness?: number }) {
+export function ChassisMaterial({ roughness = 0.4 }: { roughness?: number }) {
   const level = useCommandStore((s) => s.quality.level);
   if (level === 'low') {
-    return <meshStandardMaterial color={GRAPHITE} metalness={0.88} roughness={roughness + 0.06} />;
+    return <meshStandardMaterial color={GRAPHITE} metalness={0.55} roughness={roughness} />;
   }
   return (
     <meshPhysicalMaterial
       color={GRAPHITE}
-      metalness={0.94}
+      metalness={0.58}
       roughness={roughness}
-      clearcoat={0.48}
-      clearcoatRoughness={0.32}
-      envMapIntensity={level === 'high' ? 0.82 : 0.52}
+      clearcoat={0.22}
+      clearcoatRoughness={0.45}
+      envMapIntensity={level === 'high' ? 0.32 : 0.22}
     />
   );
 }

@@ -23,8 +23,8 @@ export function Nucleus({ radius = 0.18, accent }: { radius?: number; accent: st
         <ChassisMaterial roughness={0.22} />
       </mesh>
       <mesh>
-        <sphereGeometry args={[radius * 0.38, 12, 10]} />
-        <AccentGlow accent={accent} opacity={0.92} />
+        <sphereGeometry args={[radius * 0.22, 10, 8]} />
+        <AccentGlow accent={accent} opacity={0.6} />
       </mesh>
     </group>
   );

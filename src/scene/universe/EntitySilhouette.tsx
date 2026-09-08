@@ -1,6 +1,5 @@
 'use client';
 
-import { FresnelShell } from '@/scene/materials/FresnelShell';
 import {
   ConstellationKind,
   CrystalKind,
@@ -34,7 +33,6 @@ export function EntitySilhouette({ kind, accent, segs, detail }: Props) {
       {kind === 'reel' ? <ReelKind {...props} /> : null}
       {kind === 'vessel' ? <VesselKind {...props} /> : null}
       {kind === 'soft' ? <SoftKind {...props} /> : null}
-      <FresnelShell radius={kind === 'lattice' ? 1.42 : 1.28} accent={accent} amp={0.42} alpha={0.62} />
     </group>
   );
 }

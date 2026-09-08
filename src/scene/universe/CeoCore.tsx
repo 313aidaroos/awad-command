@@ -7,7 +7,6 @@ import { requestCeoOpen } from '@/lib/ceoBridge';
 import { particleCount } from '@/lib/quality';
 import { AccentGlow } from '@/scene/materials/AccentGlow';
 import { ChassisMaterial } from '@/scene/materials/ChassisMaterial';
-import { FresnelShell } from '@/scene/materials/FresnelShell';
 import { SilverMaterial } from '@/scene/materials/SilverMaterial';
 import { HitSphere } from '@/scene/universe/HitSphere';
 import { pointerGate } from '@/scene/lib/pointer';
@@ -62,23 +61,19 @@ export function CeoCore() {
     >
       <HitSphere radius={1.7} />
       <mesh>
-        <sphereGeometry args={[0.78, 48, 36]} />
-        <ChassisMaterial roughness={0.2} />
+        <sphereGeometry args={[0.92, 48, 36]} />
+        <ChassisMaterial roughness={0.36} />
       </mesh>
       <mesh>
-        <sphereGeometry args={[0.16, 16, 12]} />
-        <AccentGlow accent="#E6E8EC" opacity={0.95} />
+        <sphereGeometry args={[0.08, 12, 10]} />
+        <AccentGlow accent="#E6E8EC" opacity={0.55} />
       </mesh>
-      <pointLight color="#e8edf5" intensity={1.15} distance={14} />
-      <pointLight color="#3D8BFF" intensity={0.22} distance={10} position={[0, 0.4, 0]} />
       <group ref={inner}>
         <mesh rotation={[Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[0.8, 0.018, 8, 64]} />
-          <SilverMaterial roughness={0.14} />
+          <torusGeometry args={[0.94, 0.022, 8, 64]} />
+          <SilverMaterial roughness={0.22} />
         </mesh>
       </group>
-      <FresnelShell radius={1.08} accent="#9BB7E8" amp={0.35} alpha={0.78} />
-      {detail ? <FresnelShell radius={1.55} accent="#3D8BFF" amp={0.22} alpha={0.42} /> : null}
       <group ref={rings}>
         <mesh rotation={[1.22, 0.18, 0.08]}>
           <torusGeometry args={[1.92, 0.016, 8, 96]} />

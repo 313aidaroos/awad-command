@@ -31,12 +31,12 @@ export function FlowPath({ project, flow }: { project: ProjectDefinition; flow: 
   return (
     <group>
       <mesh>
-        <tubeGeometry args={[curve, tubular, quality === 'low' ? 0.048 : 0.058, radial, false]} />
-        <ChassisMaterial roughness={0.36} />
+        <tubeGeometry args={[curve, tubular, quality === 'low' ? 0.07 : 0.085, radial, false]} />
+        <ChassisMaterial roughness={0.4} />
       </mesh>
       <mesh>
-        <tubeGeometry args={[curve, tubular, 0.016, Math.max(4, radial - 2), false]} />
-        <meshBasicMaterial color={project.accent} transparent opacity={0.55} toneMapped={false} />
+        <tubeGeometry args={[curve, tubular, 0.02, Math.max(4, radial - 2), false]} />
+        <meshStandardMaterial color={project.accent} emissive={project.accent} emissiveIntensity={0.35} metalness={0.2} roughness={0.4} />
       </mesh>
     </group>
   );

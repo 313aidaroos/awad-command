@@ -19,17 +19,17 @@ export interface KindProps {
   detail: boolean;
 }
 
-export function LatticeKind({ accent, segs, detail }: KindProps) {
+export function LatticeKind({ accent, segs }: KindProps) {
   const s = 1.62;
   return (
     <Spin speed={0.028}>
       <Nucleus radius={0.22} accent={accent} />
       <mesh>
         <boxGeometry args={[0.92, 0.92, 0.92]} />
-        <meshStandardMaterial color="#07080A" metalness={0.5} roughness={0.42} />
+        <ChassisMaterial roughness={0.42} />
       </mesh>
       <FacePlates size={[s, s, s]} />
-      <BoxFrame size={[s, s, s]} radius={0.02} segs={Math.max(6, Math.round(segs / 6))} />
+      <BoxFrame size={[s, s, s]} radius={0.028} segs={Math.max(6, Math.round(segs / 6))} />
       {[-1, 1].flatMap((x) =>
         [-1, 1].flatMap((y) =>
           [-1, 1].map((z) => (
@@ -43,7 +43,6 @@ export function LatticeKind({ accent, segs, detail }: KindProps) {
       <AccentSlit position={[s / 2, 0, 0]} size={[0.03, 0.58, 0.035]} accent={accent} />
       <AccentSlit position={[-s / 2, 0, 0]} size={[0.03, 0.58, 0.035]} accent={accent} />
       <AccentSlit position={[0, 0, s / 2]} size={[0.035, 0.58, 0.03]} accent={accent} />
-      {detail ? <pointLight color={accent} intensity={0.85} distance={3.4} /> : null}
     </Spin>
   );
 }

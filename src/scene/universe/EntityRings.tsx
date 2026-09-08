@@ -3,7 +3,6 @@
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { SilverMaterial } from '@/scene/materials/SilverMaterial';
 
 export function EntityRings({
   count,
@@ -27,11 +26,13 @@ export function EntityRings({
       {Array.from({ length: rings }, (_, i) => (
         <mesh key={i} rotation={[1.12 + i * 0.26, i * 0.35, 0.12 * i]}>
           <torusGeometry args={[radius + i * 0.18, i === 0 ? 0.012 : 0.007, 8, 80]} />
-          {i === 0 ? (
-            <meshBasicMaterial color={accent} transparent opacity={0.55} toneMapped={false} />
-          ) : (
-            <SilverMaterial roughness={0.2} />
-          )}
+          <meshStandardMaterial
+            color={i === 0 ? accent : '#C5CBD4'}
+            emissive={i === 0 ? accent : '#000000'}
+            emissiveIntensity={i === 0 ? 0.12 : 0}
+            metalness={0.55}
+            roughness={0.32}
+          />
         </mesh>
       ))}
     </group>

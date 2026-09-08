@@ -30,9 +30,9 @@ export function WorldHorizon({ accent }: { accent: string }) {
             float r = length(p) * 2.0;
             float fade = smoothstep(1.0, 0.18, r);
             float rings = smoothstep(0.05, 0.0, abs(sin(r * 22.0)));
-            vec3 graphite = vec3(0.045, 0.05, 0.058);
-            vec3 col = graphite + vec3(0.82, 0.85, 0.9) * rings * 0.07 + uAccent * rings * 0.04;
-            gl_FragColor = vec4(col, fade * 0.92);
+            vec3 graphite = vec3(0.14, 0.16, 0.185);
+            vec3 col = graphite + vec3(0.82, 0.85, 0.9) * rings * 0.16 + uAccent * rings * 0.06;
+            gl_FragColor = vec4(col, fade * 0.96);
           }
         `,
       }),
@@ -51,8 +51,8 @@ export function WorldHorizon({ accent }: { accent: string }) {
       </mesh>
       {[4.2, 7.1, 10.4].map((r) => (
         <mesh key={r} rotation={[-Math.PI / 2, 0, 0]} position={[0, -3.18, 0]}>
-          <torusGeometry args={[r, 0.012, 8, 64]} />
-          <meshBasicMaterial color="#E6E8EC" transparent opacity={0.1} />
+          <torusGeometry args={[r, 0.02, 8, 64]} />
+          <meshBasicMaterial color="#E6E8EC" transparent opacity={0.22} />
         </mesh>
       ))}
       <mesh rotation={[1.15, 0.12, 0.08]}>
