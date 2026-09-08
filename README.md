@@ -1,19 +1,78 @@
 # AWAD COMMAND
 
-Private 3D AI command center for Awad (Apixis Dev).
+Private 3D AI command center for Awad (Apixis Dev). The universe **is** the UI — orbs, not a card grid.
 
-## Docs
-- `AWAD_COMMAND_MASTER_HANDOFF.md` — master build handoff (Parts A–D)
-- `awad-command-preview.html` — mood reference (open in a browser; not app code)
+Mood reference (not app code): [public/awad-command-preview.html](public/awad-command-preview.html)  
+Master handoff: [docs/MASTER_HANDOFF.md](docs/MASTER_HANDOFF.md)
 
-## Stack
-Next.js 15 App Router · R3F/three · Zustand · Tailwind 4 · Supabase (schema `awad_command` on shared Contraxis project) · Anthropic CEO via `/api/ceo`
+## Run locally
+
+```bash
+pnpm install
+cp .env.example .env.local
+pnpm dev
+```
+
+Dev server: [http://localhost:43180](http://localhost:43180)
+
+```bash
+pnpm typecheck
+pnpm lint
+```
+
+The demo deck stays **open** until `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `ALLOWED_EMAIL` are all set. Then magic-link login gates the site to that email.
+
+## Lead bots on the orbs
+
+Every product orb is wired in `src/config/orbLeads.ts` and its project plugin under `src/projects/<slug>/`.
+
+| Orb | Lead | Agent id |
+|---|---|---|
+| contraxis | Contraxis Lead | `d4261445-439f-419e-9c3d-7db2d769676f` |
+| socixis | Socixis Lead | `8e5056f3-642b-42ec-9c3b-b17803afa2ac` |
+| lyrixis | Lyrixis Lead | `b92c8845-aa75-445f-8156-bf2e8c51a9a3` |
+| halaxis | Halaxis Lead | `7da5afaa-d04a-44f3-8d0c-695260264161` |
+| rawixis | Rawixis Lead | `ab3f9f13-6c25-410d-b941-410e1aa6f276` |
+| awadbot | AwadBot Lead | `4288dd32-bca5-413e-8636-5651e41ef3bf` |
+| apixis | Apixis Lead | `fa4ded99-57a0-4963-b55f-4e6439348591` |
+| nursery-toons | Nursery Toon Lead | `a769a50c-c92e-4e3e-ad0f-00eb45c175d2` (coming soon) |
+| qahwahworld | Qahwahworld Lead | `bf8167e3-fc00-466b-9025-ef5fe0e7fbda` (coming soon) |
+
+Developer Bot and Dashboard Lead are **system contacts** in the same config — not fake orbs.
+
+Click an orb → ProjectWorld HUD shows the lead name + agent id and a **Message lead** panel.
+
+## Live lead messaging (hub keys)
+
+`POST /api/lead-message` `{ projectSlug, message }` runs **server-side only**.
+
+1. Set `LEAD_MESSAGE_WEBHOOK_URL` to the hub ingest URL.
+2. Optionally set `GROK_BOT_API_KEY` — sent as `Authorization: Bearer …`.
+3. The route POSTs `{ projectSlug, agentId, leadName, message }`.
+4. Delivery is claimed **only** after the webhook returns 2xx.
+5. If the webhook is unset, the message is queued in the deck and tagged DEMO. No OAuth to Grok Bot Chat is invented.
+
+## CEO
+
+`POST /api/ceo` — Anthropic only when `ANTHROPIC_API_KEY` **and** `AI_PROVIDER=anthropic`. Otherwise the demo responder answers from the store snapshot (including who owns each company).
+
+## Supabase
+
+Shared project: `https://myfclypikkcvfurkbzmj.supabase.co`  
+Schema: `awad_command` (clients set `db.schema = "awad_command"`).  
+Migration copy (already applied): `supabase/migrations/0001_part_b.sql`.
+
+## Vercel
+
+1. Import this repo.
+2. Framework: Next.js. Install: `pnpm install`. Build: `pnpm build`.
+3. Copy vars from `.env.example` into the Vercel project (Production + Preview).
+4. Set `ALLOWED_EMAIL` last — the deck stays public demo until URL + anon + email are all present.
+5. Add `NEXT_PUBLIC_SITE_URL` as the production URL so magic links redirect home.
 
 ## Hard rules
-1. 3D universe is the UI — never a card-grid admin
-2. Every number is real or tagged DEMO
-3. No spend/publish/delete/trade without Approve
-4. Secrets server-side only
 
-## Status
-Bootstrap with handoff docs. App scaffold landing via Cursor cloud agent.
+1. 3D universe is the interface.
+2. Every number goes through `<Metric>` and is tagged DEMO unless live.
+3. No real spend / publish / delete / trade without Approve (record only tonight).
+4. Secrets stay on the server.
