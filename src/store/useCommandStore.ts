@@ -40,6 +40,7 @@ export const useCommandStore = create<CommandState & CommandActions>((set, get) 
 
   initFromRegistry: () =>
     set((state) => {
+      if (Object.keys(state.projects).length > 0) return state;
       const nextProjects: CommandState['projects'] = {};
       const nextAgents: CommandState['agents'] = {};
       for (const project of projects) {
@@ -64,12 +65,14 @@ export const useCommandStore = create<CommandState & CommandActions>((set, get) 
       return { ...state, projects: nextProjects, agents: nextAgents };
     }),
 
-  finishBoot: () =>
+  finishBoot: () => {
+    if (get().booted) return;
     set({
       booted: true,
       view: 'universe',
       camera: { target: UNIVERSE_CAM, requestId: get().camera.requestId + 1 },
-    }),
+    });
+  },
 
   enterProject: (slug) => {
     const project = getProject(slug);
@@ -160,6 +163,7 @@ export const useCommandStore = create<CommandState & CommandActions>((set, get) 
   setVoiceMuted: (muted) => set({ voiceMuted: muted }),
   tick: (dt) =>
     set((state) => {
+      if (!state.booted) return state;
       let changed = false;
       const projectsNext: CommandState['projects'] = { ...state.projects };
       for (const [slug, runtime] of Object.entries(projectsNext)) {

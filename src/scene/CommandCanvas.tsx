@@ -67,6 +67,8 @@ export function CommandCanvas() {
   const safari = isSafariLike();
   const dpr = safari || level === 'low' ? DPR_LOW : level === 'medium' ? DPR_MED : DPR_HIGH;
 
+  if (safari) return null;
+
   return (
     <Canvas
       camera={CAMERA_INIT}
