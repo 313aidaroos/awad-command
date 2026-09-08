@@ -44,12 +44,8 @@ export async function POST(request: Request) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(secret
-          ? {
-              Authorization: `Bearer ${secret}`,
-              'X-Webhook-Secret': secret,
-            }
-          : {}),
+        // Hub contract: one auth header — Authorization: Bearer <LEAD_MESSAGE_WEBHOOK_SECRET>
+        ...(secret ? { Authorization: `Bearer ${secret}` } : {}),
       },
       body: JSON.stringify(payload),
     });
