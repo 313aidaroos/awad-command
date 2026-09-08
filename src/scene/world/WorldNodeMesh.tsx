@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { GlassMaterial } from '@/scene/materials/GlassMaterial';
 import { FloatingLabel } from '@/scene/ui/FloatingLabel';
+import { WorldName } from '@/scene/ui/WorldName';
 import { useCommandStore } from '@/store/useCommandStore';
 import type { WorldNode } from '@/types/world';
 
@@ -126,7 +127,7 @@ export function WorldNodeMesh({ node, accent }: { node: WorldNode; accent: strin
   });
   if (node.kind === 'screen') return null;
   const shape = SHAPE[node.label] ?? (node.kind === 'sink' ? 'crystal' : node.kind === 'source' ? 'cluster' : 'generic');
-  const showLabel = hovered || tracked || !following;
+  const showLabel = hovered || !following;
   const priority = hovered ? 5 : tracked ? 4 : 1;
   return (
     <group
@@ -148,7 +149,7 @@ export function WorldNodeMesh({ node, accent }: { node: WorldNode; accent: strin
           fadeFrom={hovered || tracked ? 18 : 9}
           position={[0, 0.92, 0]}
         >
-          <div className="text-[8px] tracking-[0.14em] text-[rgba(230,232,236,0.72)]">{node.label}</div>
+          <WorldName primary={hovered || tracked}>{node.label}</WorldName>
         </FloatingLabel>
       ) : null}
     </group>

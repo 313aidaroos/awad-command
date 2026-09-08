@@ -3,12 +3,12 @@
 export function Lighting() {
   return (
     <>
-      <hemisphereLight args={['#d5dbe6', '#0a0c10', 0.38]} />
-      <ambientLight intensity={0.16} color="#d7dbe4" />
-      <directionalLight color="#f2f4f8" intensity={1.35} position={[-9, 16, 10]} />
-      <directionalLight color="#3D8BFF" intensity={0.14} position={[14, -4, -9]} />
-      <directionalLight color="#c8cfd8" intensity={0.28} position={[3, -8, 12]} />
-      <pointLight color="#e6ebf4" intensity={0.85} distance={26} position={[0, 0.6, 0]} />
+      <hemisphereLight args={['#e4e8f0', '#07080A', 0.32]} />
+      <ambientLight intensity={0.12} color="#d7dbe4" />
+      <directionalLight color="#f7f8fb" intensity={1.62} position={[-8, 18, 11]} />
+      <directionalLight color="#f4f6fa" intensity={1.12} position={[12, 6, -14]} />
+      <directionalLight color="#3D8BFF" intensity={0.26} position={[10, -3, -8]} />
+      <pointLight color="#eef2f8" intensity={0.7} distance={24} position={[0, 1.2, 0]} />
     </>
   );
 }

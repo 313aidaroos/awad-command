@@ -4,12 +4,15 @@ import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { agentWorldPosition } from '@/scene/lib/agentMotion';
+import { FOLLOW_BACK, FOLLOW_LIFT, FOLLOW_SIDE, followCorrections } from '@/scene/lib/followFraming';
 import { pointerGate } from '@/scene/lib/pointer';
 import { getProject } from '@/projects/registry';
 import { useCommandStore } from '@/store/useCommandStore';
 
 const _core = new THREE.Vector3();
 const _away = new THREE.Vector3();
+const _side = new THREE.Vector3();
+const _ndc = new THREE.Vector3();
 
 export function CameraRig() {
   const camera = useThree((s) => s.camera);
@@ -21,6 +24,9 @@ export function CameraRig() {
   const rot = useRef({ x: 0, y: 0, tx: 0, ty: 0, zoom: 42, tZoom: 42 });
   const drag = useRef({ on: false, x: 0, y: 0, moved: 0, pan: false });
   const flying = useRef(false);
+  const followBias = useRef(0);
+  const followDrop = useRef(0);
+  const wasFollow = useRef(false);
   const requestId = useCommandStore((s) => s.camera.requestId);
   const target = useCommandStore((s) => s.camera.target);
   const view = useCommandStore((s) => s.view);
@@ -126,26 +132,55 @@ export function CameraRig() {
     const project = state.focusedProject ? getProject(state.focusedProject) : undefined;
 
     if (followed && project) {
+      flying.current = false;
       agentWorldPosition(project.universePosition, followed, state.agents[followed.id], project.nodes, Date.now(), follow.current);
       _core.set(...project.universePosition);
       _away.copy(follow.current).sub(_core);
-      if (_away.lengthSq() < 0.25) _away.set(1, 0.35, 1);
+      _away.y = 0;
+      if (_away.lengthSq() < 0.25) _away.set(1, 0, 1);
       _away.normalize();
-      posT.current.copy(follow.current).addScaledVector(_away, 6.8);
-      posT.current.y = follow.current.y + 3.9;
-      lookT.current.copy(follow.current).lerp(_core, 0.1);
-      lookT.current.y += 0.15;
+      _side.set(-_away.z, 0, _away.x);
+      posT.current.copy(follow.current).addScaledVector(_away, FOLLOW_BACK).addScaledVector(_side, FOLLOW_SIDE);
+      posT.current.y = follow.current.y + FOLLOW_LIFT - followDrop.current;
+      lookT.current.copy(follow.current);
+      lookT.current.y += 0.06 + followBias.current;
+
+      if (!wasFollow.current) {
+        followBias.current = 0;
+        followDrop.current = 0;
+        look.current.copy(lookT.current);
+        camera.position.copy(posT.current);
+      }
+      wasFollow.current = true;
+
+      _ndc.copy(follow.current).project(camera);
+      const fix = followCorrections(_ndc.y, _ndc.x);
+      followBias.current += (fix.lookLift - followBias.current) * 0.18;
+      followDrop.current += (fix.camDrop - followDrop.current) * 0.16;
+      lookT.current.y = follow.current.y + 0.06 + followBias.current;
+      posT.current.y = follow.current.y + FOLLOW_LIFT - followDrop.current;
+      if (fix.pullBack > 0) posT.current.addScaledVector(_away, fix.pullBack);
     } else if (view === 'universe' && !flying.current) {
+      wasFollow.current = false;
+      followBias.current = 0;
+      followDrop.current = 0;
       posT.current.set(Math.sin(r.y) * r.zoom, 9 + r.x * 8, Math.cos(r.y) * r.zoom);
       lookT.current.set(0, 0, 0);
     } else if (project && !flying.current && view !== 'universe') {
+      wasFollow.current = false;
+      followBias.current = 0;
+      followDrop.current = 0;
       const [cx, cy, cz] = project.universePosition;
       posT.current.set(cx + Math.sin(r.y) * r.zoom, cy + 4.6 + r.x * 5.2, cz + Math.cos(r.y) * r.zoom);
       lookT.current.set(cx, cy, cz);
+    } else {
+      wasFollow.current = false;
+      followBias.current = 0;
+      followDrop.current = 0;
     }
 
-    camera.position.lerp(posT.current, flying.current ? 0.042 : followed ? 0.05 : 0.055);
-    look.current.lerp(lookT.current, followed ? 0.07 : 0.06);
+    camera.position.lerp(posT.current, flying.current ? 0.042 : followed ? 0.16 : 0.055);
+    look.current.lerp(lookT.current, followed ? 0.22 : 0.06);
     camera.lookAt(look.current);
   });
 

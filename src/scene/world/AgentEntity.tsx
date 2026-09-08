@@ -102,13 +102,13 @@ export function AgentEntity({
             document.body.style.cursor = 'grab';
           }}
         >
-          <coneGeometry args={[0.2, 0.58, 10]} />
+          <coneGeometry args={[0.22, 0.64, 12]} />
           <meshStandardMaterial
             color={color}
-            metalness={0.4}
-            roughness={0.24}
+            metalness={0.55}
+            roughness={0.16}
             emissive={glow}
-            emissiveIntensity={following || status === 'working' ? 0.7 : 0.22}
+            emissiveIntensity={following || status === 'working' ? 0.82 : 0.28}
           />
         </mesh>
         <pointLight color={color} intensity={following || status === 'working' ? 1.1 : 0.35} distance={3.4} />
@@ -126,12 +126,31 @@ export function AgentEntity({
         </mesh>
         {following ? (
           <mesh rotation={[1.4, 0, 0]}>
-            <torusGeometry args={[0.52, 0.018, 8, 28]} />
+            <torusGeometry args={[0.48, 0.016, 8, 28]} />
             <meshBasicMaterial color={color} transparent opacity={0.8} />
           </mesh>
         ) : null}
+        {following ? (
+          <Html center transform={false} position={[0, -0.58, 0]} style={{ pointerEvents: 'none' }}>
+            <div
+              style={{
+                fontSize: 12,
+                letterSpacing: '0.12em',
+                fontWeight: 560,
+                color: '#FFFFFF',
+                padding: '4px 10px',
+                borderRadius: 999,
+                background: 'rgba(7,8,10,0.78)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {agent.name}
+            </div>
+          </Html>
+        ) : null}
         {workforce && !following ? (
-          <Html center position={[0, 0.62, 0]} style={{ pointerEvents: 'none' }}>
+          <Html center transform={false} position={[0, 0.62, 0]} style={{ pointerEvents: 'none' }}>
             <div className="text-[8px] tracking-[0.1em] text-[var(--text)] whitespace-nowrap">{agent.name}</div>
           </Html>
         ) : null}

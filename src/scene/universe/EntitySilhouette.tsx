@@ -12,6 +12,15 @@ interface Props {
   segs: number;
 }
 
+function DarkCore({ radius = 0.22 }: { radius?: number }) {
+  return (
+    <mesh>
+      <octahedronGeometry args={[radius, 0]} />
+      <meshStandardMaterial color="#0E1013" metalness={0.88} roughness={0.16} />
+    </mesh>
+  );
+}
+
 function Spin({ children, speed = 0.12 }: { children: ReactNode; speed?: number }) {
   const ref = useRef<THREE.Group>(null);
   useFrame((_, dt) => {
@@ -68,11 +77,16 @@ export function EntitySilhouette({ kind, accent, segs }: Props) {
       <Spin speed={0.07}>
         <mesh>
           <boxGeometry args={[1.42, 1.42, 1.42]} />
-          <GlassMaterial accent={accent} opacity={0.42} emissive={0.05} />
+          <GlassMaterial accent={accent} opacity={0.52} emissive={0.04} />
         </mesh>
+        <DarkCore radius={0.36} />
         <mesh>
           <octahedronGeometry args={[0.5, 0]} />
-          <GlassMaterial accent={accent} opacity={0.88} emissive={0.1} />
+          <GlassMaterial accent={accent} opacity={0.92} emissive={0.12} />
+        </mesh>
+        <mesh rotation={[1.2, 0.3, 0.1]}>
+          <torusGeometry args={[0.62, 0.022, 10, radial]} />
+          <GlassMaterial accent="#E6E8EC" opacity={0.7} />
         </mesh>
         {[-0.54, 0.54].map((x) =>
           [-0.54, 0.54].map((z) => (
@@ -98,10 +112,11 @@ export function EntitySilhouette({ kind, accent, segs }: Props) {
     ];
     return (
       <Spin speed={0.08}>
+        <DarkCore radius={0.2} />
         {towers.map((tower) => (
           <mesh key={`${tower.p.join()}-${tower.h}`} position={[tower.p[0], tower.p[1] + tower.h / 2 - 0.45, tower.p[2]]}>
             <cylinderGeometry args={[tower.r * 0.72, tower.r, tower.h, hex]} />
-            <GlassMaterial accent={accent} opacity={0.78} />
+            <GlassMaterial accent={accent} opacity={0.82} />
           </mesh>
         ))}
         <mesh position={[0, 0.62, 0]} rotation={[0.4, 0.2, 0.1]}>
@@ -115,10 +130,11 @@ export function EntitySilhouette({ kind, accent, segs }: Props) {
   if (kind === 'rings') {
     return (
       <Spin speed={0.16}>
+        <DarkCore radius={0.18} />
         {[-0.55, -0.28, 0, 0.28, 0.55].map((y, i) => (
           <mesh key={y} rotation={[1.22, 0, i * 0.08]} position={[0, y, 0]}>
             <cylinderGeometry args={[0.92 - Math.abs(y) * 0.22, 0.92 - Math.abs(y) * 0.22, 0.055, radial]} />
-            <GlassMaterial accent={i === 2 ? '#E6E8EC' : accent} opacity={0.48 + (i === 2 ? 0.16 : 0)} />
+            <GlassMaterial accent={i === 2 ? '#E6E8EC' : accent} opacity={0.62 + (i === 2 ? 0.14 : 0)} />
           </mesh>
         ))}
       </Spin>
@@ -128,9 +144,10 @@ export function EntitySilhouette({ kind, accent, segs }: Props) {
   if (kind === 'octa') {
     return (
       <Spin speed={0.07}>
+        <DarkCore radius={0.16} />
         <mesh scale={[0.48, 1.72, 0.48]}>
           <octahedronGeometry args={[1, 0]} />
-          <GlassMaterial accent={accent} opacity={0.7} />
+          <GlassMaterial accent={accent} opacity={0.74} />
         </mesh>
         <mesh position={[0, 0.12, 0]}>
           <octahedronGeometry args={[0.26, 0]} />
@@ -150,6 +167,7 @@ export function EntitySilhouette({ kind, accent, segs }: Props) {
     ];
     return (
       <Spin speed={0.04}>
+        <DarkCore radius={0.14} />
         {slabs.map((slab) => (
           <mesh key={slab.y} position={[0, slab.y, 0]}>
             <boxGeometry args={slab.s} />
@@ -192,13 +210,14 @@ export function EntitySilhouette({ kind, accent, segs }: Props) {
   if (kind === 'icosa') {
     return (
       <Spin speed={0.14}>
+        <DarkCore radius={0.2} />
         <mesh>
           <boxGeometry args={[0.48, 0.48, 0.48]} />
-          <GlassMaterial accent="#E6E8EC" opacity={0.7} />
+          <GlassMaterial accent="#E6E8EC" opacity={0.78} />
         </mesh>
         <mesh>
           <sphereGeometry args={[0.88, radial, hex]} />
-          <GlassMaterial accent={accent} opacity={0.52} emissive={0.06} />
+          <GlassMaterial accent={accent} opacity={0.58} emissive={0.06} />
         </mesh>
         <mesh rotation={[Math.PI / 2, 0, 0]}>
           <torusGeometry args={[0.72, 0.038, 10, radial]} />
@@ -225,6 +244,7 @@ export function EntitySilhouette({ kind, accent, segs }: Props) {
   if (kind === 'folios') {
     return (
       <Spin speed={0.055}>
+        <DarkCore radius={0.16} />
         {[-0.42, -0.21, 0, 0.21, 0.42].map((x, i) => (
           <mesh key={x} position={[x * 0.55, 0, 0]} rotation={[0.12, i * 0.16 - 0.32, 0.08]}>
             <boxGeometry args={[0.032, 1.42, 1.02]} />
@@ -238,6 +258,7 @@ export function EntitySilhouette({ kind, accent, segs }: Props) {
   if (kind === 'reel') {
     return (
       <Spin speed={0.11}>
+        <DarkCore radius={0.18} />
         <mesh rotation={[0, 0, Math.PI / 2]}>
           <cylinderGeometry args={[0.9, 0.9, 0.2, radial]} />
           <GlassMaterial accent={accent} opacity={0.62} />
@@ -259,6 +280,7 @@ export function EntitySilhouette({ kind, accent, segs }: Props) {
   if (kind === 'vessel') {
     return (
       <Spin speed={0.05}>
+        <DarkCore radius={0.16} />
         <mesh rotation={[Math.PI, 0, 0]} position={[0, -0.12, 0]}>
           <cylinderGeometry args={[0.72, 0.28, 0.62, radial, 1, true]} />
           <GlassMaterial accent={accent} opacity={0.68} />
@@ -277,9 +299,10 @@ export function EntitySilhouette({ kind, accent, segs }: Props) {
 
   return (
     <Spin speed={0.05}>
+      <DarkCore radius={0.2} />
       <mesh>
         <sphereGeometry args={[0.6, hex, hex]} />
-        <GlassMaterial accent={accent} opacity={0.52} />
+        <GlassMaterial accent={accent} opacity={0.7} />
       </mesh>
       <mesh position={[0.4, 0.16, 0.12]}>
         <sphereGeometry args={[0.3, hex, hex]} />

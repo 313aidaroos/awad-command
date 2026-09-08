@@ -28,8 +28,8 @@ void main() {
   vec3 v = normalize(cameraPosition - vW);
   float fr = pow(1.0 - max(dot(vN, v), 0.0), 2.05);
   float n = n3(vP * 1.15 + vec3(uT * 0.03));
-  vec3 col = uA * (0.025 + 0.08 * n * (0.12 + uAct)) + uA * fr * (1.35 + uH * 0.32) + uS * fr * 0.18 + vec3(0.018, 0.02, 0.024);
-  float a = uAlpha * (0.1 + 0.78 * fr);
+  vec3 col = uA * (0.02 + 0.06 * n * (0.1 + uAct)) + uA * fr * (1.55 + uH * 0.38) + uS * fr * 0.22 + vec3(0.03, 0.032, 0.038);
+  float a = uAlpha * (0.06 + 0.86 * pow(fr, 1.15));
   gl_FragColor = vec4(col, a);
 }
 `;

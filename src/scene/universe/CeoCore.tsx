@@ -8,6 +8,7 @@ import { particleCount } from '@/lib/quality';
 import { GlassMaterial } from '@/scene/materials/GlassMaterial';
 import { OrbCore } from '@/scene/universe/OrbCore';
 import { FloatingLabel } from '@/scene/ui/FloatingLabel';
+import { WorldName } from '@/scene/ui/WorldName';
 import { useCommandStore } from '@/store/useCommandStore';
 
 export function CeoCore() {
@@ -86,7 +87,7 @@ export function CeoCore() {
         <pointsMaterial color="#dfe4ee" size={0.028} transparent opacity={0.48} depthWrite={false} sizeAttenuation />
       </points>
       <FloatingLabel id="ceo-core" priority={4} maxDist={58} fadeFrom={36} position={[0, 2.05, 0]}>
-        <div className="text-[10px] tracking-[0.28em] font-light text-[rgba(230,232,236,0.88)]">AWAD</div>
+        <WorldName primary>AWAD</WorldName>
       </FloatingLabel>
     </group>
   );

@@ -46,7 +46,7 @@ export function FloatingLabel({
 
   return (
     <group ref={group} position={position}>
-      <Html center style={{ pointerEvents: 'none' }}>
+      <Html center transform={false} style={{ pointerEvents: 'none' }}>
         <div
           ref={el}
           style={{

@@ -4,8 +4,8 @@ import { useCommandStore } from '@/store/useCommandStore';
 
 export function GlassMaterial({
   accent,
-  opacity = 0.58,
-  emissive = 0.07,
+  opacity = 0.7,
+  emissive = 0.06,
 }: {
   accent: string;
   opacity?: number;
@@ -16,10 +16,10 @@ export function GlassMaterial({
     return (
       <meshStandardMaterial
         color={accent}
-        metalness={0.42}
-        roughness={0.28}
+        metalness={0.52}
+        roughness={0.18}
         transparent
-        opacity={opacity}
+        opacity={Math.min(1, opacity + 0.1)}
         emissive={accent}
         emissiveIntensity={emissive}
       />
@@ -28,15 +28,21 @@ export function GlassMaterial({
   return (
     <meshPhysicalMaterial
       color={accent}
-      metalness={level === 'high' ? 0.22 : 0.28}
-      roughness={level === 'high' ? 0.08 : 0.14}
-      clearcoat={level === 'high' ? 0.86 : 0.62}
-      clearcoatRoughness={level === 'high' ? 0.08 : 0.16}
+      metalness={0.26}
+      roughness={0.055}
+      clearcoat={1}
+      clearcoatRoughness={0.04}
+      ior={1.5}
+      reflectivity={0.78}
+      thickness={0.72}
+      attenuationDistance={2.1}
+      attenuationColor={accent}
+      envMapIntensity={1.32}
       transparent
       opacity={opacity}
       emissive={accent}
       emissiveIntensity={emissive}
-      reflectivity={0.55}
+      specularIntensity={1}
     />
   );
 }

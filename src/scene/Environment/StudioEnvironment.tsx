@@ -8,10 +8,12 @@ export function StudioEnvironment() {
   const level = useCommandStore((s) => s.quality.level);
   if (level === 'low') return null;
   return (
-    <Environment resolution={level === 'high' ? 256 : 128} frames={1} environmentIntensity={0.62}>
-      <Lightformer intensity={3.4} position={[6, 9, 5]} scale={[12, 7, 1]} color="#f3f6fb" />
-      <Lightformer intensity={1.1} position={[-7, 3, -5]} scale={[8, 5, 1]} color="#3D8BFF" />
-      <Lightformer intensity={0.7} position={[0, -6, 8]} scale={[14, 5, 1]} color="#b7c0cc" />
+    <Environment resolution={level === 'high' ? 256 : 176} frames={1} environmentIntensity={1.02}>
+      <Lightformer intensity={6.4} position={[3, 13, 5]} scale={[3.2, 1.1, 1]} color="#ffffff" />
+      <Lightformer intensity={4.2} position={[5, 10, 6]} scale={[14, 8, 1]} color="#f7f9fc" />
+      <Lightformer intensity={2.4} position={[-8, 5, 3]} scale={[6, 10, 1]} color="#ffffff" />
+      <Lightformer intensity={1.55} position={[8, 2, -8]} scale={[10, 4, 1]} color="#3D8BFF" />
+      <Lightformer intensity={1} position={[0, -7, 5]} scale={[16, 4, 1]} color="#c5ccd6" />
     </Environment>
   );
 }

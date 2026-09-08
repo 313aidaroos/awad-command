@@ -11,6 +11,7 @@ import { EntitySilhouette } from '@/scene/universe/EntitySilhouette';
 import { identityOf } from '@/scene/universe/identities';
 import { OrbCore } from '@/scene/universe/OrbCore';
 import { FloatingLabel } from '@/scene/ui/FloatingLabel';
+import { WorldName } from '@/scene/ui/WorldName';
 import { useCommandStore } from '@/store/useCommandStore';
 import type { ProjectDefinition } from '@/types/project';
 
@@ -81,14 +82,12 @@ export function ProjectOrb({ project }: { project: ProjectDefinition }) {
       {!focused && (
         <FloatingLabel
           id={`orb-${project.slug}`}
-          priority={hovered ? 5 : 1}
-          maxDist={hovered ? 70 : 38}
-          fadeFrom={hovered ? 52 : 20}
+          priority={hovered ? 5 : 2}
+          maxDist={hovered ? 74 : 52}
+          fadeFrom={hovered ? 58 : 34}
           position={[0, -2.45, 0]}
         >
-          <div className="text-[9px] tracking-[0.2em] font-light text-[rgba(230,232,236,0.82)]">
-            {project.name}
-          </div>
+          <WorldName primary={hovered}>{project.name}</WorldName>
         </FloatingLabel>
       )}
     </group>

@@ -29,12 +29,13 @@ export function resolveLabels() {
   const kept: LabelSlot[] = [];
   for (const item of live) {
     let opacity = 0;
-    const onScreen = item.z > 0 && item.z < 1 && Math.abs(item.x) < 0.92 && Math.abs(item.y) < 0.9;
-    const nearEdge = Math.abs(item.x) > 0.74 || Math.abs(item.y) > 0.72;
-    if (onScreen && item.fade > 0.04) {
-      const clash = kept.some((other) => Math.hypot(other.x - item.x, (other.y - item.y) * 1.7) < 0.16);
-      if (!clash && (item.priority >= 5 || !nearEdge)) {
-        opacity = nearEdge && item.priority >= 5 ? item.fade * 0.85 : item.fade;
+    const onScreen = item.z > 0 && item.z < 1 && Math.abs(item.x) < 0.92 && item.y < 0.7 && item.y > -0.88;
+    const nearEdge = Math.abs(item.x) > 0.74 || item.y > 0.58 || item.y < -0.72;
+    const readable = item.priority >= 4 ? item.fade > 0.08 : item.fade > 0.32;
+    if (onScreen && readable) {
+      const clash = kept.some((other) => Math.hypot(other.x - item.x, (other.y - item.y) * 1.7) < 0.18);
+      if (!clash && (item.priority >= 4 || !nearEdge)) {
+        opacity = item.priority >= 4 ? 1 : Math.max(0.92, item.fade);
         kept.push(item);
       }
     }
