@@ -10,9 +10,14 @@ export function startDataLayer() {
   source = new DemoEventSource();
   source.start((event) => useCommandStore.getState().applyEvent(event));
   let last = performance.now();
+  let acc = 0;
   const loop = (now: number) => {
-    useCommandStore.getState().tick((now - last) / 1000);
+    acc += (now - last) / 1000;
     last = now;
+    if (acc >= 0.1) {
+      useCommandStore.getState().tick(acc);
+      acc = 0;
+    }
     tickId = window.requestAnimationFrame(loop);
   };
   tickId = window.requestAnimationFrame(loop);

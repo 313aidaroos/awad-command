@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import { useEffect, useLayoutEffect, useState } from 'react';
 import { startDataLayer, stopDataLayer } from '@/data';
 import { detectQuality } from '@/lib/quality';
+import { isSafariLike } from '@/lib/safari';
 import { isWebGLAvailable } from '@/lib/webgl';
 import { ApprovalCard } from '@/ui/ApprovalCard';
 import { BootSequence } from '@/ui/BootSequence';
@@ -22,32 +23,54 @@ import { TopBar } from '@/ui/TopBar';
 import { useCommandStore } from '@/store/useCommandStore';
 
 const CommandCanvas = dynamic(
-  () => import('@/scene/CommandCanvas').then((m) => m.CommandCanvas),
+  () =>
+    import('@/scene/CommandCanvas')
+      .then((m) => m.CommandCanvas)
+      .catch(() => WebGLFallback),
   { ssr: false },
 );
 
 export function CommandShell() {
-  const setQuality = useCommandStore((s) => s.setQuality);
   const [webgl, setWebgl] = useState<boolean | null>(null);
+  const [canvasReady, setCanvasReady] = useState(false);
 
   useLayoutEffect(() => {
-    setQuality(detectQuality(), true);
+    const next = isSafariLike() ? 'low' : detectQuality();
+    useCommandStore.getState().setQuality(next, true);
     setWebgl(isWebGLAvailable());
-  }, [setQuality]);
+  }, []);
 
   useEffect(() => {
     startDataLayer();
     return () => stopDataLayer();
   }, []);
 
+  useEffect(() => {
+    if (webgl !== true) return;
+    if (!isSafariLike()) {
+      setCanvasReady(true);
+      return;
+    }
+    let inner = 0;
+    const outer = window.requestAnimationFrame(() => {
+      inner = window.requestAnimationFrame(() => setCanvasReady(true));
+    });
+    return () => {
+      window.cancelAnimationFrame(outer);
+      window.cancelAnimationFrame(inner);
+    };
+  }, [webgl]);
+
   return (
-    <div className="relative h-dvh w-full overflow-hidden bg-[var(--void)]">
+    <div className="relative h-svh w-full overflow-hidden bg-[var(--void)]">
       {webgl === false ? (
         <WebGLFallback />
-      ) : webgl ? (
-        <ClientErrorBoundary fallback={<WebGLFallback />}>
-          <CommandCanvas />
-        </ClientErrorBoundary>
+      ) : webgl && canvasReady ? (
+        <div className="absolute inset-0">
+          <ClientErrorBoundary fallback={<WebGLFallback />}>
+            <CommandCanvas />
+          </ClientErrorBoundary>
+        </div>
       ) : null}
       <BootSequence />
       <TopBar />
