@@ -7,7 +7,8 @@ import { recordLeadMessage } from '@/lib/leadThread';
 export const dynamic = 'force-dynamic';
 
 /**
- * Hub inbound contract (Developer Bot / Grok routine after a Lead answers):
+ * Hub inbound contract (Developer Bot / Grok routine after a Lead answers).
+ * The hub still owns this reverse hop — COMMAND never pulls Grok for replies.
  *
  *   POST /api/lead-inbound
  *   Authorization: Bearer <LEAD_INBOUND_WEBHOOK_SECRET | LEAD_MESSAGE_WEBHOOK_SECRET>

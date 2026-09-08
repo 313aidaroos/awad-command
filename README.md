@@ -80,9 +80,22 @@ Content-Type: application/json
 - The deck polls `GET /api/lead-thread?projectSlug=<slug>` while the panel is open (every few seconds). No page reload.
 - Replies persist in process memory and, when `SUPABASE_SERVICE_ROLE_KEY` is set, in `awad_command.lead_messages` plus an `awad_command.events` row (`lead.message.replied`).
 
-## CEO (text + voice)
+## CEO (text + voice + tools)
 
 `POST /api/ceo` — **live CEO needs `AI_PROVIDER=anthropic` and `ANTHROPIC_API_KEY`** (optional `ANTHROPIC_MODEL`). Otherwise the demo responder answers from the store snapshot (including who owns each company).
+
+The CEO is an orchestrator, not text-only advice. It can call:
+
+| Tool | Where it runs | What it does |
+|---|---|---|
+| `message_lead` | Server | Same outbound helper as `POST /api/lead-message` (`{ agentId, message, projectSlug }` + Bearer). |
+| `navigate` | Client | Fly the camera to a project / agent / mode. |
+| `open_panel` | Client | Open a HUD panel (including Message lead). |
+| `propose_approval` | Client | Record-only approval card. Never spend / publish / delete / live trade. |
+
+Ask something like “tell Contraxis Lead to ping me” and the CEO actually sends. The reply is honest: **delivered**, **queued (DEMO)**, or **failed**. Unknown slugs are errors — never fake success.
+
+The hub still owns the reverse hop. Lead replies appear in Message lead only after the hub POSTs `/api/lead-inbound`. COMMAND does not pull Grok for answers.
 
 Voice (Chrome / Safari Web Speech API):
 
