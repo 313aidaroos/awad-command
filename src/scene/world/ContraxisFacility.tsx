@@ -27,8 +27,8 @@ function HallBackdrop() {
     const prevFog = scene.fog;
     const prevBg = scene.background;
     scene.fog = null;
-    scene.background = new THREE.Color('#0B0D10');
-    gl.setClearColor('#0B0D10', 1);
+    scene.background = new THREE.Color('#12161C');
+    gl.setClearColor('#12161C', 1);
     gl.toneMappingExposure = INTERIOR_EXPOSURE;
     return () => {
       scene.fog = prevFog;
@@ -114,9 +114,9 @@ export function ContraxisFacility({ accent }: { accent: string }) {
       <KitModel name="accessPoint" position={[8.8, 0, -2.2]} grade={WALL} />
       <KitModel name="decalLogo" position={[-9.6, 1.6, 2.4]} rotation={[0, Math.PI / 2, 0]} sit={false} scale={1.4} />
 
-      <pointLight color="#D7DCE4" intensity={0.55} distance={12} position={[-5.2, 2.5, 0.6]} />
-      <pointLight color="#C9D0DA" intensity={0.4} distance={11} position={[2.2, 2.4, 0.2]} />
-      <pointLight color={accent} intensity={0.22} distance={9} position={[7.2, 2.2, 0]} />
+      <pointLight color="#D7DCE4" intensity={0.85} distance={13} position={[-5.2, 2.5, 0.6]} />
+      <pointLight color="#C9D0DA" intensity={0.65} distance={12} position={[2.2, 2.4, 0.2]} />
+      <pointLight color={accent} intensity={0.28} distance={10} position={[7.2, 2.2, 0]} />
       <ContactShadows position={[0, 0.02, 0]} opacity={0.48} scale={28} blur={2.4} far={7} color="#000000" />
     </group>
   );

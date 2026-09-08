@@ -13,8 +13,8 @@ function ChamberBackdrop() {
     const prevFog = scene.fog;
     const prevBg = scene.background;
     scene.fog = null;
-    scene.background = new THREE.Color('#0B0D10');
-    gl.setClearColor('#0B0D10', 1);
+    scene.background = new THREE.Color('#12161C');
+    gl.setClearColor('#12161C', 1);
     gl.toneMappingExposure = INTERIOR_EXPOSURE;
     return () => {
       scene.fog = prevFog;

@@ -56,6 +56,7 @@ export function CommandPalette() {
             {projects.map((project) => (
               <Command.Item
                 key={project.slug}
+                value={`${project.name} ${project.slug}`}
                 className="cursor-pointer rounded-md px-2 py-1.5 text-[var(--text)]"
                 onSelect={() => {
                   enter(project.slug);

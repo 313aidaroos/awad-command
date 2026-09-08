@@ -8,13 +8,13 @@ export interface EntityIdentity {
 }
 
 const IDENTITIES: Record<string, EntityIdentity> = {
-  contraxis: { kind: 'hangarCargo', scale: 1, plaza: true, plazaPosition: [8.4, 0, 3.15] },
-  socixis: { kind: 'glassNet', scale: 1, plaza: true, plazaPosition: [-8.4, 0, 3.15] },
-  rawixis: { kind: 'miner', scale: 1, plaza: true, plazaPosition: [6.6, 0, -6.4] },
-  awadbot: { kind: 'botStack', scale: 1, plaza: true, plazaPosition: [0, 0, -8.35] },
-  apixis: { kind: 'racerPad', scale: 1, plaza: true, plazaPosition: [-6.6, 0, -6.4] },
-  lyrixis: { kind: 'speeder', scale: 1, plaza: true, plazaPosition: [10.4, 0, -2.1] },
-  halaxis: { kind: 'cargoDock', scale: 1, plaza: true, plazaPosition: [-10.4, 0, -2.1] },
+  contraxis: { kind: 'hangarCargo', scale: 1, plaza: true, plazaPosition: [6.1, 0, 2.35] },
+  socixis: { kind: 'glassNet', scale: 1, plaza: true, plazaPosition: [-6.1, 0, 2.35] },
+  rawixis: { kind: 'miner', scale: 1, plaza: true, plazaPosition: [4.6, 0, -4.7] },
+  awadbot: { kind: 'botStack', scale: 1, plaza: true, plazaPosition: [0, 0, -6.05] },
+  apixis: { kind: 'racerPad', scale: 1, plaza: true, plazaPosition: [-4.6, 0, -4.7] },
+  lyrixis: { kind: 'speeder', scale: 1, plaza: true, plazaPosition: [7.15, 0, -1.45] },
+  halaxis: { kind: 'cargoDock', scale: 1, plaza: true, plazaPosition: [-7.15, 0, -1.45] },
   publishing: { kind: 'speeder', scale: 0.85, plaza: false },
   studios: { kind: 'racerPad', scale: 0.85, plaza: false },
   'nursery-toons': { kind: 'botStack', scale: 0.8, plaza: false },

@@ -1,24 +1,20 @@
 'use client';
 
 import { ContactShadows } from '@react-three/drei';
-import { KitModel } from '@/scene/kit/KitModel';
 
-const TILES: Array<[number, number]> = [];
-for (let x = -2; x <= 2; x += 1) {
-  for (let z = -2; z <= 2; z += 1) {
-    if (Math.hypot(x, z) > 2.35) continue;
-    TILES.push([x * 4, z * 4]);
-  }
-}
-
-/** Quiet graphite deck. Ships sit on it — no truss corners, no pipe towers. */
+/** Continuous graphite field — not a tiled slab island, no trusses. */
 export function PlazaDeck() {
   return (
     <group>
-      {TILES.map(([x, z]) => (
-        <KitModel key={`${x}:${z}`} name="floorDark" position={[x, 0, z]} grade="#5C6168" />
-      ))}
-      <ContactShadows position={[0, 0.01, 0]} opacity={0.55} scale={32} blur={2.6} far={7} color="#000000" />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.012, 0]} receiveShadow>
+        <circleGeometry args={[20, 64]} />
+        <meshPhysicalMaterial color="#0C0E12" metalness={0.62} roughness={0.78} envMapIntensity={0.22} />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.002, 0]} receiveShadow>
+        <ringGeometry args={[7.6, 7.72, 80]} />
+        <meshPhysicalMaterial color="#3A3F47" metalness={0.8} roughness={0.35} envMapIntensity={0.3} />
+      </mesh>
+      <ContactShadows position={[0, 0.01, 0]} opacity={0.62} scale={28} blur={2.8} far={6} color="#000000" />
     </group>
   );
 }

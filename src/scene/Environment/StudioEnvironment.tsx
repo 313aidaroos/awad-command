@@ -8,7 +8,7 @@ import { ENV_INTENSITY_INTERIOR, ENV_INTENSITY_UNIVERSE } from '@/scene/lib/expo
 import { showExterior } from '@/scene/lib/cameraPaths';
 import { useCommandStore } from '@/store/useCommandStore';
 
-/** Local RoomEnvironment probe — dimmed so metals stay graphite, not blown white. */
+/** RoomEnvironment probe — created once. Intensity only changes with view. */
 export function StudioEnvironment() {
   const { gl, scene } = useThree();
   const level = useCommandStore((s) => s.quality.level);
@@ -24,7 +24,6 @@ export function StudioEnvironment() {
     const room = new RoomEnvironment();
     const tex = pmrem.fromScene(room, 0.04).texture;
     scene.environment = tex;
-    scene.environmentIntensity = showExterior(enterPhase) ? ENV_INTENSITY_UNIVERSE : ENV_INTENSITY_INTERIOR;
     room.dispose();
     return () => {
       if (scene.environment === tex) scene.environment = null;
@@ -32,7 +31,12 @@ export function StudioEnvironment() {
       tex.dispose();
       pmrem.dispose();
     };
-  }, [enterPhase, gl, level, scene]);
+  }, [gl, level, scene]);
+
+  useLayoutEffect(() => {
+    if (level === 'low') return;
+    scene.environmentIntensity = showExterior(enterPhase) ? ENV_INTENSITY_UNIVERSE : ENV_INTENSITY_INTERIOR;
+  }, [enterPhase, level, scene]);
 
   return null;
 }
