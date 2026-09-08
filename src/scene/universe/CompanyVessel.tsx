@@ -1,6 +1,7 @@
 'use client';
 
 import { KitModel } from '@/scene/kit/KitModel';
+import type { KitName } from '@/scene/kit/catalog';
 import { pointerGate } from '@/scene/lib/pointer';
 import { FloatingLabel } from '@/scene/ui/FloatingLabel';
 import { WorldName } from '@/scene/ui/WorldName';
@@ -8,63 +9,23 @@ import { identityOf, type VesselKind } from '@/scene/universe/identities';
 import { useCommandStore } from '@/store/useCommandStore';
 import type { ProjectDefinition } from '@/types/project';
 
-/** Craft-first vessels — hangars stay as pads so the silhouette is a ship, not a slab. */
+/** One authored Quaternius hull per plaza company — not Kenney toys, not Mesh boxes. */
+const HULL: Record<VesselKind, { ship: KitName; scale: number; yaw: number }> = {
+  hangarCargo: { ship: 'shipImperial', scale: 0.26, yaw: 0.55 },
+  glassNet: { ship: 'shipExecutioner', scale: 0.42, yaw: -0.7 },
+  miner: { ship: 'shipChallenger', scale: 0.4, yaw: 0.35 },
+  botStack: { ship: 'shipInsurgent', scale: 0.4, yaw: 0.8 },
+  racerPad: { ship: 'shipSpitfire', scale: 0.42, yaw: -0.25 },
+  speeder: { ship: 'shipStriker', scale: 0.5, yaw: 0.9 },
+  cargoDock: { ship: 'shipZenith', scale: 0.36, yaw: -0.45 },
+};
+
 function VesselBody({ kind }: { kind: VesselKind }) {
-  if (kind === 'hangarCargo') {
-    return (
-      <group>
-        <KitModel name="platformLarge" metalize scale={2.4} />
-        <KitModel name="craftCargoB" metalize position={[0, 0.35, 0]} scale={6.2} rotation={[0, 0.55, 0]} />
-      </group>
-    );
-  }
-  if (kind === 'glassNet') {
-    return (
-      <group>
-        <KitModel name="platformHigh" metalize scale={2.2} />
-        <KitModel name="craftSpeederD" metalize position={[0, 0.45, 0]} scale={6.4} rotation={[0, -0.7, 0]} />
-        <KitModel name="dishLarge" metalize position={[1.35, 1.55, -0.4]} scale={2.4} rotation={[0.25, 0.6, 0]} />
-      </group>
-    );
-  }
-  if (kind === 'miner') {
-    return (
-      <group>
-        <KitModel name="platformLong" metalize scale={2.1} />
-        <KitModel name="craftMiner" metalize position={[0, 0.4, 0]} scale={6.6} rotation={[0, 0.35, 0]} />
-        <KitModel name="machineGen" metalize position={[-1.5, 0, 1.1]} scale={2.4} />
-      </group>
-    );
-  }
-  if (kind === 'botStack') {
-    return (
-      <group>
-        <KitModel name="platformLarge" metalize scale={2.2} />
-        <KitModel name="rover" metalize position={[0.15, 0.15, 0.2]} scale={5.4} rotation={[0, 0.8, 0]} />
-        <KitModel name="structureDetailed" metalize position={[-1.15, 0, -0.55]} scale={3.6} />
-      </group>
-    );
-  }
-  if (kind === 'racerPad') {
-    return (
-      <group>
-        <KitModel name="platformHigh" metalize scale={2.15} />
-        <KitModel name="craftRacer" metalize position={[0, 0.4, 0]} scale={6.8} rotation={[0, -0.25, 0]} />
-      </group>
-    );
-  }
-  if (kind === 'speeder') {
-    return (
-      <group>
-        <KitModel name="platformLarge" metalize scale={2.1} />
-        <KitModel name="craftSpeederC" metalize position={[0, 0.35, 0]} scale={6.5} rotation={[0, 0.9, 0]} />
-      </group>
-    );
-  }
+  const hull = HULL[kind];
   return (
     <group>
-      <KitModel name="platformLong" metalize scale={2.2} />
-      <KitModel name="craftCargoA" metalize position={[0, 0.35, 0]} scale={6.3} rotation={[0, -0.45, 0]} />
+      <KitModel name="floorDark" scale={0.55} />
+      <KitModel name={hull.ship} position={[0, 0.08, 0]} scale={hull.scale} rotation={[0, hull.yaw, 0]} />
     </group>
   );
 }

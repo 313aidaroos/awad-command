@@ -9,7 +9,7 @@ import { particleCount } from '@/lib/quality';
 export function Starfield() {
   const level = useCommandStore((s) => s.quality.level);
   const enterPhase = useCommandStore((s) => s.enterPhase);
-  const count = particleCount(level, 420, 260, 140);
+  const count = particleCount(level, 70, 40, 18);
   const visible = enterPhase === 'universe' || enterPhase === 'approach';
 
   const geo = useMemo(() => {

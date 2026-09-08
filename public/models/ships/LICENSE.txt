@@ -1,0 +1,4 @@
+Quaternius Ultimate Spaceships (May 2021)
+https://quaternius.com/packs/ultimatespaceships.html
+License: CC0 1.0 Universal
+OBJ+texture converted to GLB for AWAD COMMAND. Textures resized to 1024.

@@ -1,17 +1,17 @@
 import type { CameraTarget } from '@/store/types';
 
-export const UNIVERSE_ZOOM = 15;
+export const UNIVERSE_ZOOM = 18;
 export const INTERIOR_ORIGIN: [number, number, number] = [0, 0, 0];
 
 export const UNIVERSE_CAM: CameraTarget = {
-  position: [0, 4.4, UNIVERSE_ZOOM],
-  lookAt: [0, 1.05, 0],
+  position: [0, 6.2, UNIVERSE_ZOOM],
+  lookAt: [0, 0.9, 0],
   duration: 1.6,
   phase: 'universe',
 };
 
 /**
- * Standing inside the Kenney room-large envelope (−10..10).
+ * Standing inside the MegaKit hall (−10..10 x, −6..6 z).
  * Must stay inside that volume or the camera sees a wall as a grey field.
  */
 export const CONTRAXIS_HALL_CAM: CameraTarget = {

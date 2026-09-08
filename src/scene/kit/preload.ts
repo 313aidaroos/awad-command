@@ -1,7 +1,59 @@
 'use client';
 
 import { useGLTF } from '@react-three/drei';
-import { allKitUrls } from '@/scene/kit/catalog';
+import { kitUrl, type KitName } from '@/scene/kit/catalog';
+
+/** First-paint pieces only — skip unused Kenney hangars/rooms. */
+const BOOT: KitName[] = [
+  'floorMetal',
+  'floorDark',
+  'columnSupport',
+  'columnPipes',
+  'columnLarge',
+  'columnAstra',
+  'columnRound',
+  'columnHollow',
+  'computer',
+  'accessPoint',
+  'deskComputer',
+  'deskChair',
+  'dishDetailed',
+  'dish',
+  'dishLarge',
+  'lightWide',
+  'shipImperial',
+  'shipExecutioner',
+  'shipChallenger',
+  'shipInsurgent',
+  'shipSpitfire',
+  'shipStriker',
+  'shipZenith',
+  'wallAstra',
+  'wallAstraOuter',
+  'topCables',
+  'topWindow',
+  'topAstra',
+  'topPlastic',
+  'shortPlates',
+  'shortAccent',
+  'doorFrame',
+  'doorHeavy',
+  'doorMetal',
+  'windowWide',
+  'pipeHolder',
+  'cable1',
+  'cable3',
+  'vent',
+  'machineGen',
+  'machineBarrel',
+  'barrelLarge',
+  'crate',
+  'chest',
+  'fan',
+  'decalLogo',
+  'astronautA',
+  'astronautB',
+];
 
 let queued = false;
 
@@ -9,5 +61,5 @@ let queued = false;
 export function preloadCommandKit() {
   if (queued || typeof window === 'undefined') return;
   queued = true;
-  for (const url of allKitUrls()) useGLTF.preload(url);
+  for (const name of BOOT) useGLTF.preload(kitUrl(name));
 }
