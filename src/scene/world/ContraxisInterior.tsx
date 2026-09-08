@@ -1,38 +1,31 @@
 'use client';
 
-import { useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
-import * as THREE from 'three';
 import { ChassisMaterial } from '@/scene/materials/ChassisMaterial';
 import { SilverMaterial } from '@/scene/materials/SilverMaterial';
 
-/** Contraxis-only: planted pipeline spine so the interior reads as a facility, not a bubble. */
+/** Contraxis nave: walkway, piers, far altar wall. Stations live on the node bays. */
 export function ContraxisInterior() {
-  const scan = useRef<THREE.Mesh>(null);
-  useFrame((state) => {
-    if (!scan.current) return;
-    scan.current.position.x = Math.sin(state.clock.elapsedTime * 0.12) * 6.5;
-  });
-
   return (
     <group>
-      <mesh position={[0.4, -3.05, 0.4]} rotation={[0, 0.18, 0]}>
-        <boxGeometry args={[16.4, 0.08, 1.15]} />
-        <ChassisMaterial roughness={0.38} />
+      <mesh position={[0.6, -3.14, 0]}>
+        <boxGeometry args={[20.2, 0.04, 1.38]} />
+        <meshStandardMaterial color="#14181E" metalness={0.2} roughness={0.74} />
       </mesh>
-      <mesh position={[0.4, -3.0, 0.4]} rotation={[0, 0.18, 0]}>
-        <boxGeometry args={[16.4, 0.02, 0.12]} />
-        <meshBasicMaterial color="#3D8BFF" transparent opacity={0.45} toneMapped={false} />
+      {[-5.4, -1.8, 1.8, 5.4].flatMap((x) =>
+        ([-1.82, 1.82] as const).map((z) => (
+          <mesh key={`${x}:${z}`} position={[x, -0.55, z]}>
+            <boxGeometry args={[0.36, 5.2, 0.36]} />
+            <ChassisMaterial roughness={0.5} />
+          </mesh>
+        )),
+      )}
+      <mesh position={[9.55, -1.55, 0]}>
+        <boxGeometry args={[1.15, 3.2, 4.8]} />
+        <ChassisMaterial roughness={0.46} />
       </mesh>
-      {[-6.2, -2.1, 2.2, 6.4].map((x) => (
-        <mesh key={x} position={[x, -0.4, -0.2]}>
-          <boxGeometry args={[0.12, 5.2, 0.12]} />
-          <SilverMaterial roughness={0.3} />
-        </mesh>
-      ))}
-      <mesh ref={scan} position={[0, -2.92, 0.4]}>
-        <boxGeometry args={[0.8, 0.015, 1.05]} />
-        <meshBasicMaterial color="#3D8BFF" transparent opacity={0.28} toneMapped={false} />
+      <mesh position={[9.0, -0.35, 0]}>
+        <boxGeometry args={[0.08, 0.9, 1.15]} />
+        <SilverMaterial roughness={0.22} />
       </mesh>
     </group>
   );

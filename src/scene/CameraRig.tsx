@@ -20,7 +20,7 @@ export function CameraRig() {
   const gl = useThree((s) => s.gl);
   const look = useRef(new THREE.Vector3());
   const lookT = useRef(new THREE.Vector3());
-  const posT = useRef(new THREE.Vector3(0, 6.6, UNIVERSE_ZOOM));
+  const posT = useRef(new THREE.Vector3(0, 3.15, UNIVERSE_ZOOM));
   const follow = useRef(new THREE.Vector3());
   const rot = useRef({ x: 0, y: 0, tx: 0, ty: 0, zoom: UNIVERSE_ZOOM, tZoom: UNIVERSE_ZOOM });
   const drag = useRef({ on: false, x: 0, y: 0, moved: 0, pan: false });
@@ -48,16 +48,12 @@ export function CameraRig() {
       flying.current = false;
       const focus = state.focusedProject ? getProject(state.focusedProject) : undefined;
       if (focus && state.view !== 'universe') {
-        const [x, y, z] = target.position;
-        const [lx, , lz] = target.lookAt;
-        const dx = x - lx;
-        const dz = z - lz;
         rot.current.tZoom = INTERIOR_ZOOM;
         rot.current.zoom = INTERIOR_ZOOM;
-        rot.current.ty = Math.atan2(dx, dz);
-        rot.current.y = rot.current.ty;
-        rot.current.tx = Math.max(-0.28, Math.min(0.28, (y - focus.universePosition[1] - 2.5) / 6));
-        rot.current.x = rot.current.tx;
+        rot.current.ty = 0;
+        rot.current.y = 0;
+        rot.current.tx = 0;
+        rot.current.x = 0;
       }
       if (state.view === 'universe') {
         rot.current.tZoom = UNIVERSE_ZOOM;
@@ -91,6 +87,10 @@ export function CameraRig() {
       }
       rot.current.ty += dx * 0.005;
       rot.current.tx = Math.max(-0.62, Math.min(0.62, rot.current.tx + dy * 0.003));
+      if (useCommandStore.getState().view !== 'universe') {
+        rot.current.ty = Math.max(-0.32, Math.min(0.32, rot.current.ty));
+        rot.current.tx = Math.max(-0.22, Math.min(0.22, rot.current.tx));
+      }
     };
     const up = () => {
       if (drag.current.moved > 8) {
@@ -104,8 +104,8 @@ export function CameraRig() {
     const wheel = (e: WheelEvent) => {
       if (flying.current || useCommandStore.getState().followingAgent) return;
       const projectView = useCommandStore.getState().view !== 'universe';
-      const min = projectView ? 8.6 : 22;
-      const max = projectView ? 13.2 : 52;
+      const min = projectView ? 7.2 : 16;
+      const max = projectView ? 11.6 : 36;
       rot.current.tZoom = Math.max(min, Math.min(max, rot.current.tZoom + e.deltaY * 0.02));
     };
     el.addEventListener('pointerdown', down);
@@ -165,15 +165,15 @@ export function CameraRig() {
       wasFollow.current = false;
       followBias.current = 0;
       followDrop.current = 0;
-      posT.current.set(Math.sin(r.y) * r.zoom, 6.6 + r.x * 7, Math.cos(r.y) * r.zoom);
-      lookT.current.set(0, 0.25, 0);
+      posT.current.set(Math.sin(r.y) * r.zoom, 3.15 + r.x * 4.2, Math.cos(r.y) * r.zoom);
+      lookT.current.set(0, 0.75, 0);
     } else if (project && !flying.current && view !== 'universe') {
       wasFollow.current = false;
       followBias.current = 0;
       followDrop.current = 0;
       const [cx, cy, cz] = project.universePosition;
-      posT.current.set(cx + Math.sin(r.y) * r.zoom, cy + 2.5 + r.x * 1.35, cz + Math.cos(r.y) * r.zoom);
-      lookT.current.set(cx, cy - 0.35, cz);
+      posT.current.set(cx - r.zoom, cy + 1.45 + r.x * 1.05, cz + r.y * 1.55);
+      lookT.current.set(cx + 4.4, cy - 1.25, cz);
     } else {
       wasFollow.current = false;
       followBias.current = 0;

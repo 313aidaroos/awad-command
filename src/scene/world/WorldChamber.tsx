@@ -1,35 +1,29 @@
 'use client';
 
 import { BackSide } from 'three';
-import { SilverMaterial } from '@/scene/materials/SilverMaterial';
 
+/** Closed rectangular nave — floors, walls, ceiling. Not a cylinder diorama. */
 export function WorldChamber() {
-  const wallSegs = 48;
   return (
     <group>
       <mesh>
-        <cylinderGeometry args={[13.8, 13.8, 8.4, wallSegs, 1, true]} />
-        <meshStandardMaterial color="#2A3038" metalness={0.38} roughness={0.55} side={BackSide} />
+        <boxGeometry args={[22.4, 7.4, 9.4]} />
+        <meshStandardMaterial color="#2A3038" metalness={0.36} roughness={0.58} side={BackSide} />
       </mesh>
-      <mesh position={[0, 4.15, 0]} rotation={[Math.PI, 0, 0]}>
-        <circleGeometry args={[13.8, wallSegs]} />
-        <meshStandardMaterial color="#232830" metalness={0.35} roughness={0.58} side={BackSide} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -3.18, 0]}>
+        <planeGeometry args={[22.2, 9.2]} />
+        <meshStandardMaterial color="#232830" metalness={0.32} roughness={0.62} />
       </mesh>
-      {Array.from({ length: 8 }, (_, i) => {
-        const a = (i / 8) * Math.PI * 2;
-        return (
-          <mesh key={i} position={[Math.cos(a) * 13.55, 0.4, Math.sin(a) * 13.55]}>
-            <boxGeometry args={[0.1, 7.6, 0.1]} />
-            <SilverMaterial roughness={0.32} />
-          </mesh>
-        );
-      })}
-      <mesh position={[0, 4.05, 0]} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[4.2, 0.05, 8, 48]} />
-        <meshBasicMaterial color="#E6E8EC" transparent opacity={0.28} />
+      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 3.68, 0]}>
+        <planeGeometry args={[22.2, 9.2]} />
+        <meshStandardMaterial color="#1C2026" metalness={0.3} roughness={0.66} />
       </mesh>
-      <pointLight color="#e8edf5" intensity={0.85} distance={22} position={[0, 3.4, 0]} />
-      <pointLight color="#c5d0e0" intensity={0.5} distance={16} position={[5, 2, 4]} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0.4, -3.16, 0]}>
+        <planeGeometry args={[20.4, 1.42]} />
+        <meshStandardMaterial color="#161A20" metalness={0.22} roughness={0.72} />
+      </mesh>
+      <pointLight color="#e4e8ee" intensity={0.55} distance={18} position={[-4.5, 2.4, 0]} />
+      <pointLight color="#d5dbe4" intensity={0.42} distance={16} position={[5.5, 2.2, 0]} />
     </group>
   );
 }

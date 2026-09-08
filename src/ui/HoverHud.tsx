@@ -9,8 +9,7 @@ export function HoverHud() {
   const project = slug ? getProject(slug) : undefined;
   if (!slug || !project || view !== 'universe') return null;
   return (
-    <div className="pointer-events-none fixed left-4 top-14 z-20 hidden md:flex items-center gap-2 text-[11px] tracking-[0.2em] text-[rgba(230,232,236,0.82)] [text-shadow:0_2px_16px_rgba(0,0,0,0.9)]">
-      <span className="block h-px w-3 bg-[rgba(61,139,255,0.7)]" />
+    <div className="pointer-events-none fixed left-4 top-14 z-20 hidden md:block text-[11px] tracking-[0.22em] text-[rgba(230,232,236,0.78)] [text-shadow:0_2px_16px_rgba(0,0,0,0.9)]">
       {project.name}
     </div>
   );

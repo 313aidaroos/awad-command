@@ -178,6 +178,31 @@ export function SilverRing({
   );
 }
 
+/** Solid graphite mass — cathedral language, not a kit of spheres and rings. */
+export function Monument({
+  size,
+  slit = true,
+}: {
+  size: [number, number, number];
+  slit?: boolean;
+}) {
+  const [sx, sy, sz] = size;
+  return (
+    <group>
+      <mesh>
+        <boxGeometry args={size} />
+        <ChassisMaterial roughness={0.48} />
+      </mesh>
+      {slit ? (
+        <mesh position={[0, sy * 0.12, sz / 2 + 0.006]}>
+          <boxGeometry args={[Math.max(0.16, sx * 0.22), 0.016, 0.01]} />
+          <SilverMaterial roughness={0.24} />
+        </mesh>
+      ) : null}
+    </group>
+  );
+}
+
 export function Deck({ radius = 0.58 }: { radius?: number }) {
   return (
     <group position={[0, -0.42, 0]}>

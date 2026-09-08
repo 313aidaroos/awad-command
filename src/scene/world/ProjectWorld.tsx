@@ -6,10 +6,7 @@ import * as THREE from 'three';
 import { getProject } from '@/projects/registry';
 import { AgentEntity } from '@/scene/world/AgentEntity';
 import { ContraxisInterior } from '@/scene/world/ContraxisInterior';
-import { FlowCouriers } from '@/scene/world/FlowCourier';
-import { FlowPath } from '@/scene/world/FlowPath';
 import { WorldChamber } from '@/scene/world/WorldChamber';
-import { WorldCore } from '@/scene/world/WorldCore';
 import { WorldHorizon } from '@/scene/world/WorldHorizon';
 import { WorldNodeMesh } from '@/scene/world/WorldNodeMesh';
 import { useCommandStore } from '@/store/useCommandStore';
@@ -35,19 +32,14 @@ export function ProjectWorld() {
     <group position={project.universePosition}>
       <group ref={group} scale={0.001} visible={false}>
         <WorldChamber />
-        <WorldHorizon accent={project.accent} />
+        <WorldHorizon />
         {project.slug === 'contraxis' ? <ContraxisInterior /> : null}
-        <WorldCore project={project} />
         {project.agents.map((agent) => (
           <AgentEntity key={agent.id} agent={agent} nodes={project.nodes} />
         ))}
         {project.nodes.map((node) => (
           <WorldNodeMesh key={node.id} node={node} accent={project.accent} />
         ))}
-        {project.flows.map((flow) => (
-          <FlowPath key={flow.id} project={project} flow={flow} />
-        ))}
-        <FlowCouriers project={project} />
       </group>
     </group>
   );

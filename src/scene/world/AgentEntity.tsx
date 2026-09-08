@@ -86,8 +86,10 @@ export function AgentEntity({
     }
   });
 
+  const present = workforce || following;
+
   return (
-    <group>
+    <group visible={present}>
       <mesh ref={path} visible={false}>
         <cylinderGeometry args={[0.02, 0.02, 1, 6]} />
         <meshBasicMaterial color={color} transparent opacity={0.28} />
