@@ -49,13 +49,13 @@ function Courier({
   if (!curve) return null;
   return (
     <mesh ref={mesh}>
-      <sphereGeometry args={[0.07, 10, 10]} />
+      <boxGeometry args={[0.1, 0.1, 0.1]} />
       <meshStandardMaterial
         color={project.accent}
         emissive={project.accent}
-        emissiveIntensity={0.4}
-        metalness={0.3}
-        roughness={0.3}
+        emissiveIntensity={0.35}
+        metalness={0.55}
+        roughness={0.28}
       />
     </mesh>
   );

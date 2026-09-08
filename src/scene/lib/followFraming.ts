@@ -3,9 +3,9 @@ export const FOLLOW_NDC_TARGET = 0.1;
 export const FOLLOW_NDC_TOP = 0.34;
 export const FOLLOW_NDC_BOT = -0.26;
 
-export const FOLLOW_BACK = 7.2;
-export const FOLLOW_SIDE = 2.15;
-export const FOLLOW_LIFT = 1.28;
+export const FOLLOW_BACK = 5.4;
+export const FOLLOW_SIDE = 1.6;
+export const FOLLOW_LIFT = 1.55;
 
 export function followCorrections(ndcY: number, ndcX: number) {
   let lookLift = 0;

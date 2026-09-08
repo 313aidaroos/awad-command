@@ -18,7 +18,7 @@ export const halaxis = defineProject({
   name: 'HALAXIS',
   tagline: 'Halal and high-value industry ventures',
   accent: '#4FC3A1',
-  universePosition: [-16.2, 3.8, -13.6],
+  universePosition: [-9.4, 0, 1.2],
   connections: [{ to: 'apixis', kind: 'data' }],
   agents,
   nodes,

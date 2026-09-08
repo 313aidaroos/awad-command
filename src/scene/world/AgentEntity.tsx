@@ -1,11 +1,13 @@
 'use client';
 
-import { useMemo, useRef } from 'react';
+import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { agentLocalPosition, agentTravelEndpoints } from '@/scene/lib/agentMotion';
 import { pointerGate } from '@/scene/lib/pointer';
+import { Anodized, Graphite } from '@/scene/kit/materials';
+import { Slit } from '@/scene/kit/parts';
 import { STATUS_COLOR } from '@/scene/universe/statusColor';
 import { useCommandStore } from '@/store/useCommandStore';
 import type { AgentDefinition, AgentStatus } from '@/types/agent';
@@ -34,9 +36,6 @@ export function AgentEntity({
 }) {
   const group = useRef<THREE.Group>(null);
   const path = useRef<THREE.Mesh>(null);
-  const t0 = useRef<THREE.Mesh>(null);
-  const t1 = useRef<THREE.Mesh>(null);
-  const t2 = useRef<THREE.Mesh>(null);
   const last = useRef(new THREE.Vector3(...agent.homePosition));
   const state = useCommandStore((s) => s.agents[agent.id]);
   const followAgent = useCommandStore((s) => s.followAgent);
@@ -44,27 +43,16 @@ export function AgentEntity({
   const workforce = useCommandStore((s) => s.mode === 'workforce');
   const status = state?.status ?? 'idle';
   const color = AGENT_TINT[status];
-  const glow = useMemo(() => new THREE.Color(color), [color]);
 
   useFrame(() => {
     if (!group.current) return;
     agentLocalPosition(agent, state, nodes, Date.now(), _next);
     const moving = _next.distanceTo(last.current) > 0.004;
-    const dx = last.current.x - _next.x;
-    const dy = last.current.y - _next.y;
-    const dz = last.current.z - _next.z;
-    if (t0.current) t0.current.position.set(dx, dy, dz);
-    if (t1.current) t1.current.position.set(dx * 2.4, dy * 2.4, dz * 2.4);
-    if (t2.current) t2.current.position.set(dx * 3.8, dy * 3.8, dz * 3.8);
-    if (t0.current) t0.current.visible = moving;
-    if (t1.current) t1.current.visible = moving;
-    if (t2.current) t2.current.visible = moving;
     if (moving) {
       group.current.lookAt(_next.x + (_next.x - last.current.x), _next.y, _next.z + (_next.z - last.current.z));
     }
     group.current.position.copy(_next);
     last.current.copy(_next);
-    if (!moving) group.current.rotation.y += 0.018;
 
     const travel = agentTravelEndpoints(agent, state, nodes);
     if (path.current) {
@@ -85,8 +73,8 @@ export function AgentEntity({
   return (
     <group>
       <mesh ref={path} visible={false}>
-        <cylinderGeometry args={[0.035, 0.035, 1, 6]} />
-        <meshBasicMaterial color={color} transparent opacity={0.42} />
+        <boxGeometry args={[0.04, 1, 0.04]} />
+        <meshBasicMaterial color={color} transparent opacity={0.28} />
       </mesh>
       <group ref={group} position={agent.homePosition}>
         <mesh
@@ -102,46 +90,23 @@ export function AgentEntity({
             document.body.style.cursor = 'grab';
           }}
         >
-          <coneGeometry args={[0.22, 0.64, 12]} />
-          <meshStandardMaterial
-            color={color}
-            metalness={0.55}
-            roughness={0.16}
-            emissive={glow}
-            emissiveIntensity={following || status === 'working' ? 0.82 : 0.28}
-          />
+          <boxGeometry args={[0.28, 0.72, 0.18]} />
+          <Graphite roughness={0.36} />
         </mesh>
-        <pointLight color={color} intensity={following || status === 'working' ? 1.1 : 0.35} distance={3.4} />
-        <mesh ref={t0} visible={false}>
-          <sphereGeometry args={[0.09, 8, 8]} />
-          <meshBasicMaterial color={color} transparent opacity={0.45} />
+        <mesh position={[0, 0.48, 0]}>
+          <boxGeometry args={[0.16, 0.16, 0.16]} />
+          <Anodized />
         </mesh>
-        <mesh ref={t1} visible={false}>
-          <sphereGeometry args={[0.07, 8, 8]} />
-          <meshBasicMaterial color={color} transparent opacity={0.28} />
-        </mesh>
-        <mesh ref={t2} visible={false}>
-          <sphereGeometry args={[0.05, 8, 8]} />
-          <meshBasicMaterial color={color} transparent opacity={0.16} />
-        </mesh>
+        <Slit position={[0, 0.12, 0.1]} size={[0.08, 0.22, 0.02]} accent={color} intensity={following ? 0.9 : 0.45} />
         {following ? (
-          <mesh rotation={[1.4, 0, 0]}>
-            <torusGeometry args={[0.48, 0.016, 8, 28]} />
-            <meshBasicMaterial color={color} transparent opacity={0.8} />
-          </mesh>
-        ) : null}
-        {following ? (
-          <Html center transform={false} position={[0, -0.58, 0]} style={{ pointerEvents: 'none' }}>
+          <Html center transform={false} position={[0, -0.52, 0]} style={{ pointerEvents: 'none' }}>
             <div
               style={{
-                fontSize: 12,
-                letterSpacing: '0.12em',
-                fontWeight: 560,
-                color: '#FFFFFF',
-                padding: '4px 10px',
-                borderRadius: 999,
-                background: 'rgba(7,8,10,0.78)',
-                border: '1px solid rgba(255,255,255,0.2)',
+                fontSize: 11,
+                letterSpacing: '0.14em',
+                fontWeight: 450,
+                color: '#E6E8EC',
+                textShadow: '0 1px 8px rgba(0,0,0,0.85)',
                 whiteSpace: 'nowrap',
               }}
             >
@@ -150,7 +115,7 @@ export function AgentEntity({
           </Html>
         ) : null}
         {workforce && !following ? (
-          <Html center transform={false} position={[0, 0.62, 0]} style={{ pointerEvents: 'none' }}>
+          <Html center transform={false} position={[0, 0.72, 0]} style={{ pointerEvents: 'none' }}>
             <div className="text-[8px] tracking-[0.1em] text-[var(--text)] whitespace-nowrap">{agent.name}</div>
           </Html>
         ) : null}

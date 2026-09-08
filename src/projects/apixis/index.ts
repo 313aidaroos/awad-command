@@ -18,7 +18,7 @@ export const apixis = defineProject({
   name: 'APIXIS',
   tagline: 'Virtual world platform',
   accent: '#5FD3F3',
-  universePosition: [0, 4.4, -18.5],
+  universePosition: [-0.4, 0, -9.4],
   connections: [
     { to: 'contraxis', kind: 'technology' },
     { to: 'halaxis', kind: 'data' },

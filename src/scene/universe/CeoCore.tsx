@@ -1,94 +1,123 @@
 'use client';
 
-import { useMemo, useRef } from 'react';
+import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { requestCeoOpen } from '@/lib/ceoBridge';
-import { particleCount } from '@/lib/quality';
-import { GlassMaterial } from '@/scene/materials/GlassMaterial';
-import { OrbCore } from '@/scene/universe/OrbCore';
+import { Anodized, Brushed, Graphite } from '@/scene/kit/materials';
+import { Plinth, Slit } from '@/scene/kit/parts';
+import { pointerGate } from '@/scene/lib/pointer';
 import { FloatingLabel } from '@/scene/ui/FloatingLabel';
 import { WorldName } from '@/scene/ui/WorldName';
 import { useCommandStore } from '@/store/useCommandStore';
 
+const TICKS = Array.from({ length: 24 }, (_, i) => (i / 24) * Math.PI * 2);
+
+/** Multi-shell dark-metal intelligence core — gyroscope, not a tutorial sphere. */
 export function CeoCore() {
-  const spin = useRef<THREE.Group>(null);
-  const pulse = useRef<THREE.Mesh>(null);
-  const focused = useCommandStore((s) => s.focusedProject);
-  const quality = useCommandStore((s) => s.quality.level);
+  const inner = useRef<THREE.Group>(null);
+  const mid = useRef<THREE.Group>(null);
+  const hovered = useCommandStore((s) => s.hoveredProject === 'ceo');
+  const hoverProject = useCommandStore((s) => s.hoverProject);
   const flyTo = useCommandStore((s) => s.flyTo);
+  const quality = useCommandStore((s) => s.quality.level);
 
-  const halo = useMemo(() => {
-    const n = particleCount(quality, 260, 160, 90);
-    const positions = new Float32Array(n * 3);
-    for (let i = 0; i < n; i += 1) {
-      const th = Math.random() * Math.PI * 2;
-      const ph = Math.acos(2 * Math.random() - 1);
-      const rr = 1.15 + Math.random() * 0.85;
-      positions.set(
-        [rr * Math.sin(ph) * Math.cos(th), rr * Math.sin(ph) * Math.sin(th) * 0.72, rr * Math.cos(ph)],
-        i * 3,
-      );
-    }
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    return geo;
-  }, [quality]);
-
-  useFrame((state, dt) => {
-    if (spin.current) {
-      spin.current.rotation.y += dt * 0.12;
-      spin.current.rotation.x += dt * 0.045;
-    }
-    if (pulse.current) {
-      const s = 1.05 + Math.sin(state.clock.elapsedTime * 0.7) * 0.035;
-      pulse.current.scale.setScalar(s);
-    }
+  useFrame((_, dt) => {
+    if (inner.current) inner.current.rotation.y += dt * 0.18;
+    if (mid.current) mid.current.rotation.y -= dt * 0.07;
   });
 
-  if (focused) return null;
+  const openCeo = () => {
+    if (pointerGate.suppressClick) return;
+    flyTo({ position: [0, 2.6, 8.4], lookAt: [0, 1.15, 0], duration: 1.1, phase: 'universe' });
+    requestCeoOpen();
+  };
 
   return (
-    <group>
-      <OrbCore
-        accent="#dfe4ee"
-        status="operational"
-        activity={0.62}
-        hovered={false}
-        radius={0.88}
-        onClick={() => {
-          flyTo({ position: [0, 3.2, 11], lookAt: [0, 0, 0], duration: 1.2, phase: 'universe' });
-          requestCeoOpen();
-        }}
-      />
-      <group ref={spin}>
-        <mesh>
-          <icosahedronGeometry args={[1.38, quality === 'low' ? 0 : 1]} />
-          <GlassMaterial accent="#E6E8EC" opacity={0.34} emissive={0.08} />
+    <group
+      position={[0, 0.42, 0]}
+      onClick={(e) => {
+        e.stopPropagation();
+        openCeo();
+      }}
+      onPointerOver={(e) => {
+        e.stopPropagation();
+        hoverProject('ceo');
+        document.body.style.cursor = 'pointer';
+      }}
+      onPointerOut={() => {
+        hoverProject(undefined);
+        document.body.style.cursor = 'grab';
+      }}
+    >
+      <Plinth size={[2.35, 0.18, 2.35]} steps={3} />
+      <mesh position={[0, 0.42, 0]}>
+        <cylinderGeometry args={[0.92, 1.05, 0.72, 8]} />
+        <Anodized roughness={0.26} />
+      </mesh>
+      <mesh position={[0, 0.8, 0]}>
+        <cylinderGeometry args={[0.78, 0.82, 0.12, 8]} />
+        <Brushed roughness={0.22} />
+      </mesh>
+      {[-0.55, 0, 0.55].map((x) => (
+        <mesh key={x} position={[x, 0.95, 0]}>
+          <boxGeometry args={[0.08, 1.15, 0.08]} />
+          <Graphite roughness={0.32} />
         </mesh>
-        <mesh>
-          <octahedronGeometry args={[0.58, 0]} />
-          <GlassMaterial accent="#E6E8EC" opacity={0.72} emissive={0.14} />
+      ))}
+      {[-0.55, 0, 0.55].map((z) => (
+        <mesh key={`z${z}`} position={[0, 0.95, z]}>
+          <boxGeometry args={[0.08, 1.15, 0.08]} />
+          <Graphite roughness={0.32} />
+        </mesh>
+      ))}
+      <group ref={mid} position={[0, 1.15, 0]}>
+        <mesh rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[1.12, 0.028, 8, quality === 'low' ? 32 : 64]} />
+          <Brushed roughness={0.18} />
+        </mesh>
+        <mesh rotation={[Math.PI / 2.4, 0.4, 0.2]}>
+          <torusGeometry args={[0.92, 0.02, 8, quality === 'low' ? 28 : 56]} />
+          <Brushed roughness={0.2} />
         </mesh>
       </group>
-      <mesh ref={pulse} rotation={[1.2, 0.2, 0.1]}>
-        <torusGeometry args={[2.05, 0.01, 10, 80]} />
-        <meshBasicMaterial color="#3D8BFF" transparent opacity={0.24} />
+      <group ref={inner} position={[0, 1.15, 0]}>
+        <mesh>
+          <cylinderGeometry args={[0.42, 0.42, 0.55, 12]} />
+          <Anodized roughness={0.18} />
+        </mesh>
+        <mesh>
+          <octahedronGeometry args={[0.22, 0]} />
+          <Brushed roughness={0.16} />
+        </mesh>
+        {[-0.18, 0, 0.18].map((y) => (
+          <mesh key={y} position={[0, y, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[0.48, 0.48, 0.035, 16]} />
+            <Graphite roughness={0.28} />
+          </mesh>
+        ))}
+        {TICKS.filter((_, i) => quality === 'low' ? i % 2 === 0 : true).map((a) => (
+          <mesh key={a} position={[Math.cos(a) * 0.62, 0, Math.sin(a) * 0.62]}>
+            <boxGeometry args={[0.035, 0.09, 0.018]} />
+            <Brushed roughness={0.22} />
+          </mesh>
+        ))}
+      </group>
+      <mesh position={[0, 1.72, 0]}>
+        <boxGeometry args={[0.7, 0.06, 0.7]} />
+        <Brushed roughness={0.2} />
       </mesh>
-      <mesh rotation={[0.4, 0.8, 1.1]}>
-        <torusGeometry args={[2.45, 0.007, 10, 80]} />
-        <meshBasicMaterial color="#9aa3b2" transparent opacity={0.14} />
+      <Slit position={[0, 1.76, 0.36]} size={[0.22, 0.012, 0.012]} intensity={0.85} />
+      <Slit position={[0.36, 1.12, 0]} size={[0.012, 0.28, 0.012]} intensity={0.45} />
+      <mesh position={[0, 1.15, 0]} visible={false}>
+        <sphereGeometry args={[1.55, 8, 8]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
-      <mesh rotation={[1.7, 0.3, 0]}>
-        <torusGeometry args={[2.85, 0.006, 10, 72]} />
-        <meshBasicMaterial color="#dfe4ee" transparent opacity={0.09} />
-      </mesh>
-      <points geometry={halo}>
-        <pointsMaterial color="#dfe4ee" size={0.028} transparent opacity={0.48} depthWrite={false} sizeAttenuation />
-      </points>
-      <FloatingLabel id="ceo-core" priority={4} maxDist={58} fadeFrom={36} position={[0, 2.05, 0]}>
-        <WorldName primary>AWAD</WorldName>
-      </FloatingLabel>
+      {hovered ? (
+        <FloatingLabel id="ceo-core" priority={5} maxDist={40} fadeFrom={28} position={[0, 2.35, 0]}>
+          <WorldName primary>CEO</WorldName>
+        </FloatingLabel>
+      ) : null}
     </group>
   );
 }

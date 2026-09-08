@@ -21,7 +21,7 @@ export const socixis = defineProject({
   name: 'SOCIXIS',
   tagline: 'AI social media for cafés and restaurants',
   accent: '#B48CFF',
-  universePosition: [-12.2, 1.4, 10.2],
+  universePosition: [-6.8, 0, 7.2],
   connections: [
     { to: 'contraxis', kind: 'marketing' },
     { to: 'publishing', kind: 'publishing' },

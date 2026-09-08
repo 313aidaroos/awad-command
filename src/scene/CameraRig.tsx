@@ -19,9 +19,9 @@ export function CameraRig() {
   const gl = useThree((s) => s.gl);
   const look = useRef(new THREE.Vector3());
   const lookT = useRef(new THREE.Vector3());
-  const posT = useRef(new THREE.Vector3(0, 8, 38));
+  const posT = useRef(new THREE.Vector3(0, 6.4, 22));
   const follow = useRef(new THREE.Vector3());
-  const rot = useRef({ x: 0, y: 0, tx: 0, ty: 0, zoom: 42, tZoom: 42 });
+  const rot = useRef({ x: 0, y: 0, tx: 0, ty: 0, zoom: 22, tZoom: 22 });
   const drag = useRef({ on: false, x: 0, y: 0, moved: 0, pan: false });
   const flying = useRef(false);
   const followBias = useRef(0);
@@ -51,16 +51,16 @@ export function CameraRig() {
         const [lx, , lz] = target.lookAt;
         const dx = x - lx;
         const dz = z - lz;
-        rot.current.tZoom = Math.max(14, Math.min(24, Math.hypot(dx, dz)));
+        rot.current.tZoom = Math.max(8, Math.min(16, Math.hypot(dx, dz)));
         rot.current.zoom = rot.current.tZoom;
         rot.current.ty = Math.atan2(dx, dz);
         rot.current.y = rot.current.ty;
-        rot.current.tx = Math.max(-0.45, Math.min(0.45, (y - focus.universePosition[1] - 2.2) / 5));
+        rot.current.tx = Math.max(-0.45, Math.min(0.45, (y - focus.universePosition[1] - 1.6) / 5));
         rot.current.x = rot.current.tx;
       }
       if (state.view === 'universe') {
-        rot.current.tZoom = 42;
-        rot.current.zoom = 42;
+        rot.current.tZoom = 22;
+        rot.current.zoom = 22;
       }
     }, target.duration * 1000);
     return () => window.clearTimeout(id);
@@ -103,8 +103,8 @@ export function CameraRig() {
     const wheel = (e: WheelEvent) => {
       if (flying.current || useCommandStore.getState().followingAgent) return;
       const projectView = useCommandStore.getState().view !== 'universe';
-      const min = projectView ? 12 : 24;
-      const max = projectView ? 28 : 58;
+      const min = projectView ? 7 : 14;
+      const max = projectView ? 18 : 32;
       rot.current.tZoom = Math.max(min, Math.min(max, rot.current.tZoom + e.deltaY * 0.02));
     };
     el.addEventListener('pointerdown', down);
@@ -164,15 +164,15 @@ export function CameraRig() {
       wasFollow.current = false;
       followBias.current = 0;
       followDrop.current = 0;
-      posT.current.set(Math.sin(r.y) * r.zoom, 9 + r.x * 8, Math.cos(r.y) * r.zoom);
-      lookT.current.set(0, 0, 0);
+      posT.current.set(Math.sin(r.y) * r.zoom, 6.4 + r.x * 5.2, Math.cos(r.y) * r.zoom);
+      lookT.current.set(0, 1.05, 0);
     } else if (project && !flying.current && view !== 'universe') {
       wasFollow.current = false;
       followBias.current = 0;
       followDrop.current = 0;
       const [cx, cy, cz] = project.universePosition;
-      posT.current.set(cx + Math.sin(r.y) * r.zoom, cy + 4.6 + r.x * 5.2, cz + Math.cos(r.y) * r.zoom);
-      lookT.current.set(cx, cy, cz);
+      posT.current.set(cx + Math.sin(r.y) * r.zoom, cy + 2.4 + r.x * 3.2, cz + Math.cos(r.y) * r.zoom);
+      lookT.current.set(cx, cy + 0.9, cz);
     } else {
       wasFollow.current = false;
       followBias.current = 0;

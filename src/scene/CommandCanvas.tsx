@@ -8,12 +8,11 @@ import { isSafariLike } from '@/lib/safari';
 import { CameraRig } from '@/scene/CameraRig';
 import { Lighting } from '@/scene/Environment/Lighting';
 import { StudioEnvironment } from '@/scene/Environment/StudioEnvironment';
-import { Starfield } from '@/scene/Environment/Starfield';
 import { Universe } from '@/scene/universe/Universe';
 import { ProjectWorld } from '@/scene/world/ProjectWorld';
 import { useCommandStore } from '@/store/useCommandStore';
 
-const CAMERA_INIT = { position: [0, 9, 42] as [number, number, number], fov: 40, near: 0.1, far: 420 };
+const CAMERA_INIT = { position: [0, 6.4, 22] as [number, number, number], fov: 36, near: 0.1, far: 220 };
 const GL_INIT = {
   antialias: true,
   alpha: false,
@@ -30,7 +29,7 @@ const DPR_HIGH: [number, number] = [1, 2];
 function handleCreated({ gl }: { gl: WebGLRenderer }) {
   gl.setClearColor('#07080A', 1);
   gl.toneMapping = THREE.ACESFilmicToneMapping;
-  gl.toneMappingExposure = 1.16;
+  gl.toneMappingExposure = 0.92;
   gl.outputColorSpace = THREE.SRGBColorSpace;
   gl.domElement.addEventListener(
     'webglcontextlost',
@@ -46,7 +45,6 @@ export function CommandCanvas() {
   const safari = isSafariLike();
   const dpr = safari || level === 'low' ? DPR_LOW : level === 'medium' ? DPR_MED : DPR_HIGH;
   const [Gate, setGate] = useState<ComponentType | null>(null);
-  // Safari still mounts the universe; only EffectComposer stays off.
 
   useEffect(() => {
     if (safari) {
@@ -75,10 +73,9 @@ export function CommandCanvas() {
       onCreated={handleCreated}
       style={CANVAS_STYLE}
     >
-      <fog attach="fog" args={['#07080A', 26, 92]} />
+      <fog attach="fog" args={['#07080A', 38, 72]} />
       <Lighting />
       <StudioEnvironment />
-      <Starfield />
       <Universe />
       <ProjectWorld />
       <CameraRig />

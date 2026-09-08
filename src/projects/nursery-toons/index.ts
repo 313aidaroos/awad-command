@@ -15,7 +15,7 @@ export const nurseryToons = defineProject({
   name: 'NURSERY TOONS',
   tagline: 'Children’s toon studio — coming online',
   accent: '#FFB86B',
-  universePosition: [14.6, 4.8, 7.1],
+  universePosition: [11.2, 0, 5.4],
   connections: [{ to: 'studios', kind: 'publishing' }],
   agents,
   nodes,

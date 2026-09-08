@@ -2,18 +2,30 @@
 
 import { Environment, Lightformer } from '@react-three/drei';
 import { useCommandStore } from '@/store/useCommandStore';
+import { showExterior } from '@/scene/lib/cameraPaths';
 
-/** One-shot studio lights so clearcoat glass has something to reflect. Off on LOW. */
+/** Studio/city probe — Apple product-film lighting, not space-game glow. */
 export function StudioEnvironment() {
   const level = useCommandStore((s) => s.quality.level);
-  if (level === 'low') return null;
+  const interior = !showExterior(useCommandStore((s) => s.enterPhase));
+  const preset = interior ? 'warehouse' : 'city';
+
+  if (level === 'low') {
+    return (
+      <Environment resolution={64} frames={1} environmentIntensity={0.55}>
+        <Lightformer intensity={4.2} position={[4, 12, 6]} scale={[18, 8, 1]} color="#ffffff" />
+        <Lightformer intensity={2.2} position={[-10, 4, 2]} scale={[8, 12, 1]} color="#f2f4f8" />
+        <Lightformer intensity={0.8} position={[8, 1, -8]} scale={[10, 4, 1]} color="#c5ccd6" />
+      </Environment>
+    );
+  }
+
   return (
-    <Environment resolution={level === 'high' ? 256 : 176} frames={1} environmentIntensity={1.02}>
-      <Lightformer intensity={6.4} position={[3, 13, 5]} scale={[3.2, 1.1, 1]} color="#ffffff" />
-      <Lightformer intensity={4.2} position={[5, 10, 6]} scale={[14, 8, 1]} color="#f7f9fc" />
-      <Lightformer intensity={2.4} position={[-8, 5, 3]} scale={[6, 10, 1]} color="#ffffff" />
-      <Lightformer intensity={1.55} position={[8, 2, -8]} scale={[10, 4, 1]} color="#3D8BFF" />
-      <Lightformer intensity={1} position={[0, -7, 5]} scale={[16, 4, 1]} color="#c5ccd6" />
-    </Environment>
+    <Environment
+      preset={preset}
+      resolution={level === 'high' ? 256 : 128}
+      environmentIntensity={interior ? 0.62 : 0.48}
+      background={false}
+    />
   );
 }

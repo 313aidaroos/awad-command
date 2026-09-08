@@ -1,37 +1,39 @@
-export type SilhouetteKind =
-  | 'lattice'
-  | 'crystal'
-  | 'rings'
-  | 'octa'
-  | 'monolith'
-  | 'constellation'
-  | 'icosa'
+export type VesselKind =
+  | 'hall'
+  | 'mast'
+  | 'discs'
+  | 'spire'
+  | 'stack'
+  | 'cabinet'
+  | 'cluster'
   | 'folios'
-  | 'reel'
-  | 'soft'
-  | 'vessel';
+  | 'stage'
+  | 'tent'
+  | 'urn';
 
 export interface EntityIdentity {
-  kind: SilhouetteKind;
-  rings: number;
+  kind: VesselKind;
   scale: number;
-  core: number;
 }
 
 const IDENTITIES: Record<string, EntityIdentity> = {
-  contraxis: { kind: 'lattice', rings: 3, scale: 1.32, core: 0.28 },
-  apixis: { kind: 'crystal', rings: 0, scale: 1.22, core: 0.22 },
-  lyrixis: { kind: 'rings', rings: 0, scale: 1.18, core: 0.18 },
-  halaxis: { kind: 'octa', rings: 0, scale: 1.28, core: 0.2 },
-  rawixis: { kind: 'monolith', rings: 0, scale: 1.26, core: 0.16 },
-  socixis: { kind: 'constellation', rings: 0, scale: 1.2, core: 0.14 },
-  awadbot: { kind: 'icosa', rings: 1, scale: 1.2, core: 0.24 },
-  publishing: { kind: 'folios', rings: 0, scale: 1.16, core: 0.12 },
-  studios: { kind: 'reel', rings: 0, scale: 1.18, core: 0.2 },
-  'nursery-toons': { kind: 'soft', rings: 0, scale: 1.08, core: 0.28 },
-  qahwahworld: { kind: 'vessel', rings: 0, scale: 1.1, core: 0.16 },
+  contraxis: { kind: 'hall', scale: 1.22 },
+  socixis: { kind: 'mast', scale: 1.08 },
+  lyrixis: { kind: 'discs', scale: 1.05 },
+  halaxis: { kind: 'spire', scale: 1.12 },
+  rawixis: { kind: 'stack', scale: 1.1 },
+  awadbot: { kind: 'cabinet', scale: 1.08 },
+  apixis: { kind: 'cluster', scale: 1.1 },
+  publishing: { kind: 'folios', scale: 0.92 },
+  studios: { kind: 'stage', scale: 0.94 },
+  'nursery-toons': { kind: 'tent', scale: 0.88 },
+  qahwahworld: { kind: 'urn', scale: 0.9 },
 };
 
 export function identityOf(slug: string): EntityIdentity {
-  return IDENTITIES[slug] ?? { kind: 'soft', rings: 0, scale: 1, core: 0.22 };
+  return IDENTITIES[slug] ?? { kind: 'tent', scale: 0.9 };
+}
+
+export function listedIdentities(): Record<string, EntityIdentity> {
+  return IDENTITIES;
 }

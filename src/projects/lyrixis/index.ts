@@ -17,7 +17,7 @@ export const lyrixis = defineProject({
   name: 'LYRIXIS',
   tagline: 'Lyrics and song platform',
   accent: '#8CA6FF',
-  universePosition: [-5.2, -1.1, -23.0],
+  universePosition: [-8.8, 0, -4.6],
   connections: [],
   agents,
   nodes,

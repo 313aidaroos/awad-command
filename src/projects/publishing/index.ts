@@ -21,7 +21,7 @@ export const publishing = defineProject({
   name: 'AWAD PUBLISHING',
   tagline: 'Amazon KDP operation',
   accent: '#F2C14E',
-  universePosition: [-18.6, -3.2, -3.6],
+  universePosition: [-11.6, 0, -8.2],
   connections: [{ to: 'socixis', kind: 'publishing' }],
   agents,
   nodes,
