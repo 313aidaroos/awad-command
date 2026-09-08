@@ -29,7 +29,7 @@ function SceneAtmosphere() {
   return <fog attach="fog" args={['#12151A', 48, 92]} />;
 }
 
-const CAMERA_INIT = { position: [0, 5.8, 20] as [number, number, number], fov: 36, near: 0.1, far: 220 };
+const CAMERA_INIT = { position: [0, 3.15, 15] as [number, number, number], fov: 34, near: 0.1, far: 220 };
 const GL_INIT = {
   antialias: true,
   alpha: false,

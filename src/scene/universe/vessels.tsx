@@ -52,39 +52,42 @@ function Mast({ accent }: { accent: string }) {
   return (
     <group>
       <mesh position={[0, 0.95, 0]}>
-        <cylinderGeometry args={[0.07, 0.11, 1.9, 8]} />
-        <Anodized />
+        <boxGeometry args={[0.42, 1.9, 0.42]} />
+        <Anodized roughness={0.22} />
       </mesh>
-      {[0.55, 1.05, 1.55].map((y, i) => (
-        <mesh key={y} position={[0, y, 0]} rotation={[0.2 + i * 0.15, i * 0.4, 0]}>
-          <boxGeometry args={[1.15 - i * 0.18, 0.04, 0.28]} />
-          <Graphite roughness={0.34} />
-        </mesh>
-      ))}
+      <mesh position={[0, 0.55, 0.28]}>
+        <boxGeometry args={[0.95, 0.12, 0.22]} />
+        <Graphite roughness={0.32} />
+      </mesh>
+      <mesh position={[0, 1.15, 0.22]}>
+        <boxGeometry args={[0.72, 0.1, 0.18]} />
+        <Graphite roughness={0.3} />
+      </mesh>
       <mesh position={[0, 1.95, 0]}>
-        <boxGeometry args={[0.22, 0.22, 0.22]} />
-        <Brushed roughness={0.2} />
+        <boxGeometry args={[0.5, 0.12, 0.5]} />
+        <Brushed roughness={0.18} />
       </mesh>
-      <Slit position={[0, 1.95, 0.12]} size={[0.08, 0.08, 0.02]} accent={accent} />
+      <Slit position={[0, 1.95, 0.26]} size={[0.18, 0.04, 0.02]} accent={accent} />
     </group>
   );
 }
 
 function Discs({ accent }: { accent: string }) {
-  const rs = [0.78, 0.62, 0.48, 0.34];
   return (
     <group>
-      <mesh position={[0, 0.95, 0]}>
-        <cylinderGeometry args={[0.08, 0.08, 1.9, 8]} />
-        <Brushed roughness={0.24} />
+      <mesh position={[0, 0.55, 0]}>
+        <cylinderGeometry args={[0.95, 1.05, 1.1, 8]} />
+        <Graphite roughness={0.34} />
       </mesh>
-      {rs.map((r, i) => (
-        <mesh key={r} position={[0, 0.28 + i * 0.38, 0]}>
-          <cylinderGeometry args={[r, r, 0.08, 24]} />
-          <Graphite roughness={0.32} />
-        </mesh>
-      ))}
-      <Slit position={[0.5, 0.32, 0]} size={[0.18, 0.02, 0.02]} accent={accent} />
+      <mesh position={[0, 1.25, 0]}>
+        <cylinderGeometry args={[0.72, 0.88, 0.35, 8]} />
+        <Anodized roughness={0.2} />
+      </mesh>
+      <mesh position={[0, 1.52, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[0.62, 0.04, 8, 32]} />
+        <Brushed roughness={0.16} />
+      </mesh>
+      <Slit position={[0, 1.12, 0.92]} size={[0.28, 0.03, 0.03]} accent={accent} />
     </group>
   );
 }
@@ -92,38 +95,31 @@ function Discs({ accent }: { accent: string }) {
 function Spire({ accent }: { accent: string }) {
   return (
     <group>
-      <mesh position={[0, 0.55, 0]}>
-        <boxGeometry args={[0.72, 1.1, 0.72]} />
-        <Graphite roughness={0.4} />
-      </mesh>
-      <mesh position={[0, 1.35, 0]}>
-        <boxGeometry args={[0.48, 0.72, 0.48]} />
+      <mesh position={[0, 0.7, 0]}>
+        <boxGeometry args={[0.95, 1.4, 0.95]} />
         <Graphite roughness={0.36} />
       </mesh>
-      <mesh position={[0, 1.92, 0]}>
-        <octahedronGeometry args={[0.28, 0]} />
+      <mesh position={[0, 1.55, 0]}>
+        <boxGeometry args={[0.62, 0.35, 0.62]} />
         <Brushed roughness={0.2} />
       </mesh>
-      <Slit position={[0, 0.7, 0.37]} size={[0.12, 0.55, 0.02]} accent={accent} intensity={0.5} />
+      <Slit position={[0, 0.85, 0.48]} size={[0.1, 0.7, 0.02]} accent={accent} intensity={0.45} />
     </group>
   );
 }
 
 function Stack({ accent }: { accent: string }) {
-  const slabs: Array<[number, number, number]> = [
-    [1.45, 0.28, 0.95],
-    [1.15, 0.32, 0.78],
-    [0.88, 0.38, 0.62],
-  ];
   return (
     <group>
-      {slabs.map((s, i) => (
-        <mesh key={i} position={[0, 0.2 + i * 0.42, 0]}>
-          <boxGeometry args={s} />
-          <Graphite roughness={0.44} />
-        </mesh>
-      ))}
-      <Slit position={[0, 0.34, 0.49]} size={[0.4, 0.02, 0.02]} accent={accent} />
+      <mesh position={[0, 0.38, 0]}>
+        <boxGeometry args={[1.7, 0.76, 1.15]} />
+        <Graphite roughness={0.4} />
+      </mesh>
+      <mesh position={[0.12, 1.05, 0]}>
+        <boxGeometry args={[1.25, 0.58, 0.88]} />
+        <Anodized roughness={0.26} />
+      </mesh>
+      <Slit position={[0, 0.52, 0.58]} size={[0.55, 0.03, 0.02]} accent={accent} />
     </group>
   );
 }
@@ -150,21 +146,17 @@ function Cabinet({ accent }: { accent: string }) {
 }
 
 function Cluster({ accent }: { accent: string }) {
-  const towers: Array<[number, number, number, number]> = [
-    [0, 1.15, 0, 0.28],
-    [0.42, 0.72, 0.18, 0.18],
-    [-0.38, 0.55, 0.22, 0.16],
-    [0.18, 0.42, -0.4, 0.14],
-  ];
   return (
     <group>
-      {towers.map(([x, h, z, w]) => (
-        <mesh key={`${x}${z}`} position={[x, h / 2, z]}>
-          <boxGeometry args={[w, h, w]} />
-          <Graphite roughness={0.34} />
-        </mesh>
-      ))}
-      <Slit position={[0, 1.12, 0.15]} size={[0.08, 0.4, 0.02]} accent={accent} />
+      <mesh position={[0, 0.85, 0]}>
+        <boxGeometry args={[1.15, 1.7, 0.85]} />
+        <Graphite roughness={0.34} />
+      </mesh>
+      <mesh position={[0.55, 0.45, 0.28]}>
+        <boxGeometry args={[0.55, 0.9, 0.48]} />
+        <Anodized roughness={0.24} />
+      </mesh>
+      <Slit position={[0, 1.45, 0.44]} size={[0.35, 0.04, 0.02]} accent={accent} />
     </group>
   );
 }
@@ -186,19 +178,15 @@ function Folios({ accent }: { accent: string }) {
 function Stage({ accent }: { accent: string }) {
   return (
     <group>
-      <mesh position={[0, 0.28, 0]}>
-        <boxGeometry args={[1.55, 0.55, 1.05]} />
-        <Graphite roughness={0.4} />
+      <mesh position={[0, 0.42, 0]}>
+        <boxGeometry args={[1.75, 0.84, 1.2]} />
+        <Graphite roughness={0.38} />
       </mesh>
-      <mesh position={[0, 0.72, 0]} rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[0.55, 0.55, 0.22, 24]} />
-        <Anodized />
+      <mesh position={[0, 0.92, 0.52]}>
+        <boxGeometry args={[1.35, 0.12, 0.08]} />
+        <Brushed roughness={0.2} />
       </mesh>
-      <mesh position={[0.72, 0.72, 0]} rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[0.42, 0.42, 0.12, 20]} />
-        <Brushed roughness={0.22} />
-      </mesh>
-      <Slit position={[0, 0.58, 0.54]} size={[0.8, 0.02, 0.02]} accent={accent} />
+      <Slit position={[0, 0.88, 0.62]} size={[0.7, 0.03, 0.02]} accent={accent} />
     </group>
   );
 }
@@ -206,15 +194,15 @@ function Stage({ accent }: { accent: string }) {
 function Tent({ accent }: { accent: string }) {
   return (
     <group>
-      <mesh position={[0, 0.35, 0]}>
-        <cylinderGeometry args={[0.72, 0.85, 0.7, 6]} />
-        <Graphite roughness={0.42} />
+      <mesh position={[0, 0.55, 0]}>
+        <cylinderGeometry args={[0.82, 0.98, 1.1, 6]} />
+        <Graphite roughness={0.4} />
       </mesh>
-      <mesh position={[0, 1.05, 0]}>
-        <cylinderGeometry args={[0.12, 0.72, 0.85, 6]} />
-        <Graphite roughness={0.36} />
+      <mesh position={[0, 1.25, 0]}>
+        <cylinderGeometry args={[0.28, 0.72, 0.35, 6]} />
+        <Anodized roughness={0.24} />
       </mesh>
-      <Slit position={[0, 0.42, 0.74]} size={[0.35, 0.04, 0.02]} accent={accent} />
+      <Slit position={[0, 0.55, 0.9]} size={[0.3, 0.04, 0.02]} accent={accent} />
     </group>
   );
 }

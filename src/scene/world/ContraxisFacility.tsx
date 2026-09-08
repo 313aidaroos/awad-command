@@ -60,11 +60,11 @@ export function ContraxisFacility({ accent }: { accent: string }) {
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
         <planeGeometry args={[36, 14]} />
-        <meshStandardMaterial color="#3C454F" metalness={0.32} roughness={0.52} />
+        <meshStandardMaterial color="#2A313A" metalness={0.48} roughness={0.46} />
       </mesh>
       <mesh position={[0, 0.03, 0]}>
-        <boxGeometry args={[30, 0.05, 2.55]} />
-        <meshStandardMaterial color="#4A5562" metalness={0.48} roughness={0.38} />
+        <boxGeometry args={[30, 0.05, 2.2]} />
+        <meshStandardMaterial color="#323A44" metalness={0.55} roughness={0.34} />
       </mesh>
       <mesh position={[0, 0.06, 0]}>
         <boxGeometry args={[28, 0.02, 0.07]} />
@@ -123,13 +123,13 @@ export function ContraxisFacility({ accent }: { accent: string }) {
         <boxGeometry args={[36.2, 5.2, 0.2]} />
         <Graphite roughness={0.5} />
       </mesh>
-      <hemisphereLight args={['#f7f8fb', '#3a424c', 0.85]} />
-      <ambientLight intensity={0.42} color="#e8edf3" />
-      <pointLight color="#f8f9fb" intensity={4.2} distance={30} position={[-9.5, 3.4, 0.6]} />
-      <pointLight color="#f3f5f8" intensity={3.4} distance={26} position={[-1, 3.8, 0.4]} />
-      <pointLight color="#eef2f6" intensity={2.8} distance={24} position={[7, 3.6, -0.4]} />
-      <pointLight color={accent} intensity={1.1} distance={20} position={[14, 3.1, 0]} />
-      <ContactShadows position={[0, -0.02, 0]} opacity={0.32} scale={40} blur={2.4} far={10} color="#000000" />
+      <hemisphereLight args={['#eef1f5', '#2a3038', 0.62]} />
+      <ambientLight intensity={0.28} color="#d8dee6" />
+      <pointLight color="#f2f4f7" intensity={2.6} distance={26} position={[-9.2, 3.2, 0.5]} />
+      <pointLight color="#e8edf3" intensity={2.1} distance={22} position={[-0.5, 3.5, 0.3]} />
+      <pointLight color="#dfe5ee" intensity={1.7} distance={20} position={[7.5, 3.3, -0.3]} />
+      <pointLight color={accent} intensity={0.75} distance={16} position={[14, 2.9, 0]} />
+      <ContactShadows position={[0, -0.02, 0]} opacity={0.28} scale={40} blur={2.6} far={10} color="#000000" />
     </group>
   );
 }

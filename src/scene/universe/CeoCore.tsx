@@ -24,7 +24,7 @@ export function CeoCore() {
 
   const openCeo = () => {
     if (pointerGate.suppressClick) return;
-    flyTo({ position: [0, 2.8, 9.2], lookAt: [0, 1.7, 0], duration: 1.1, phase: 'universe' });
+    flyTo({ position: [0, 2.4, 8.4], lookAt: [0, 1.5, 0], duration: 1.1, phase: 'universe' });
     requestCeoOpen();
   };
 

@@ -1,14 +1,14 @@
 import type { CameraTarget } from '@/store/types';
 
-export const UNIVERSE_ZOOM = 20;
+export const UNIVERSE_ZOOM = 15;
 export const INTERIOR_ZOOM = 11;
 
 /** Sealed interiors live at the world origin so the camera cannot miss them. */
 export const INTERIOR_ORIGIN: [number, number, number] = [0, 0, 0];
 
 export const UNIVERSE_CAM: CameraTarget = {
-  position: [0, 5.8, UNIVERSE_ZOOM],
-  lookAt: [0, 1.55, 0],
+  position: [0, 3.15, UNIVERSE_ZOOM],
+  lookAt: [0, 1.35, 0],
   duration: 1.8,
   phase: 'universe',
 };

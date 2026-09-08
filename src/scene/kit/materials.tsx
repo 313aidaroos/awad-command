@@ -7,10 +7,10 @@ export function Graphite({ roughness = 0.42, metalness = 0.62 }: { roughness?: n
   const low = useCommandStore((s) => s.quality.level === 'low');
   return (
     <meshStandardMaterial
-      color="#22272E"
-      metalness={low ? Math.min(0.55, metalness) : metalness}
+      color="#1C2128"
+      metalness={low ? Math.min(0.6, metalness) : metalness}
       roughness={roughness}
-      envMapIntensity={1.15}
+      envMapIntensity={1.35}
     />
   );
 }

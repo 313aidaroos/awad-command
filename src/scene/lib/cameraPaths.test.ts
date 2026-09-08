@@ -36,8 +36,8 @@ describe('camera paths', () => {
   });
 
   it('starts from a product-film universe camera, not a space-god view', () => {
-    expect(UNIVERSE_CAM.position[1]).toBeLessThan(8);
-    expect(UNIVERSE_CAM.position[2]).toBeLessThan(28);
+    expect(UNIVERSE_CAM.position[1]).toBeLessThan(4);
+    expect(UNIVERSE_CAM.position[2]).toBeLessThan(18);
     expect(UNIVERSE_CAM.lookAt[1]).toBeGreaterThan(0.5);
   });
 });
