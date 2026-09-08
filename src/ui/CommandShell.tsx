@@ -1,11 +1,13 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useEffect } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import { startDataLayer, stopDataLayer } from '@/data';
 import { detectQuality } from '@/lib/quality';
+import { isWebGLAvailable } from '@/lib/webgl';
 import { ApprovalCard } from '@/ui/ApprovalCard';
 import { BootSequence } from '@/ui/BootSequence';
+import { ClientErrorBoundary, WebGLFallback } from '@/ui/CanvasErrorBoundary';
 import { CeoConsole } from '@/ui/CeoConsole';
 import { CommandPalette } from '@/ui/CommandPalette';
 import { ComputerPanel } from '@/ui/ComputerPanel';
@@ -26,16 +28,27 @@ const CommandCanvas = dynamic(
 
 export function CommandShell() {
   const setQuality = useCommandStore((s) => s.setQuality);
+  const [webgl, setWebgl] = useState<boolean | null>(null);
+
+  useLayoutEffect(() => {
+    setQuality(detectQuality(), true);
+    setWebgl(isWebGLAvailable());
+  }, [setQuality]);
 
   useEffect(() => {
-    setQuality(detectQuality(), true);
     startDataLayer();
     return () => stopDataLayer();
-  }, [setQuality]);
+  }, []);
 
   return (
     <div className="relative h-dvh w-full overflow-hidden bg-[var(--void)]">
-      <CommandCanvas />
+      {webgl === false ? (
+        <WebGLFallback />
+      ) : webgl ? (
+        <ClientErrorBoundary fallback={<WebGLFallback />}>
+          <CommandCanvas />
+        </ClientErrorBoundary>
+      ) : null}
       <BootSequence />
       <TopBar />
       <ModeBar />
