@@ -3,7 +3,6 @@
 import { useEffect, useState, type ComponentType } from 'react';
 import { startDataLayer, stopDataLayer } from '@/data';
 import { detectQuality } from '@/lib/quality';
-import { isSafariLike } from '@/lib/safari';
 import { isWebGLAvailable } from '@/lib/webgl';
 import { ApprovalCard } from '@/ui/ApprovalCard';
 import { BootSequence } from '@/ui/BootSequence';
@@ -22,26 +21,27 @@ import { TopBar } from '@/ui/TopBar';
 import { useCommandStore } from '@/store/useCommandStore';
 
 export function CommandShell() {
-  // Closed until after hydration so SSR and Safari never mount R3F/three.
+  // Closed until after hydration so SSR never mounts R3F/three.
   const [canvasEnabled, setCanvasEnabled] = useState(false);
   const [webgl, setWebgl] = useState<boolean | null>(null);
   const [CanvasSlot, setCanvasSlot] = useState<ComponentType | null>(null);
 
   useEffect(() => {
-    const canvasEnabled = !isSafariLike();
-    setCanvasEnabled(canvasEnabled);
-    if (!canvasEnabled) return;
     let live = true;
-    setWebgl(isWebGLAvailable());
+    const available = isWebGLAvailable();
+    setWebgl(available);
+    setCanvasEnabled(true);
     useCommandStore.getState().setQuality(detectQuality(), true);
-    void import('@/ui/EnabledCanvas')
-      .then((mod) => {
-        if (live) setCanvasSlot(() => mod.EnabledCanvas);
-      })
-      .catch((error: unknown) => {
-        console.warn('[awad-command] canvas loader failed', error);
-        if (live) setWebgl(false);
-      });
+    if (available) {
+      void import('@/ui/EnabledCanvas')
+        .then((mod) => {
+          if (live) setCanvasSlot(() => mod.EnabledCanvas);
+        })
+        .catch((error: unknown) => {
+          console.warn('[awad-command] canvas loader failed', error);
+          if (live) setWebgl(false);
+        });
+    }
     return () => {
       live = false;
     };

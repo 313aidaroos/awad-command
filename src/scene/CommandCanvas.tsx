@@ -66,8 +66,7 @@ export function CommandCanvas() {
   const level = useCommandStore((s) => s.quality.level);
   const safari = isSafariLike();
   const dpr = safari || level === 'low' ? DPR_LOW : level === 'medium' ? DPR_MED : DPR_HIGH;
-
-  if (safari) return null;
+  // Safari still mounts the universe; only EffectComposer stays off.
 
   return (
     <Canvas
