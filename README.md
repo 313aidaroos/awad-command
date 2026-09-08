@@ -45,12 +45,22 @@ Click an orb → ProjectWorld HUD shows the lead name + agent id and a **Message
 ## Live lead messaging (hub keys)
 
 `POST /api/lead-message` `{ projectSlug, message }` runs **server-side only**.
+The route resolves `agentId` from `src/config/orbLeads.ts`.
+
+Hub contract (outbound):
+
+```http
+POST $LEAD_MESSAGE_WEBHOOK_URL
+Authorization: Bearer $LEAD_MESSAGE_WEBHOOK_SECRET
+Content-Type: application/json
+
+{ "agentId": "<uuid>", "message": "<text>", "projectSlug": "<slug>" }
+```
 
 1. Set `LEAD_MESSAGE_WEBHOOK_URL` to the hub ingest URL.
-2. Optionally set `GROK_BOT_API_KEY` — sent as `Authorization: Bearer …`.
-3. The route POSTs `{ projectSlug, agentId, leadName, message }`.
-4. Delivery is claimed **only** after the webhook returns 2xx.
-5. If the webhook is unset, the message is queued in the deck and tagged DEMO. No OAuth to Grok Bot Chat is invented.
+2. Set `LEAD_MESSAGE_WEBHOOK_SECRET` (or alias `GROK_BOT_API_KEY`) — sent as `Authorization: Bearer …`.
+3. Delivery is claimed **only** after the webhook returns 2xx. Non-2xx surfaces as failed.
+4. If the webhook is unset, the message is queued in the deck and tagged DEMO. No OAuth to Grok Bot Chat.
 
 ## CEO
 
@@ -66,9 +76,19 @@ Migration copy (already applied): `supabase/migrations/0001_part_b.sql`.
 
 1. Import this repo.
 2. Framework: Next.js. Install: `pnpm install`. Build: `pnpm build`.
-3. Copy vars from `.env.example` into the Vercel project (Production + Preview).
+3. Copy this env list into the Vercel project (Production + Preview):
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `ALLOWED_EMAIL`
+   - `AI_PROVIDER`
+   - `ANTHROPIC_API_KEY`
+   - `ANTHROPIC_MODEL`
+   - `LEAD_MESSAGE_WEBHOOK_URL`
+   - `LEAD_MESSAGE_WEBHOOK_SECRET`
+   - `GROK_BOT_API_KEY` (optional alias for the webhook secret)
+   - `NEXT_PUBLIC_SITE_URL` (production URL for magic-link redirects)
 4. Set `ALLOWED_EMAIL` last — the deck stays public demo until URL + anon + email are all present.
-5. Add `NEXT_PUBLIC_SITE_URL` as the production URL so magic links redirect home.
 
 ## Hard rules
 

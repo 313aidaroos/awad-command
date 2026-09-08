@@ -157,14 +157,16 @@ export const useCommandStore = create<CommandState & CommandActions>((set, get) 
   setVoiceMuted: (muted) => set({ voiceMuted: muted }),
   tick: (dt) =>
     set((state) => {
+      let changed = false;
       const projectsNext = { ...state.projects };
       for (const [slug, runtime] of Object.entries(projectsNext)) {
         const floor = runtime.status === 'idle' ? 0.12 : 0.15;
-        projectsNext[slug] = {
-          ...runtime,
-          activity: Math.max(floor, runtime.activity - 0.03 * dt),
-        };
+        const next = Math.max(floor, runtime.activity - 0.03 * dt);
+        if (next !== runtime.activity) {
+          changed = true;
+          projectsNext[slug] = { ...runtime, activity: next };
+        }
       }
-      return { projects: projectsNext };
+      return changed ? { projects: projectsNext } : state;
     }),
 }));
