@@ -7,8 +7,9 @@ export function detectQuality(): QualityLevel {
   const cores = navigator.hardwareConcurrency ?? 4;
   const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
   const mobile = window.matchMedia('(max-width: 768px)').matches;
+  const coarse = window.matchMedia('(pointer: coarse)').matches;
   const lowMemory = typeof memory === 'number' && memory <= 4;
-  if (mobile) return 'low';
+  if (mobile && coarse) return 'low';
   if (cores <= 4 || lowMemory) return 'medium';
   if (cores <= 8) return 'medium';
   return 'high';
