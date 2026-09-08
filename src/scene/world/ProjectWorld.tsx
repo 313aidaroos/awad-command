@@ -9,7 +9,24 @@ import { ContraxisInterior } from '@/scene/world/ContraxisInterior';
 import { WorldChamber } from '@/scene/world/WorldChamber';
 import { WorldHorizon } from '@/scene/world/WorldHorizon';
 import { WorldNodeMesh } from '@/scene/world/WorldNodeMesh';
+import { ChassisMaterial } from '@/scene/materials/ChassisMaterial';
+import { SilverMaterial } from '@/scene/materials/SilverMaterial';
 import { useCommandStore } from '@/store/useCommandStore';
+
+function QuietNave() {
+  return (
+    <group position={[4.2, -1.2, 0]}>
+      <mesh>
+        <boxGeometry args={[1.6, 3.2, 0.7]} />
+        <ChassisMaterial roughness={0.48} />
+      </mesh>
+      <mesh position={[0, 0.55, 0.36]}>
+        <boxGeometry args={[0.32, 0.016, 0.012]} />
+        <SilverMaterial roughness={0.22} />
+      </mesh>
+    </group>
+  );
+}
 
 export function ProjectWorld() {
   const group = useRef<THREE.Group>(null);
@@ -33,13 +50,13 @@ export function ProjectWorld() {
       <group ref={group} scale={0.001} visible={false}>
         <WorldChamber />
         <WorldHorizon />
-        {project.slug === 'contraxis' ? <ContraxisInterior /> : null}
+        {project.slug === 'contraxis' ? <ContraxisInterior /> : <QuietNave />}
         {project.agents.map((agent) => (
           <AgentEntity key={agent.id} agent={agent} nodes={project.nodes} />
         ))}
-        {project.nodes.map((node) => (
-          <WorldNodeMesh key={node.id} node={node} accent={project.accent} />
-        ))}
+        {project.slug === 'contraxis'
+          ? project.nodes.map((node) => <WorldNodeMesh key={node.id} node={node} accent={project.accent} />)
+          : null}
       </group>
     </group>
   );

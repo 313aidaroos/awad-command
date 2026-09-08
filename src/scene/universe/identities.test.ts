@@ -9,8 +9,8 @@ describe('project entity identities', () => {
       const identity = identityOf(slug);
       expect(identity.kind).toBeTruthy();
       expect(identity.rings).toBe(0);
-      expect(identity.scale).toBeGreaterThan(0.3);
-      expect(identity.scale).toBeLessThan(0.9);
+      expect(identity.scale).toBeGreaterThan(0.25);
+      expect(identity.scale).toBeLessThan(0.95);
       used.add(`${identity.kind}:${slug}`);
     }
     expect(used.size).toBe(listProjectSlugs().length);

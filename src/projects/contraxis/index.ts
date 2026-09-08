@@ -34,7 +34,7 @@ export const contraxis = defineProject({
   name: 'CONTRAXIS',
   tagline: 'Local lead marketplace for contractors',
   accent: '#3D8BFF',
-  universePosition: [13.6, -1.55, 15.4],
+  universePosition: [6.5, -1.84, 2.6],
   connections: [
     { to: 'socixis', kind: 'marketing' },
     { to: 'apixis', kind: 'technology' },
