@@ -2,7 +2,7 @@
 
 Private 3D AI command center for Awad (Apixis Dev). The universe **is** the UI — project worlds, not a card grid.
 
-Visual V2: each company is a distinct 3D entity (shell, silhouette, rings, particles) around a dominant AWAD CEO core. Click flies through the shell into the internal ecosystem. Contraxis is the showcase world — Customer → Lead Gen → Qualification → Database → Matching → Sales → Contractor → Job → Revenue — with moving agents and a Follow path. Safari now renders the canvas (postprocessing stays off on WebKit).
+Visual V3: royalty-free **GLTF kitbash** (Kenney Modular Space Kit, Kenney Space Kit, Quaternius MegaKit — all CC0). Plaza vessels are distinct authored models on a metal deck; the CEO is a multi-part rocket/dish assembly; Contraxis enter cuts into a sealed facility dressed with desks, servers, pipes. Almost no orbit lines. Safari still renders the canvas (postprocessing stays off on WebKit). Asset licenses: [public/models/LICENSE.md](public/models/LICENSE.md). Preview at `?quality=medium`.
 
 Mood reference (not app code): [public/awad-command-preview.html](public/awad-command-preview.html)  
 Master handoff: [docs/MASTER_HANDOFF.md](docs/MASTER_HANDOFF.md)

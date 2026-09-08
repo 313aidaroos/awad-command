@@ -1,9 +1,10 @@
 'use client';
 
-import { useMemo, useRef } from 'react';
+import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
+import { KitModel } from '@/scene/kit/KitModel';
 import { agentLocalPosition, agentTravelEndpoints } from '@/scene/lib/agentMotion';
 import { pointerGate } from '@/scene/lib/pointer';
 import { STATUS_COLOR } from '@/scene/universe/statusColor';
@@ -44,7 +45,6 @@ export function AgentEntity({
   const workforce = useCommandStore((s) => s.mode === 'workforce');
   const status = state?.status ?? 'idle';
   const color = AGENT_TINT[status];
-  const glow = useMemo(() => new THREE.Color(color), [color]);
 
   useFrame(() => {
     if (!group.current) return;
@@ -89,7 +89,8 @@ export function AgentEntity({
         <meshBasicMaterial color={color} transparent opacity={0.42} />
       </mesh>
       <group ref={group} position={agent.homePosition}>
-        <mesh
+        <group
+          scale={0.55}
           onClick={(e) => {
             e.stopPropagation();
             if (pointerGate.suppressClick) return;
@@ -102,15 +103,8 @@ export function AgentEntity({
             document.body.style.cursor = 'grab';
           }}
         >
-          <coneGeometry args={[0.22, 0.64, 12]} />
-          <meshStandardMaterial
-            color={color}
-            metalness={0.55}
-            roughness={0.16}
-            emissive={glow}
-            emissiveIntensity={following || status === 'working' ? 0.82 : 0.28}
-          />
-        </mesh>
+          <KitModel name={agent.name.includes('Sales') ? 'astronautB' : 'astronautA'} metalize tint={color} />
+        </group>
         <pointLight color={color} intensity={following || status === 'working' ? 1.1 : 0.35} distance={3.4} />
         <mesh ref={t0} visible={false}>
           <sphereGeometry args={[0.09, 8, 8]} />

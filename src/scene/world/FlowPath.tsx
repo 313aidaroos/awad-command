@@ -31,7 +31,7 @@ export function FlowPath({ project, flow }: { project: ProjectDefinition; flow: 
   return (
     <mesh>
       <tubeGeometry args={[curve, tubular, quality === 'low' ? 0.028 : 0.032, radial, false]} />
-      <GlassMaterial accent={project.accent} opacity={0.32} emissive={0.04} />
+      <GlassMaterial accent={project.accent} opacity={0.16} emissive={0.02} />
     </mesh>
   );
 }

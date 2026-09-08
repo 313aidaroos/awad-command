@@ -82,13 +82,13 @@ export const useCommandStore = create<CommandState & CommandActions>((set, get) 
   enterProject: (slug) => {
     const project = getProject(slug);
     if (!project) return;
-    const sequence = projectEnterSequence(project.universePosition);
+    const sequence = projectEnterSequence(project.universePosition, slug);
     set({
       view: 'project',
       focusedProject: slug,
       focusedAgent: undefined,
       followingAgent: undefined,
-      enterPhase: 'approach',
+      enterPhase: sequence[0]?.phase ?? 'interior',
       contextPanel: 'none',
       camera: cameraFrom(sequence, get().camera.requestId + 1),
     });
@@ -121,7 +121,7 @@ export const useCommandStore = create<CommandState & CommandActions>((set, get) 
       followingAgent: undefined,
       contextPanel: 'none',
       enterPhase: 'interior',
-      camera: cameraFrom([projectInteriorCam(project.universePosition)], get().camera.requestId + 1),
+      camera: cameraFrom([projectInteriorCam(project.universePosition, slug)], get().camera.requestId + 1),
     });
   },
 

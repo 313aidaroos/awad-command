@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type ComponentType, type CSSProperties } from 'react';
+import { Suspense, useEffect, useState, type ComponentType, type CSSProperties } from 'react';
 import { Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { WebGLRenderer } from 'three';
@@ -9,11 +9,13 @@ import { CameraRig } from '@/scene/CameraRig';
 import { Lighting } from '@/scene/Environment/Lighting';
 import { StudioEnvironment } from '@/scene/Environment/StudioEnvironment';
 import { Starfield } from '@/scene/Environment/Starfield';
+import { preloadCommandKit } from '@/scene/kit/preload';
+import { UNIVERSE_ZOOM } from '@/scene/lib/cameraPaths';
 import { Universe } from '@/scene/universe/Universe';
 import { ProjectWorld } from '@/scene/world/ProjectWorld';
 import { useCommandStore } from '@/store/useCommandStore';
 
-const CAMERA_INIT = { position: [0, 9, 42] as [number, number, number], fov: 40, near: 0.1, far: 420 };
+const CAMERA_INIT = { position: [0, 3.15, UNIVERSE_ZOOM] as [number, number, number], fov: 40, near: 0.1, far: 220 };
 const GL_INIT = {
   antialias: true,
   alpha: false,
@@ -30,7 +32,7 @@ const DPR_HIGH: [number, number] = [1, 2];
 function handleCreated({ gl }: { gl: WebGLRenderer }) {
   gl.setClearColor('#07080A', 1);
   gl.toneMapping = THREE.ACESFilmicToneMapping;
-  gl.toneMappingExposure = 1.16;
+  gl.toneMappingExposure = 1.12;
   gl.outputColorSpace = THREE.SRGBColorSpace;
   gl.domElement.addEventListener(
     'webglcontextlost',
@@ -39,6 +41,7 @@ function handleCreated({ gl }: { gl: WebGLRenderer }) {
     },
     false,
   );
+  preloadCommandKit();
 }
 
 export function CommandCanvas() {
@@ -46,7 +49,6 @@ export function CommandCanvas() {
   const safari = isSafariLike();
   const dpr = safari || level === 'low' ? DPR_LOW : level === 'medium' ? DPR_MED : DPR_HIGH;
   const [Gate, setGate] = useState<ComponentType | null>(null);
-  // Safari still mounts the universe; only EffectComposer stays off.
 
   useEffect(() => {
     if (safari) {
@@ -68,6 +70,7 @@ export function CommandCanvas() {
 
   return (
     <Canvas
+      shadows
       camera={CAMERA_INIT}
       dpr={dpr}
       gl={GL_INIT}
@@ -75,12 +78,14 @@ export function CommandCanvas() {
       onCreated={handleCreated}
       style={CANVAS_STYLE}
     >
-      <fog attach="fog" args={['#07080A', 26, 92]} />
+      <fog attach="fog" args={['#07080A', 22, 48]} />
       <Lighting />
       <StudioEnvironment />
       <Starfield />
-      <Universe />
-      <ProjectWorld />
+      <Suspense fallback={null}>
+        <Universe />
+        <ProjectWorld />
+      </Suspense>
       <CameraRig />
       {safari || !Gate ? null : <Gate />}
     </Canvas>

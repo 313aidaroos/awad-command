@@ -5,6 +5,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { agentWorldPosition } from '@/scene/lib/agentMotion';
 import { FOLLOW_BACK, FOLLOW_LIFT, FOLLOW_SIDE, followCorrections } from '@/scene/lib/followFraming';
+import { UNIVERSE_ZOOM } from '@/scene/lib/cameraPaths';
 import { pointerGate } from '@/scene/lib/pointer';
 import { getProject } from '@/projects/registry';
 import { useCommandStore } from '@/store/useCommandStore';
@@ -19,9 +20,9 @@ export function CameraRig() {
   const gl = useThree((s) => s.gl);
   const look = useRef(new THREE.Vector3());
   const lookT = useRef(new THREE.Vector3());
-  const posT = useRef(new THREE.Vector3(0, 8, 38));
+  const posT = useRef(new THREE.Vector3(0, 3.15, UNIVERSE_ZOOM));
   const follow = useRef(new THREE.Vector3());
-  const rot = useRef({ x: 0, y: 0, tx: 0, ty: 0, zoom: 42, tZoom: 42 });
+  const rot = useRef({ x: 0, y: 0, tx: 0, ty: 0, zoom: UNIVERSE_ZOOM, tZoom: UNIVERSE_ZOOM });
   const drag = useRef({ on: false, x: 0, y: 0, moved: 0, pan: false });
   const flying = useRef(false);
   const followBias = useRef(0);
@@ -35,7 +36,17 @@ export function CameraRig() {
     if (!target) return;
     posT.current.set(...target.position);
     lookT.current.set(...target.lookAt);
-    flying.current = true;
+    const hall = useCommandStore.getState().focusedProject === 'contraxis';
+    if (target.cut) {
+      camera.position.set(...target.position);
+      look.current.set(...target.lookAt);
+      flying.current = false;
+      if (hall) {
+        rot.current = { x: 0, y: 0, tx: 0, ty: 0, zoom: 2.2, tZoom: 2.2 };
+      }
+    } else {
+      flying.current = true;
+    }
     if (target.phase) useCommandStore.getState().setEnterPhase(target.phase);
     const id = window.setTimeout(() => {
       const state = useCommandStore.getState();
@@ -51,20 +62,21 @@ export function CameraRig() {
         const [lx, , lz] = target.lookAt;
         const dx = x - lx;
         const dz = z - lz;
-        rot.current.tZoom = Math.max(14, Math.min(24, Math.hypot(dx, dz)));
+        const inside = focus.slug === 'contraxis';
+        rot.current.tZoom = inside ? 2.2 : Math.max(6, Math.min(11, Math.hypot(dx, dz)));
         rot.current.zoom = rot.current.tZoom;
-        rot.current.ty = Math.atan2(dx, dz);
+        rot.current.ty = inside ? 0 : Math.atan2(dx, dz);
         rot.current.y = rot.current.ty;
-        rot.current.tx = Math.max(-0.45, Math.min(0.45, (y - focus.universePosition[1] - 2.2) / 5));
+        rot.current.tx = inside ? 0 : Math.max(-0.35, Math.min(0.35, (y - 2.2) / 5));
         rot.current.x = rot.current.tx;
       }
       if (state.view === 'universe') {
-        rot.current.tZoom = 42;
-        rot.current.zoom = 42;
+        rot.current.tZoom = UNIVERSE_ZOOM;
+        rot.current.zoom = UNIVERSE_ZOOM;
       }
     }, target.duration * 1000);
     return () => window.clearTimeout(id);
-  }, [requestId, target]);
+  }, [camera, requestId, target]);
 
   useEffect(() => {
     const el = gl.domElement;
@@ -103,8 +115,8 @@ export function CameraRig() {
     const wheel = (e: WheelEvent) => {
       if (flying.current || useCommandStore.getState().followingAgent) return;
       const projectView = useCommandStore.getState().view !== 'universe';
-      const min = projectView ? 12 : 24;
-      const max = projectView ? 28 : 58;
+      const min = projectView ? 6 : 9;
+      const max = projectView ? 14 : 18;
       rot.current.tZoom = Math.max(min, Math.min(max, rot.current.tZoom + e.deltaY * 0.02));
     };
     el.addEventListener('pointerdown', down);
@@ -133,8 +145,9 @@ export function CameraRig() {
 
     if (followed && project) {
       flying.current = false;
-      agentWorldPosition(project.universePosition, followed, state.agents[followed.id], project.nodes, Date.now(), follow.current);
-      _core.set(...project.universePosition);
+      const origin: [number, number, number] = [0, 0, 0];
+      agentWorldPosition(origin, followed, state.agents[followed.id], project.nodes, Date.now(), follow.current);
+      _core.set(...origin);
       _away.copy(follow.current).sub(_core);
       _away.y = 0;
       if (_away.lengthSq() < 0.25) _away.set(1, 0, 1);
@@ -164,15 +177,19 @@ export function CameraRig() {
       wasFollow.current = false;
       followBias.current = 0;
       followDrop.current = 0;
-      posT.current.set(Math.sin(r.y) * r.zoom, 9 + r.x * 8, Math.cos(r.y) * r.zoom);
-      lookT.current.set(0, 0, 0);
+      posT.current.set(Math.sin(r.y) * r.zoom, 3.15 + r.x * 1.7, Math.cos(r.y) * r.zoom);
+      lookT.current.set(0, 1.15, 0);
     } else if (project && !flying.current && view !== 'universe') {
       wasFollow.current = false;
       followBias.current = 0;
       followDrop.current = 0;
-      const [cx, cy, cz] = project.universePosition;
-      posT.current.set(cx + Math.sin(r.y) * r.zoom, cy + 4.6 + r.x * 5.2, cz + Math.cos(r.y) * r.zoom);
-      lookT.current.set(cx, cy, cz);
+      if (project.slug === 'contraxis') {
+        posT.current.set(-6.55 + Math.sin(r.y) * 0.7, 2.05 + r.x * 0.4, 2.35 + Math.cos(r.y) * 0.4);
+        lookT.current.set(3.8, 1.05, 0);
+      } else {
+        posT.current.set(Math.sin(r.y) * r.zoom, 2.2 + r.x * 1.4, Math.cos(r.y) * r.zoom);
+        lookT.current.set(0, 0.85, 0);
+      }
     } else {
       wasFollow.current = false;
       followBias.current = 0;

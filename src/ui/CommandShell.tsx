@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ComponentType } from 'react';
 import { startDataLayer, stopDataLayer } from '@/data';
-import { detectQuality } from '@/lib/quality';
+import { detectQuality, qualityFromSearch } from '@/lib/quality';
 import { isWebGLAvailable } from '@/lib/webgl';
 import { AdaptiveQuality } from '@/ui/AdaptiveQuality';
 import { AgentFollowHud } from '@/ui/AgentFollowHud';
@@ -34,7 +34,8 @@ export function CommandShell() {
     const available = isWebGLAvailable();
     setWebgl(available);
     setCanvasEnabled(true);
-    useCommandStore.getState().setQuality(detectQuality(), true);
+    const forced = qualityFromSearch();
+    useCommandStore.getState().setQuality(forced ?? detectQuality(), !forced);
     if (available) {
       void import('@/ui/EnabledCanvas')
         .then((mod) => {

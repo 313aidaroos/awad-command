@@ -8,7 +8,9 @@ import { particleCount } from '@/lib/quality';
 
 export function Starfield() {
   const level = useCommandStore((s) => s.quality.level);
-  const count = particleCount(level, 2800, 1600, 700);
+  const enterPhase = useCommandStore((s) => s.enterPhase);
+  const count = particleCount(level, 420, 260, 140);
+  const visible = enterPhase === 'universe' || enterPhase === 'approach';
 
   const geo = useMemo(() => {
     const positions = new Float32Array(count * 3);
@@ -60,5 +62,6 @@ export function Starfield() {
     material.uniforms.uOp.value = Math.min(1, (material.uniforms.uOp.value as number) + dt * 0.4);
   });
 
+  if (!visible) return null;
   return <points geometry={geo} material={material} />;
 }

@@ -1,28 +1,28 @@
 import { baseMetrics, defineProject, makeAgents, makeNodes, simpleFlow } from '@/projects/factory';
 
 const agents = makeAgents('contraxis', [
-  { name: 'CEO Agent', role: 'Lead', objective: 'Steer Contraxis', tools: ['brief', 'approve'], position: [0, 2.4, 0] },
-  { name: 'Sales Agent', role: 'Sales', objective: 'Win contractor jobs', tools: ['email', 'crm'], position: [4.6, 1.1, 0.2] },
-  { name: 'Lead Generation Agent', role: 'Leads', objective: 'Capture inbound work', tools: ['forms'], position: [-5.0, 0.9, 0.5] },
-  { name: 'Marketing Agent', role: 'Marketing', objective: 'Local demand', tools: ['ads'], position: [-8.2, 1.6, 1.6] },
-  { name: 'SEO Agent', role: 'SEO', objective: 'Rank service pages', tools: ['search'], position: [-2.4, 0.55, -0.6] },
-  { name: 'Customer Support Agent', role: 'Support', objective: 'Keep jobs moving', tools: ['inbox'], position: [5.6, -1.1, 2.0] },
-  { name: 'Analytics Agent', role: 'Analytics', objective: 'Conversion truth', tools: ['metrics'], position: [0.3, -0.1, 0.4] },
-  { name: 'Product Agent', role: 'Product', objective: 'Marketplace UX', tools: ['tickets'], position: [2.3, 0.7, 1.5] },
-  { name: 'Development Agent', role: 'Engineering', objective: 'Ship safely', tools: ['deploy'], position: [0.2, -2.6, -2.2] },
-  { name: 'Research Agent', role: 'Research', objective: 'Trade intel', tools: ['web'], position: [3.2, 2.5, -2.0] },
+  { name: 'CEO Agent', role: 'Lead', objective: 'Steer Contraxis', tools: ['brief', 'approve'], position: [0.2, 0, 0.55] },
+  { name: 'Sales Agent', role: 'Sales', objective: 'Win contractor jobs', tools: ['email', 'crm'], position: [3.4, 0, 0.7] },
+  { name: 'Lead Generation Agent', role: 'Leads', objective: 'Capture inbound work', tools: ['forms'], position: [-5.2, 0, 0.65] },
+  { name: 'Marketing Agent', role: 'Marketing', objective: 'Local demand', tools: ['ads'], position: [-7.2, 0, 1.15] },
+  { name: 'SEO Agent', role: 'SEO', objective: 'Rank service pages', tools: ['search'], position: [-3.2, 0, -0.85] },
+  { name: 'Customer Support Agent', role: 'Support', objective: 'Keep jobs moving', tools: ['inbox'], position: [5.4, 0, 3.6] },
+  { name: 'Analytics Agent', role: 'Analytics', objective: 'Conversion truth', tools: ['metrics'], position: [-1.0, 0, 0.7] },
+  { name: 'Product Agent', role: 'Product', objective: 'Marketplace UX', tools: ['tickets'], position: [1.2, 0, -0.75] },
+  { name: 'Development Agent', role: 'Engineering', objective: 'Ship safely', tools: ['deploy'], position: [5.4, 0, -3.6] },
+  { name: 'Research Agent', role: 'Research', objective: 'Trade intel', tools: ['web'], position: [3.4, 0, -1.4] },
 ]);
 
 const nodes = makeNodes('contraxis', [
-  { label: 'Customers', kind: 'source', position: [-8.6, 1.5, 1.9] },
-  { label: 'Lead Gen', kind: 'system', position: [-5.2, 0.75, 0.45] },
-  { label: 'Qualification', kind: 'system', position: [-2.2, 0.25, -0.85] },
-  { label: 'Database', kind: 'system', position: [0.15, -0.45, 0.15] },
-  { label: 'Matching', kind: 'system', position: [2.45, 0.45, 1.45] },
-  { label: 'Sales', kind: 'system', position: [4.85, 0.95, 0.1] },
-  { label: 'Contractor', kind: 'source', position: [7.7, 0.35, -1.55] },
-  { label: 'Job', kind: 'system', position: [5.85, -1.35, 2.15] },
-  { label: 'Revenue', kind: 'sink', position: [2.15, -2.15, 3.35] },
+  { label: 'Customers', kind: 'source', position: [-7.2, 0, 0] },
+  { label: 'Lead Gen', kind: 'system', position: [-5.2, 0, 0.15] },
+  { label: 'Qualification', kind: 'system', position: [-3.2, 0, -0.2] },
+  { label: 'Database', kind: 'system', position: [-1.0, 0, 0] },
+  { label: 'Matching', kind: 'system', position: [1.2, 0, 0.15] },
+  { label: 'Sales', kind: 'system', position: [3.4, 0, 0] },
+  { label: 'Contractor', kind: 'source', position: [5.4, 0, -4.2] },
+  { label: 'Job', kind: 'system', position: [5.4, 0, 4.2] },
+  { label: 'Revenue', kind: 'sink', position: [7.4, 0, 0] },
 ]);
 
 const byLabel = (label: string) => nodes.find((node) => node.label === label);
@@ -34,7 +34,7 @@ export const contraxis = defineProject({
   name: 'CONTRAXIS',
   tagline: 'Local lead marketplace for contractors',
   accent: '#3D8BFF',
-  universePosition: [11.2, -0.7, 12.4],
+  universePosition: [8.4, 0, 3.15],
   connections: [
     { to: 'socixis', kind: 'marketing' },
     { to: 'apixis', kind: 'technology' },

@@ -1,19 +1,32 @@
 'use client';
 
-import { Environment, Lightformer } from '@react-three/drei';
+import { useLayoutEffect } from 'react';
+import { useThree } from '@react-three/fiber';
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { useCommandStore } from '@/store/useCommandStore';
 
-/** One-shot studio lights so clearcoat glass has something to reflect. Off on LOW. */
+/** Local RoomEnvironment probe — no CDN HDR. Metals/glass need this to spec. */
 export function StudioEnvironment() {
+  const { gl, scene } = useThree();
   const level = useCommandStore((s) => s.quality.level);
-  if (level === 'low') return null;
-  return (
-    <Environment resolution={level === 'high' ? 256 : 176} frames={1} environmentIntensity={1.02}>
-      <Lightformer intensity={6.4} position={[3, 13, 5]} scale={[3.2, 1.1, 1]} color="#ffffff" />
-      <Lightformer intensity={4.2} position={[5, 10, 6]} scale={[14, 8, 1]} color="#f7f9fc" />
-      <Lightformer intensity={2.4} position={[-8, 5, 3]} scale={[6, 10, 1]} color="#ffffff" />
-      <Lightformer intensity={1.55} position={[8, 2, -8]} scale={[10, 4, 1]} color="#3D8BFF" />
-      <Lightformer intensity={1} position={[0, -7, 5]} scale={[16, 4, 1]} color="#c5ccd6" />
-    </Environment>
-  );
+
+  useLayoutEffect(() => {
+    if (level === 'low') {
+      scene.environment = null;
+      return;
+    }
+    const pmrem = new THREE.PMREMGenerator(gl);
+    const room = new RoomEnvironment();
+    const tex = pmrem.fromScene(room, 0.04).texture;
+    scene.environment = tex;
+    room.dispose();
+    return () => {
+      if (scene.environment === tex) scene.environment = null;
+      tex.dispose();
+      pmrem.dispose();
+    };
+  }, [gl, level, scene]);
+
+  return null;
 }

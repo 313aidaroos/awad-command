@@ -1,37 +1,40 @@
-export type SilhouetteKind =
-  | 'lattice'
-  | 'crystal'
-  | 'rings'
-  | 'octa'
-  | 'monolith'
-  | 'constellation'
-  | 'icosa'
-  | 'folios'
-  | 'reel'
-  | 'soft'
-  | 'vessel';
+export type VesselKind = 'hangarCargo' | 'glassNet' | 'miner' | 'botStack' | 'racerPad' | 'speeder' | 'cargoDock';
 
 export interface EntityIdentity {
-  kind: SilhouetteKind;
-  rings: number;
+  kind: VesselKind;
   scale: number;
-  core: number;
+  plaza: boolean;
+  plazaPosition?: [number, number, number];
 }
 
 const IDENTITIES: Record<string, EntityIdentity> = {
-  contraxis: { kind: 'lattice', rings: 3, scale: 1.32, core: 0.28 },
-  apixis: { kind: 'crystal', rings: 0, scale: 1.22, core: 0.22 },
-  lyrixis: { kind: 'rings', rings: 0, scale: 1.18, core: 0.18 },
-  halaxis: { kind: 'octa', rings: 0, scale: 1.28, core: 0.2 },
-  rawixis: { kind: 'monolith', rings: 0, scale: 1.26, core: 0.16 },
-  socixis: { kind: 'constellation', rings: 0, scale: 1.2, core: 0.14 },
-  awadbot: { kind: 'icosa', rings: 1, scale: 1.2, core: 0.24 },
-  publishing: { kind: 'folios', rings: 0, scale: 1.16, core: 0.12 },
-  studios: { kind: 'reel', rings: 0, scale: 1.18, core: 0.2 },
-  'nursery-toons': { kind: 'soft', rings: 0, scale: 1.08, core: 0.28 },
-  qahwahworld: { kind: 'vessel', rings: 0, scale: 1.1, core: 0.16 },
+  contraxis: { kind: 'hangarCargo', scale: 1, plaza: true, plazaPosition: [8.4, 0, 3.15] },
+  socixis: { kind: 'glassNet', scale: 1, plaza: true, plazaPosition: [-8.4, 0, 3.15] },
+  rawixis: { kind: 'miner', scale: 1, plaza: true, plazaPosition: [6.6, 0, -6.4] },
+  awadbot: { kind: 'botStack', scale: 1, plaza: true, plazaPosition: [0, 0, -8.35] },
+  apixis: { kind: 'racerPad', scale: 1, plaza: true, plazaPosition: [-6.6, 0, -6.4] },
+  lyrixis: { kind: 'speeder', scale: 1, plaza: true, plazaPosition: [10.4, 0, -2.1] },
+  halaxis: { kind: 'cargoDock', scale: 1, plaza: true, plazaPosition: [-10.4, 0, -2.1] },
+  publishing: { kind: 'speeder', scale: 0.85, plaza: false },
+  studios: { kind: 'racerPad', scale: 0.85, plaza: false },
+  'nursery-toons': { kind: 'botStack', scale: 0.8, plaza: false },
+  qahwahworld: { kind: 'cargoDock', scale: 0.8, plaza: false },
 };
 
 export function identityOf(slug: string): EntityIdentity {
-  return IDENTITIES[slug] ?? { kind: 'soft', rings: 0, scale: 1, core: 0.22 };
+  return IDENTITIES[slug] ?? { kind: 'botStack', scale: 0.85, plaza: false };
+}
+
+export function listedIdentities(): Record<string, EntityIdentity> {
+  return IDENTITIES;
+}
+
+export function plazaSlugs(): string[] {
+  return Object.entries(IDENTITIES)
+    .filter(([, id]) => id.plaza)
+    .map(([slug]) => slug);
+}
+
+export function onPlaza(slug: string): boolean {
+  return identityOf(slug).plaza;
 }

@@ -1,92 +1,55 @@
 'use client';
 
-import { useMemo, useRef } from 'react';
+import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { requestCeoOpen } from '@/lib/ceoBridge';
-import { particleCount } from '@/lib/quality';
-import { GlassMaterial } from '@/scene/materials/GlassMaterial';
-import { OrbCore } from '@/scene/universe/OrbCore';
+import { KitModel } from '@/scene/kit/KitModel';
 import { FloatingLabel } from '@/scene/ui/FloatingLabel';
 import { WorldName } from '@/scene/ui/WorldName';
 import { useCommandStore } from '@/store/useCommandStore';
 
+/** Multi-part GLTF command core — rocket stack + dishes + hangar ring. Not a drum. */
 export function CeoCore() {
   const spin = useRef<THREE.Group>(null);
-  const pulse = useRef<THREE.Mesh>(null);
   const focused = useCommandStore((s) => s.focusedProject);
-  const quality = useCommandStore((s) => s.quality.level);
   const flyTo = useCommandStore((s) => s.flyTo);
 
-  const halo = useMemo(() => {
-    const n = particleCount(quality, 260, 160, 90);
-    const positions = new Float32Array(n * 3);
-    for (let i = 0; i < n; i += 1) {
-      const th = Math.random() * Math.PI * 2;
-      const ph = Math.acos(2 * Math.random() - 1);
-      const rr = 1.15 + Math.random() * 0.85;
-      positions.set(
-        [rr * Math.sin(ph) * Math.cos(th), rr * Math.sin(ph) * Math.sin(th) * 0.72, rr * Math.cos(ph)],
-        i * 3,
-      );
-    }
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    return geo;
-  }, [quality]);
-
-  useFrame((state, dt) => {
-    if (spin.current) {
-      spin.current.rotation.y += dt * 0.12;
-      spin.current.rotation.x += dt * 0.045;
-    }
-    if (pulse.current) {
-      const s = 1.05 + Math.sin(state.clock.elapsedTime * 0.7) * 0.035;
-      pulse.current.scale.setScalar(s);
-    }
+  useFrame((_, dt) => {
+    if (spin.current) spin.current.rotation.y += dt * 0.08;
   });
 
   if (focused) return null;
 
   return (
-    <group>
-      <OrbCore
-        accent="#dfe4ee"
-        status="operational"
-        activity={0.62}
-        hovered={false}
-        radius={0.88}
-        onClick={() => {
-          flyTo({ position: [0, 3.2, 11], lookAt: [0, 0, 0], duration: 1.2, phase: 'universe' });
-          requestCeoOpen();
-        }}
-      />
+    <group
+      onClick={(e) => {
+        e.stopPropagation();
+        flyTo({ position: [0, 3.15, 11], lookAt: [0, 1.2, 0], duration: 1.1, phase: 'universe' });
+        requestCeoOpen();
+      }}
+      onPointerOver={() => {
+        document.body.style.cursor = 'pointer';
+      }}
+      onPointerOut={() => {
+        document.body.style.cursor = 'grab';
+      }}
+    >
+      <KitModel name="rocketBase" metalize tint="#c9ced6" scale={2.35} />
+      <KitModel name="rocketFuel" metalize tint="#d5dae2" position={[0, 1.55, 0]} scale={2.15} />
+      <KitModel name="rocketSides" metalize tint="#b7bdc6" position={[0, 0.35, 0]} scale={2.2} />
+      <KitModel name="rocketFins" metalize tint="#3D8BFF" position={[0, 0.15, 0]} scale={2.25} />
+      <KitModel name="rocketTop" metalize tint="#e6e8ec" position={[0, 3.15, 0]} scale={2.05} />
       <group ref={spin}>
-        <mesh>
-          <icosahedronGeometry args={[1.38, quality === 'low' ? 0 : 1]} />
-          <GlassMaterial accent="#E6E8EC" opacity={0.34} emissive={0.08} />
-        </mesh>
-        <mesh>
-          <octahedronGeometry args={[0.58, 0]} />
-          <GlassMaterial accent="#E6E8EC" opacity={0.72} emissive={0.14} />
-        </mesh>
+        <KitModel name="hangarRoundGlass" metalize tint="#9aa7b8" position={[0, 1.85, 0]} scale={3.4} />
+        <KitModel name="dishDetailed" metalize tint="#dfe4ee" position={[1.85, 2.35, 0.15]} scale={1.55} rotation={[0.35, 0.4, 0]} />
+        <KitModel name="dish" metalize tint="#cfd6e0" position={[-1.55, 2.15, 1.05]} scale={1.45} rotation={[0.2, -0.8, 0]} />
+        <KitModel name="dishLarge" metalize tint="#d7dce4" position={[-0.15, 2.55, -1.7]} scale={1.35} rotation={[0.15, 2.4, 0]} />
       </group>
-      <mesh ref={pulse} rotation={[1.2, 0.2, 0.1]}>
-        <torusGeometry args={[2.05, 0.01, 10, 80]} />
-        <meshBasicMaterial color="#3D8BFF" transparent opacity={0.24} />
-      </mesh>
-      <mesh rotation={[0.4, 0.8, 1.1]}>
-        <torusGeometry args={[2.45, 0.007, 10, 80]} />
-        <meshBasicMaterial color="#9aa3b2" transparent opacity={0.14} />
-      </mesh>
-      <mesh rotation={[1.7, 0.3, 0]}>
-        <torusGeometry args={[2.85, 0.006, 10, 72]} />
-        <meshBasicMaterial color="#dfe4ee" transparent opacity={0.09} />
-      </mesh>
-      <points geometry={halo}>
-        <pointsMaterial color="#dfe4ee" size={0.028} transparent opacity={0.48} depthWrite={false} sizeAttenuation />
-      </points>
-      <FloatingLabel id="ceo-core" priority={4} maxDist={58} fadeFrom={36} position={[0, 2.05, 0]}>
+      <KitModel name="gateComplex" metalize tint="#8A909A" position={[0, 0, 2.15]} scale={1.8} />
+      <pointLight color="#e8edf4" intensity={2.4} distance={14} position={[0, 3.4, 1.2]} />
+      <pointLight color="#3D8BFF" intensity={0.55} distance={10} position={[0, 2.2, 0]} />
+      <FloatingLabel id="ceo-core" priority={4} maxDist={42} fadeFrom={28} position={[0, 4.55, 0]}>
         <WorldName primary>AWAD</WorldName>
       </FloatingLabel>
     </group>
