@@ -14,13 +14,18 @@ export interface Approval {
   resolvedBy?: string;
 }
 
+export type LeadMessageDirection = 'outbound' | 'inbound';
+export type LeadMessageStatus = 'queued' | 'delivered' | 'failed' | 'received';
+
 export interface LeadMessage {
   id: string;
   projectSlug: string;
   leadName: string;
   agentId: string;
   message: string;
-  status: 'queued' | 'delivered' | 'failed';
+  status: LeadMessageStatus;
   ts: number;
   error?: string;
+  /** Defaults to outbound when omitted (older client records). */
+  direction?: LeadMessageDirection;
 }

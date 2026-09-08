@@ -22,7 +22,8 @@ export type EventType =
   | 'flow.advanced'
   | 'lead.message.queued'
   | 'lead.message.delivered'
-  | 'lead.message.failed';
+  | 'lead.message.failed'
+  | 'lead.message.replied';
 
 export interface CommandEvent {
   id: string;
