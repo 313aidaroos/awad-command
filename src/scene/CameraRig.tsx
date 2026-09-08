@@ -18,9 +18,9 @@ const _ndc = new THREE.Vector3();
 export function CameraRig() {
   const camera = useThree((s) => s.camera);
   const gl = useThree((s) => s.gl);
-  const look = useRef(new THREE.Vector3());
-  const lookT = useRef(new THREE.Vector3());
-  const posT = useRef(new THREE.Vector3(0, 6.2, UNIVERSE_ZOOM));
+  const look = useRef(new THREE.Vector3(0, 2.15, 0));
+  const lookT = useRef(new THREE.Vector3(0, 2.15, 0));
+  const posT = useRef(new THREE.Vector3(0, 7.4, UNIVERSE_ZOOM));
   const follow = useRef(new THREE.Vector3());
   const rot = useRef({ x: 0, y: 0, tx: 0, ty: 0, zoom: UNIVERSE_ZOOM, tZoom: UNIVERSE_ZOOM });
   const drag = useRef({ on: false, x: 0, y: 0, moved: 0, pan: false });
@@ -177,8 +177,8 @@ export function CameraRig() {
       wasFollow.current = false;
       followBias.current = 0;
       followDrop.current = 0;
-      posT.current.set(Math.sin(r.y) * r.zoom, 6.2 + r.x * 2.4, Math.cos(r.y) * r.zoom);
-      lookT.current.set(0, 0.9, 0);
+      posT.current.set(Math.sin(r.y) * r.zoom, 7.4 + r.x * 2.4, Math.cos(r.y) * r.zoom);
+      lookT.current.set(0, 2.15, 0);
     } else if (project && !flying.current && view !== 'universe') {
       wasFollow.current = false;
       followBias.current = 0;

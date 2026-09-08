@@ -4,69 +4,76 @@ import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { requestCeoOpen } from '@/lib/ceoBridge';
-import { KitModel } from '@/scene/kit/KitModel';
+import { BrushedMetal } from '@/scene/materials/BrushedMetal';
 import { FloatingLabel } from '@/scene/ui/FloatingLabel';
 import { WorldName } from '@/scene/ui/WorldName';
 import { useCommandStore } from '@/store/useCommandStore';
 
-const STATIONS: Array<[number, number, number, number]> = [
-  [1.55, 0, 0.95, 1.15],
-  [-1.5, 0, 1.0, 1.12],
-  [0.1, 0, -1.65, 1.15],
-  [1.5, 0, -1.05, 1.0],
-  [-1.45, 0, -1.05, 1.0],
-  [0.1, 0, 1.7, 1.05],
-  [1.7, 0, 0.05, 0.95],
-  [-1.65, 0, 0.05, 0.95],
-];
+const FIN_COUNT = 10;
+const FINS = Array.from({ length: FIN_COUNT }, (_, i) => (i / FIN_COUNT) * Math.PI * 2);
 
-function IntelligenceHeart() {
-  const spin = useRef<THREE.Group>(null);
+function IntelligenceShell() {
+  const crown = useRef<THREE.Group>(null);
 
   useFrame((_, dt) => {
-    if (spin.current) spin.current.rotation.y += dt * 0.04;
+    if (crown.current) crown.current.rotation.y += dt * 0.035;
   });
 
   return (
-    <group position={[0, 1.15, 0]}>
-      <mesh position={[0.22, 0.18, -0.12]} rotation={[0.4, 0.6, 0.1]}>
-        <icosahedronGeometry args={[0.38, 0]} />
-        <meshPhysicalMaterial color="#1A1D22" metalness={0.9} roughness={0.4} envMapIntensity={0.35} />
+    <group>
+      <mesh position={[0, 0.16, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[1.85, 2.05, 0.32, 10]} />
+        <BrushedMetal color="#6E737C" roughness={0.38} />
       </mesh>
-      <mesh position={[-0.2, -0.08, 0.16]} rotation={[0.2, -0.5, 0.3]}>
-        <icosahedronGeometry args={[0.34, 0]} />
-        <meshPhysicalMaterial color="#2A2E35" metalness={0.88} roughness={0.36} envMapIntensity={0.35} />
+      <mesh position={[0, 2.05, 0]} castShadow>
+        <cylinderGeometry args={[1.05, 1.22, 3.55, 10]} />
+        <BrushedMetal color="#4A4F56" roughness={0.36} />
       </mesh>
-      <mesh rotation={[0.15, 0.4, 0.05]}>
-        <icosahedronGeometry args={[0.78, 0]} />
-        <meshPhysicalMaterial color="#3A3F47" metalness={0.86} roughness={0.34} envMapIntensity={0.38} />
-      </mesh>
-      <mesh rotation={[-0.2, 0.8, 0.15]}>
-        <icosahedronGeometry args={[1.05, 0]} />
-        <meshPhysicalMaterial
-          color="#8A909A"
-          metalness={0.8}
-          roughness={0.22}
-          transparent
-          opacity={0.16}
-          envMapIntensity={0.4}
-        />
-      </mesh>
-      <group ref={spin}>
-        <mesh rotation={[1.25, 0.1, 0.06]}>
-          <torusGeometry args={[1.28, 0.012, 8, 72]} />
-          <meshPhysicalMaterial color="#6E737C" metalness={0.84} roughness={0.28} envMapIntensity={0.35} />
+      {FINS.map((a) => (
+        <mesh key={a} position={[Math.sin(a) * 1.28, 2.15, Math.cos(a) * 1.28]} rotation={[0, a, 0]} castShadow>
+          <boxGeometry args={[0.14, 3.7, 0.92]} />
+          <BrushedMetal color="#8A909A" roughness={0.3} />
         </mesh>
-        <mesh rotation={[0.35, 1.15, 0.3]}>
-          <torusGeometry args={[1.12, 0.009, 8, 64]} />
-          <meshPhysicalMaterial color="#4A4F56" metalness={0.82} roughness={0.32} envMapIntensity={0.32} />
+      ))}
+      <mesh position={[0, 1.35, 0]}>
+        <torusGeometry args={[1.38, 0.07, 10, 40]} />
+        <BrushedMetal color="#C5CAD3" roughness={0.24} />
+      </mesh>
+      <mesh position={[0, 2.85, 0]}>
+        <torusGeometry args={[1.22, 0.055, 10, 40]} />
+        <BrushedMetal color="#A8AEB6" roughness={0.26} />
+      </mesh>
+      <mesh position={[0, 1.35, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[1.38, 0.012, 8, 48]} />
+        <meshStandardMaterial color="#3D8BFF" emissive="#3D8BFF" emissiveIntensity={0.55} toneMapped={false} />
+      </mesh>
+      <mesh position={[0, 2.85, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[1.22, 0.01, 8, 48]} />
+        <meshStandardMaterial color="#3D8BFF" emissive="#3D8BFF" emissiveIntensity={0.4} toneMapped={false} />
+      </mesh>
+      <group ref={crown} position={[0, 4.15, 0]}>
+        <mesh castShadow>
+          <cylinderGeometry args={[0.72, 1.05, 0.85, 10]} />
+          <BrushedMetal color="#9AA0A8" roughness={0.28} />
         </mesh>
+        <mesh position={[0, 0.62, 0]} castShadow>
+          <octahedronGeometry args={[0.62, 0]} />
+          <BrushedMetal color="#C5CAD3" roughness={0.22} />
+        </mesh>
+        {FINS.filter((_, i) => i % 2 === 0).map((a) => (
+          <mesh key={`c-${a}`} position={[Math.sin(a) * 0.82, 0.15, Math.cos(a) * 0.82]} rotation={[0.35, a, 0]}>
+            <boxGeometry args={[0.08, 0.55, 0.42]} />
+            <BrushedMetal color="#8A909A" roughness={0.3} />
+          </mesh>
+        ))}
       </group>
+      <pointLight color="#D7DCE4" intensity={0.55} distance={12} position={[1.6, 4.4, 2.2]} />
+      <pointLight color="#3D8BFF" intensity={0.18} distance={7} position={[0, 2.4, 0]} />
     </group>
   );
 }
 
-/** Dense console pit around a faceted graphite cluster. Not a lamp, drum, or scaffold. */
+/** Large graphite/silver intelligence core. Focal mass from across the plaza. */
 export function CeoCore() {
   const focused = useCommandStore((s) => s.focusedProject);
   const flyTo = useCommandStore((s) => s.flyTo);
@@ -77,7 +84,7 @@ export function CeoCore() {
     <group
       onClick={(e) => {
         e.stopPropagation();
-        flyTo({ position: [1.15, 1.55, 3.15], lookAt: [0, 1.05, 0], duration: 1.0, phase: 'universe' });
+        flyTo({ position: [4.4, 3.15, 7.4], lookAt: [0, 2.35, 0], duration: 1.05, phase: 'universe' });
         requestCeoOpen();
       }}
       onPointerOver={() => {
@@ -87,21 +94,8 @@ export function CeoCore() {
         document.body.style.cursor = 'grab';
       }}
     >
-      <IntelligenceHeart />
-      {STATIONS.map(([x, y, z, scale], i) => (
-        <KitModel
-          key={`st-${i}`}
-          name={i % 4 === 3 ? 'accessPoint' : 'computer'}
-          position={[x, y, z]}
-          rotation={[0, Math.atan2(x, z) + Math.PI, 0]}
-          scale={scale}
-          grade="#6E737C"
-        />
-      ))}
-      <KitModel name="deskChair" metalize position={[2.05, 0, 1.25]} scale={1.55} rotation={[0, -2.35, 0]} grade="#5C6168" />
-      <KitModel name="deskChair" metalize position={[-2.0, 0, 1.3]} scale={1.5} rotation={[0, 2.25, 0]} grade="#5C6168" />
-      <KitModel name="deskComputer" metalize position={[0.15, 0, 2.15]} scale={1.9} rotation={[0, Math.PI, 0]} grade="#5C6168" />
-      <FloatingLabel id="ceo-core" priority={4} maxDist={42} fadeFrom={28} position={[0, 2.55, 0]}>
+      <IntelligenceShell />
+      <FloatingLabel id="ceo-core" priority={4} maxDist={48} fadeFrom={32} position={[0, 5.35, 0]}>
         <WorldName primary>AWAD</WorldName>
       </FloatingLabel>
     </group>

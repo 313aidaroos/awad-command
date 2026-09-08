@@ -1,11 +1,11 @@
 import type { CameraTarget } from '@/store/types';
 
-export const UNIVERSE_ZOOM = 16;
+export const UNIVERSE_ZOOM = 17;
 export const INTERIOR_ORIGIN: [number, number, number] = [0, 0, 0];
 
 export const UNIVERSE_CAM: CameraTarget = {
-  position: [0, 6.2, UNIVERSE_ZOOM],
-  lookAt: [0, 0.9, 0],
+  position: [0, 7.4, UNIVERSE_ZOOM],
+  lookAt: [0, 2.15, 0],
   duration: 1.6,
   phase: 'universe',
 };
