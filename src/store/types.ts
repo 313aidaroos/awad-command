@@ -66,6 +66,7 @@ export interface CommandActions {
   requestApproval: (approval: Omit<Approval, 'id' | 'status' | 'createdAt'>) => string;
   resolveApproval: (id: string, decision: 'approved' | 'denied') => void;
   queueLeadMessage: (message: LeadMessage) => void;
+  mergeLeadMessages: (messages: LeadMessage[]) => void;
   setBriefingSeen: (seen: boolean) => void;
   setVoiceMuted: (muted: boolean) => void;
   tick: (dt: number) => void;

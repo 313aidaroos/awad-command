@@ -159,6 +159,14 @@ export const useCommandStore = create<CommandState & CommandActions>((set, get) 
     })),
   queueLeadMessage: (message) =>
     set((state) => ({ leadMessages: [message, ...state.leadMessages].slice(0, 80) })),
+  mergeLeadMessages: (messages) =>
+    set((state) => {
+      if (messages.length === 0) return state;
+      const byId = new Map(state.leadMessages.map((item) => [item.id, item]));
+      for (const item of messages) byId.set(item.id, item);
+      const leadMessages = [...byId.values()].sort((a, b) => b.ts - a.ts).slice(0, 80);
+      return { leadMessages };
+    }),
   setBriefingSeen: (seen) => set({ briefingSeen: seen }),
   setVoiceMuted: (muted) => set({ voiceMuted: muted }),
   tick: (dt) =>

@@ -63,6 +63,23 @@ Header chosen: **`Authorization: Bearer`** (not `X-Webhook-Secret`).
 2. Delivery is claimed **only** after the webhook returns 2xx. Non-2xx is surfaced as failed.
 3. If the webhook is unset, the message is queued in the deck and tagged DEMO. No OAuth to Grok Bot Chat.
 
+### Inbound — Lead reply → COMMAND thread
+
+After a product Lead answers in Grok Bot Chat, Developer Bot (or the hub routine) POSTs the reply here so it appears in that orb’s Message lead panel.
+
+```http
+POST https://<command-host>/api/lead-inbound
+Authorization: Bearer $LEAD_INBOUND_WEBHOOK_SECRET
+Content-Type: application/json
+
+{ "agentId": "<uuid>", "message": "<lead reply>", "projectSlug": "<optional>", "leadName": "<optional>" }
+```
+
+- Auth secret: `LEAD_INBOUND_WEBHOOK_SECRET` if set, otherwise the same `LEAD_MESSAGE_WEBHOOK_SECRET` (or `GROK_BOT_API_KEY`) used outbound. Missing or wrong Bearer → **401**.
+- Resolve order: `agentId` (orb map) then `projectSlug`. Unknown lead → **404**.
+- The deck polls `GET /api/lead-thread?projectSlug=<slug>` while the panel is open (every few seconds). No page reload.
+- Replies persist in process memory and, when `SUPABASE_SERVICE_ROLE_KEY` is set, in `awad_command.lead_messages` plus an `awad_command.events` row (`lead.message.replied`).
+
 ## CEO (text + voice)
 
 `POST /api/ceo` — **live CEO needs `AI_PROVIDER=anthropic` and `ANTHROPIC_API_KEY`** (optional `ANTHROPIC_MODEL`). Otherwise the demo responder answers from the store snapshot (including who owns each company).
@@ -93,6 +110,7 @@ Migration copy (already applied): `supabase/migrations/0001_part_b.sql`.
    - `ANTHROPIC_MODEL`
    - `LEAD_MESSAGE_WEBHOOK_URL`
    - `LEAD_MESSAGE_WEBHOOK_SECRET`
+   - `LEAD_INBOUND_WEBHOOK_SECRET` (optional; defaults to the outbound secret)
    - `GROK_BOT_API_KEY` (optional alias for the webhook secret)
    - `NEXT_PUBLIC_SITE_URL` (production URL for magic-link redirects)
 4. Set `ALLOWED_EMAIL` last — the deck stays public demo until URL + anon + email are all present.
