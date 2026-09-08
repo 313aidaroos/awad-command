@@ -29,7 +29,7 @@ const DPR_HIGH: [number, number] = [1, 2];
 function handleCreated({ gl }: { gl: WebGLRenderer }) {
   gl.setClearColor('#12151A', 1);
   gl.toneMapping = THREE.ACESFilmicToneMapping;
-  gl.toneMappingExposure = 1.08;
+  gl.toneMappingExposure = 1.22;
   gl.outputColorSpace = THREE.SRGBColorSpace;
   gl.domElement.addEventListener(
     'webglcontextlost',
@@ -73,7 +73,7 @@ export function CommandCanvas() {
       onCreated={handleCreated}
       style={CANVAS_STYLE}
     >
-      <fog attach="fog" args={['#12151A', 32, 64]} />
+      <fog attach="fog" args={['#12151A', 48, 88]} />
       <Lighting />
       <StudioEnvironment />
       <Universe />
