@@ -44,8 +44,9 @@ export function GenericChamber({ accent }: { accent: string }) {
         <boxGeometry args={[4, 0.04, 0.16]} />
         <Brushed roughness={0.28} />
       </mesh>
-      <pointLight color="#eef1f5" intensity={0.95} distance={16} position={[-3, 2.4, 2]} />
-      <pointLight color="#e4e8f0" intensity={0.7} distance={14} position={[4, 2.1, -2]} />
+      <hemisphereLight args={['#f4f6fa', '#2a3038', 0.5]} />
+      <pointLight color="#eef1f5" intensity={2.2} distance={18} position={[-3, 2.4, 2]} />
+      <pointLight color="#e4e8f0" intensity={1.6} distance={16} position={[4, 2.1, -2]} />
     </group>
   );
 }

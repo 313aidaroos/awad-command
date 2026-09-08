@@ -19,9 +19,9 @@ export function CameraRig() {
   const gl = useThree((s) => s.gl);
   const look = useRef(new THREE.Vector3());
   const lookT = useRef(new THREE.Vector3());
-  const posT = useRef(new THREE.Vector3(0, 6.4, 22));
+  const posT = useRef(new THREE.Vector3(0, 5.8, 20));
   const follow = useRef(new THREE.Vector3());
-  const rot = useRef({ x: 0, y: 0, tx: 0, ty: 0, zoom: 22, tZoom: 22 });
+  const rot = useRef({ x: 0, y: 0, tx: 0, ty: 0, zoom: 20, tZoom: 20 });
   const drag = useRef({ on: false, x: 0, y: 0, moved: 0, pan: false });
   const flying = useRef(false);
   const followBias = useRef(0);
@@ -35,7 +35,13 @@ export function CameraRig() {
     if (!target) return;
     posT.current.set(...target.position);
     lookT.current.set(...target.lookAt);
-    flying.current = true;
+    if (target.cut) {
+      camera.position.set(...target.position);
+      look.current.set(...target.lookAt);
+      flying.current = false;
+    } else {
+      flying.current = true;
+    }
     if (target.phase) useCommandStore.getState().setEnterPhase(target.phase);
     const id = window.setTimeout(() => {
       const state = useCommandStore.getState();
@@ -51,20 +57,21 @@ export function CameraRig() {
         const [lx, , lz] = target.lookAt;
         const dx = x - lx;
         const dz = z - lz;
-        rot.current.tZoom = Math.max(8, Math.min(16, Math.hypot(dx, dz)));
+        const hall = focus.slug === 'contraxis';
+        rot.current.tZoom = hall ? 2.4 : Math.max(7, Math.min(12, Math.hypot(dx, dz)));
         rot.current.zoom = rot.current.tZoom;
-        rot.current.ty = Math.atan2(dx, dz);
+        rot.current.ty = hall ? 0 : Math.atan2(dx, dz);
         rot.current.y = rot.current.ty;
-        rot.current.tx = Math.max(-0.45, Math.min(0.45, (y - focus.universePosition[1] - 1.6) / 5));
+        rot.current.tx = hall ? 0 : Math.max(-0.35, Math.min(0.35, (y - 2.2) / 5));
         rot.current.x = rot.current.tx;
       }
       if (state.view === 'universe') {
-        rot.current.tZoom = 22;
-        rot.current.zoom = 22;
+        rot.current.tZoom = 20;
+        rot.current.zoom = 20;
       }
     }, target.duration * 1000);
     return () => window.clearTimeout(id);
-  }, [requestId, target]);
+  }, [camera, requestId, target]);
 
   useEffect(() => {
     const el = gl.domElement;
@@ -133,8 +140,9 @@ export function CameraRig() {
 
     if (followed && project) {
       flying.current = false;
-      agentWorldPosition(project.universePosition, followed, state.agents[followed.id], project.nodes, Date.now(), follow.current);
-      _core.set(...project.universePosition);
+      const origin: [number, number, number] = [0, 0, 0];
+      agentWorldPosition(origin, followed, state.agents[followed.id], project.nodes, Date.now(), follow.current);
+      _core.set(...origin);
       _away.copy(follow.current).sub(_core);
       _away.y = 0;
       if (_away.lengthSq() < 0.25) _away.set(1, 0, 1);
@@ -164,15 +172,19 @@ export function CameraRig() {
       wasFollow.current = false;
       followBias.current = 0;
       followDrop.current = 0;
-      posT.current.set(Math.sin(r.y) * r.zoom, 6.4 + r.x * 5.2, Math.cos(r.y) * r.zoom);
-      lookT.current.set(0, 1.05, 0);
+      posT.current.set(Math.sin(r.y) * r.zoom, 5.8 + r.x * 4.4, Math.cos(r.y) * r.zoom);
+      lookT.current.set(0, 1.35, 0);
     } else if (project && !flying.current && view !== 'universe') {
       wasFollow.current = false;
       followBias.current = 0;
       followDrop.current = 0;
-      const [cx, cy, cz] = project.universePosition;
-      posT.current.set(cx + Math.sin(r.y) * r.zoom, cy + 2.4 + r.x * 3.2, cz + Math.cos(r.y) * r.zoom);
-      lookT.current.set(cx, cy + 0.9, cz);
+      if (project.slug === 'contraxis') {
+        posT.current.set(-11.4 + Math.sin(r.y) * 1.1, 2.15 + r.x * 0.7, 2.35 + Math.cos(r.y) * 0.7);
+        lookT.current.set(4.2, 1.05, 0);
+      } else {
+        posT.current.set(Math.sin(r.y) * r.zoom, 2.5 + r.x * 1.6, Math.cos(r.y) * r.zoom);
+        lookT.current.set(0, 0.55, 0);
+      }
     } else {
       wasFollow.current = false;
       followBias.current = 0;

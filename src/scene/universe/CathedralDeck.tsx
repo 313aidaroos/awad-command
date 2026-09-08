@@ -1,97 +1,44 @@
 'use client';
 
 import { ContactShadows } from '@react-three/drei';
-import { Column, FloorPlate, Slit } from '@/scene/kit/parts';
-import { TiledDeck } from '@/scene/kit/TiledDeck';
-import { Brushed, Graphite } from '@/scene/kit/materials';
+import { Brushed } from '@/scene/kit/materials';
+import { Column } from '@/scene/kit/parts';
 import { useCommandStore } from '@/store/useCommandStore';
 
 const COLS: Array<[number, number]> = [
-  [16.4, 0],
-  [-16.4, 0],
-  [0, 16.4],
-  [0, -16.4],
-  [11.6, 11.6],
-  [-11.6, 11.6],
-  [11.6, -11.6],
-  [-11.6, -11.6],
-  [16.4, 6.8],
-  [16.4, -6.8],
-  [-16.4, 6.8],
-  [-16.4, -6.8],
-  [6.8, 16.4],
-  [-6.8, 16.4],
-  [6.8, -16.4],
-  [-6.8, -16.4],
+  [13.6, 0],
+  [-13.6, 0],
+  [6.8, 11.8],
+  [-6.8, 11.8],
+  [6.8, -11.8],
+  [-6.8, -11.8],
 ];
 
-/** Shared cathedral plaza — columns, inner ring, tiled floor. */
+/** Quiet plaza — one floor, six columns, no cyan tick field. */
 export function CathedralDeck() {
   const level = useCommandStore((s) => s.quality.level);
-  const cols = level === 'low' ? COLS.filter((_, i) => i % 2 === 0) : COLS;
 
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.08, 0]} receiveShadow>
-        <circleGeometry args={[28, 64]} />
-        <meshStandardMaterial color="#0A0C10" metalness={0.18} roughness={0.92} />
+        <circleGeometry args={[22, 72]} />
+        <meshStandardMaterial color="#14181E" metalness={0.38} roughness={0.62} />
       </mesh>
-      <TiledDeck radius={18.4} y={-0.02} />
-      <group position={[0, 0.02, 0]}>
-        <FloorPlate size={[6.4, 6.4]} />
-      </group>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]}>
-        <ringGeometry args={[5.9, 6.08, 64]} />
-        <Brushed roughness={0.3} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]}>
+        <circleGeometry args={[7.2, 64]} />
+        <meshStandardMaterial color="#1C2128" metalness={0.55} roughness={0.42} />
       </mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.025, 0]}>
-        <ringGeometry args={[17.7, 17.95, 72]} />
-        <Brushed roughness={0.36} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
+        <ringGeometry args={[7.05, 7.22, 64]} />
+        <Brushed roughness={0.28} />
       </mesh>
-      {cols.map(([x, z]) => (
+      {COLS.map(([x, z]) => (
         <group key={`${x}:${z}`} position={[x, 0, z]}>
-          <Column height={4.4} width={0.32} />
+          <Column height={3.6} width={0.38} />
         </group>
       ))}
-      {[
-        [16.4, 0, 16.4, 6.8],
-        [16.4, 6.8, 11.6, 11.6],
-        [11.6, 11.6, 6.8, 16.4],
-        [6.8, 16.4, 0, 16.4],
-        [0, 16.4, -6.8, 16.4],
-        [-6.8, 16.4, -11.6, 11.6],
-        [-11.6, 11.6, -16.4, 6.8],
-        [-16.4, 6.8, -16.4, 0],
-      ].map(([ax, az, bx, bz]) => (
-        <mesh key={`lintel-${ax}:${az}`} position={[(ax + bx) / 2, 4.28, (az + bz) / 2]} rotation={[0, Math.atan2(bx - ax, bz - az), 0]}>
-          <boxGeometry args={[0.2, 0.12, Math.hypot(bx - ax, bz - az)]} />
-          <Graphite roughness={0.38} />
-        </mesh>
-      ))}
-      {level === 'low'
-        ? null
-        : cols.map(([x, z], i) => (
-            <group key={`cable-${x}:${z}`}>
-              {i % 2 === 0 ? (
-                <Slit
-                  position={[x * 0.42, 0.04, z * 0.42]}
-                  size={[0.9, 0.02, 0.04]}
-                  accent="#3D8BFF"
-                  intensity={0.45}
-                />
-              ) : null}
-            </group>
-          ))}
-      <mesh position={[0, 2.15, 16.4]}>
-        <boxGeometry args={[8.4, 0.12, 0.22]} />
-        <Graphite roughness={0.4} />
-      </mesh>
-      <mesh position={[0, 2.15, -16.4]}>
-        <boxGeometry args={[8.4, 0.12, 0.22]} />
-        <Graphite roughness={0.4} />
-      </mesh>
       {level === 'low' ? null : (
-        <ContactShadows position={[0, -0.08, 0]} opacity={0.45} scale={42} blur={2.6} far={14} color="#000000" />
+        <ContactShadows position={[0, -0.07, 0]} opacity={0.4} scale={36} blur={2.8} far={12} color="#000000" />
       )}
     </group>
   );

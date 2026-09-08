@@ -16,7 +16,7 @@ export function ContraxisFacility({ accent }: { accent: string }) {
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.04, 0]} receiveShadow>
         <planeGeometry args={[36, 14]} />
-        <Graphite roughness={0.62} metalness={0.32} />
+        <meshStandardMaterial color="#2A313A" metalness={0.42} roughness={0.48} />
       </mesh>
       {[-12, -4, 4, 12].map((x) => (
         <mesh key={`seam-${x}`} position={[x, 0.01, 0]}>
@@ -98,11 +98,12 @@ export function ContraxisFacility({ accent }: { accent: string }) {
       {BAY_XS.map((x) => (
         <Slit key={`bay-slit-${x}`} position={[x, 2.4, -4.55]} size={[1.4, 0.04, 0.03]} accent={accent} intensity={0.65} />
       ))}
-      <pointLight color="#f7f8fb" intensity={2.1} distance={24} position={[-10, 4.4, 0]} />
-      <pointLight color="#f2f4f8" intensity={1.85} distance={22} position={[-2, 4.2, 1]} />
-      <pointLight color="#eef1f5" intensity={1.7} distance={22} position={[6, 4.1, -1]} />
-      <pointLight color={accent} intensity={0.45} distance={16} position={[13, 3.4, 0]} />
-      <ContactShadows position={[0, -0.05, 0]} opacity={0.48} scale={48} blur={2.2} far={10} color="#000000" />
+      <hemisphereLight args={['#f4f6fa', '#2a3038', 0.55]} />
+      <pointLight color="#f7f8fb" intensity={3.2} distance={28} position={[-11, 3.6, 1.2]} />
+      <pointLight color="#f2f4f8" intensity={2.6} distance={24} position={[-2, 4.2, 1]} />
+      <pointLight color="#eef1f5" intensity={2.2} distance={22} position={[6, 4.1, -1]} />
+      <pointLight color={accent} intensity={0.7} distance={18} position={[13, 3.4, 0]} />
+      <ContactShadows position={[0, -0.05, 0]} opacity={0.38} scale={40} blur={2.2} far={10} color="#000000" />
     </group>
   );
 }

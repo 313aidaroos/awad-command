@@ -24,6 +24,8 @@ export interface CameraTarget {
   lookAt: [number, number, number];
   duration: number;
   phase?: EnterPhase;
+  /** Snap the rig — used when the exterior unmounts so we never lerp through a void. */
+  cut?: boolean;
 }
 
 export interface CameraSlice {

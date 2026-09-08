@@ -11,9 +11,7 @@ import { FloatingLabel } from '@/scene/ui/FloatingLabel';
 import { WorldName } from '@/scene/ui/WorldName';
 import { useCommandStore } from '@/store/useCommandStore';
 
-const TICKS = Array.from({ length: 24 }, (_, i) => (i / 24) * Math.PI * 2);
-
-/** Multi-shell dark-metal intelligence core — gyroscope, not a tutorial sphere. */
+/** Dark-metal intelligence core — enough mass to read at plaza distance. */
 export function CeoCore() {
   const inner = useRef<THREE.Group>(null);
   const mid = useRef<THREE.Group>(null);
@@ -23,19 +21,20 @@ export function CeoCore() {
   const quality = useCommandStore((s) => s.quality.level);
 
   useFrame((_, dt) => {
-    if (inner.current) inner.current.rotation.y += dt * 0.18;
-    if (mid.current) mid.current.rotation.y -= dt * 0.07;
+    if (inner.current) inner.current.rotation.y += dt * 0.14;
+    if (mid.current) mid.current.rotation.y -= dt * 0.05;
   });
 
   const openCeo = () => {
     if (pointerGate.suppressClick) return;
-    flyTo({ position: [0, 2.6, 8.4], lookAt: [0, 1.15, 0], duration: 1.1, phase: 'universe' });
+    flyTo({ position: [0, 2.8, 9.2], lookAt: [0, 1.55, 0], duration: 1.1, phase: 'universe' });
     requestCeoOpen();
   };
 
   return (
     <group
-      position={[0, 0.42, 0]}
+      position={[0, 0.55, 0]}
+      scale={1.42}
       onClick={(e) => {
         e.stopPropagation();
         openCeo();
@@ -50,80 +49,61 @@ export function CeoCore() {
         document.body.style.cursor = 'grab';
       }}
     >
-      <Plinth size={[2.55, 0.2, 2.55]} steps={3} />
-      <mesh position={[0, 0.42, 0]}>
-        <cylinderGeometry args={[0.98, 1.12, 0.78, 8]} />
-        <Anodized roughness={0.26} />
+      <Plinth size={[3.1, 0.22, 3.1]} steps={3} />
+      <mesh position={[0, 0.55, 0]}>
+        <cylinderGeometry args={[1.22, 1.38, 1.05, 8]} />
+        <Anodized roughness={0.24} />
       </mesh>
-      {[0, 1, 2, 3, 4, 5].map((i) => {
-        const a = (i / 6) * Math.PI * 2;
+      <mesh position={[0, 1.12, 0]}>
+        <cylinderGeometry args={[1.05, 1.12, 0.16, 8]} />
+        <Brushed roughness={0.2} />
+      </mesh>
+      {[0, 1, 2, 3].map((i) => {
+        const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
         return (
-          <mesh key={i} position={[Math.cos(a) * 1.18, 1.05, Math.sin(a) * 1.18]}>
-            <boxGeometry args={[0.08, 1.35, 0.08]} />
-            <Brushed roughness={0.22} />
+          <mesh key={i} position={[Math.cos(a) * 1.32, 1.25, Math.sin(a) * 1.32]}>
+            <boxGeometry args={[0.16, 1.7, 0.16]} />
+            <Graphite roughness={0.3} />
           </mesh>
         );
       })}
-      <mesh position={[0, 0.8, 0]}>
-        <cylinderGeometry args={[0.78, 0.82, 0.12, 8]} />
-        <Brushed roughness={0.22} />
-      </mesh>
-      {[-0.55, 0, 0.55].map((x) => (
-        <mesh key={x} position={[x, 0.95, 0]}>
-          <boxGeometry args={[0.08, 1.15, 0.08]} />
-          <Graphite roughness={0.32} />
-        </mesh>
-      ))}
-      {[-0.55, 0, 0.55].map((z) => (
-        <mesh key={`z${z}`} position={[0, 0.95, z]}>
-          <boxGeometry args={[0.08, 1.15, 0.08]} />
-          <Graphite roughness={0.32} />
-        </mesh>
-      ))}
-      <group ref={mid} position={[0, 1.15, 0]}>
+      <group ref={mid} position={[0, 1.35, 0]}>
         <mesh rotation={[Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[1.12, 0.028, 8, quality === 'low' ? 32 : 64]} />
-          <Brushed roughness={0.18} />
-        </mesh>
-        <mesh rotation={[Math.PI / 2.4, 0.4, 0.2]}>
-          <torusGeometry args={[0.92, 0.02, 8, quality === 'low' ? 28 : 56]} />
-          <Brushed roughness={0.2} />
-        </mesh>
-      </group>
-      <group ref={inner} position={[0, 1.15, 0]}>
-        <mesh>
-          <cylinderGeometry args={[0.42, 0.42, 0.55, 12]} />
-          <Anodized roughness={0.18} />
-        </mesh>
-        <mesh>
-          <octahedronGeometry args={[0.22, 0]} />
+          <torusGeometry args={[1.42, 0.045, 8, quality === 'low' ? 32 : 64]} />
           <Brushed roughness={0.16} />
         </mesh>
-        {[-0.18, 0, 0.18].map((y) => (
+        <mesh rotation={[1.15, 0.35, 0.15]}>
+          <torusGeometry args={[1.18, 0.032, 8, quality === 'low' ? 28 : 56]} />
+          <Brushed roughness={0.18} />
+        </mesh>
+      </group>
+      <group ref={inner} position={[0, 1.35, 0]}>
+        <mesh>
+          <cylinderGeometry args={[0.58, 0.58, 0.72, 12]} />
+          <Anodized roughness={0.16} />
+        </mesh>
+        <mesh>
+          <octahedronGeometry args={[0.32, 0]} />
+          <Brushed roughness={0.14} />
+        </mesh>
+        {[-0.22, 0.22].map((y) => (
           <mesh key={y} position={[0, y, 0]} rotation={[Math.PI / 2, 0, 0]}>
-            <cylinderGeometry args={[0.48, 0.48, 0.035, 16]} />
-            <Graphite roughness={0.28} />
-          </mesh>
-        ))}
-        {TICKS.filter((_, i) => quality === 'low' ? i % 2 === 0 : true).map((a) => (
-          <mesh key={a} position={[Math.cos(a) * 0.62, 0, Math.sin(a) * 0.62]}>
-            <boxGeometry args={[0.035, 0.09, 0.018]} />
-            <Brushed roughness={0.22} />
+            <cylinderGeometry args={[0.68, 0.68, 0.05, 16]} />
+            <Graphite roughness={0.26} />
           </mesh>
         ))}
       </group>
-      <mesh position={[0, 1.72, 0]}>
-        <boxGeometry args={[0.7, 0.06, 0.7]} />
-        <Brushed roughness={0.2} />
+      <mesh position={[0, 2.05, 0]}>
+        <boxGeometry args={[0.95, 0.1, 0.95]} />
+        <Brushed roughness={0.18} />
       </mesh>
-      <Slit position={[0, 1.76, 0.36]} size={[0.22, 0.012, 0.012]} intensity={0.85} />
-      <Slit position={[0.36, 1.12, 0]} size={[0.012, 0.28, 0.012]} intensity={0.45} />
-      <mesh position={[0, 1.15, 0]} visible={false}>
-        <sphereGeometry args={[1.55, 8, 8]} />
+      <Slit position={[0, 2.12, 0.48]} size={[0.36, 0.02, 0.02]} intensity={0.95} />
+      <mesh position={[0, 1.35, 0]} visible={false}>
+        <sphereGeometry args={[1.9, 8, 8]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
       {hovered ? (
-        <FloatingLabel id="ceo-core" priority={5} maxDist={40} fadeFrom={28} position={[0, 2.35, 0]}>
+        <FloatingLabel id="ceo-core" priority={5} maxDist={40} fadeFrom={28} position={[0, 2.7, 0]}>
           <WorldName primary>CEO</WorldName>
         </FloatingLabel>
       ) : null}
