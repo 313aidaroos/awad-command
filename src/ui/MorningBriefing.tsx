@@ -4,6 +4,9 @@ import { money } from '@/lib/format';
 import { Glass } from '@/ui/Glass';
 import { Metric } from '@/ui/Metric';
 import { useCommandStore } from '@/store/useCommandStore';
+import type { ProjectRuntime } from '@/types/project';
+
+const EMPTY_PROJECTS: Record<string, ProjectRuntime> = {};
 
 export function MorningBriefing() {
   const open = useCommandStore((s) => s.contextPanel === 'briefing');
@@ -11,7 +14,7 @@ export function MorningBriefing() {
   const closePanel = useCommandStore((s) => s.closePanel);
   const enter = useCommandStore((s) => s.enterProject);
   const setMode = useCommandStore((s) => s.setMode);
-  const projects = useCommandStore((s) => (s.contextPanel === 'briefing' ? s.projects : {}));
+  const projects = useCommandStore((s) => (s.contextPanel === 'briefing' ? s.projects : EMPTY_PROJECTS));
 
   if (!open) return null;
 

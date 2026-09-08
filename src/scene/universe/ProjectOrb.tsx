@@ -5,6 +5,7 @@ import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { geoSegments } from '@/lib/quality';
+import { pointerGate } from '@/scene/lib/pointer';
 import { EntityField } from '@/scene/universe/EntityField';
 import { EntityRings } from '@/scene/universe/EntityRings';
 import { EntitySilhouette } from '@/scene/universe/EntitySilhouette';
@@ -47,16 +48,30 @@ export function ProjectOrb({ project }: { project: ProjectDefinition }) {
   });
 
   return (
-    <group ref={group} position={project.universePosition}>
+    <group
+      ref={group}
+      position={project.universePosition}
+      onClick={(e) => {
+        e.stopPropagation();
+        if (pointerGate.suppressClick) return;
+        enterProject(project.slug);
+      }}
+      onPointerOver={(e) => {
+        e.stopPropagation();
+        hoverProject(project.slug);
+        document.body.style.cursor = 'pointer';
+      }}
+      onPointerOut={() => {
+        hoverProject(undefined);
+        document.body.style.cursor = 'grab';
+      }}
+    >
       <OrbCore
         accent={project.accent}
         status={status}
         activity={activity}
         hovered={hovered}
         radius={identity.core}
-        onClick={() => enterProject(project.slug)}
-        onPointerOver={() => hoverProject(project.slug)}
-        onPointerOut={() => hoverProject(undefined)}
       />
       <group scale={1.85}>
         <EntitySilhouette kind={identity.kind} accent={project.accent} segs={segs} />
