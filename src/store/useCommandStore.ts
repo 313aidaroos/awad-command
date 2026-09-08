@@ -36,7 +36,7 @@ export const useCommandStore = create<CommandState & CommandActions>((set, get) 
   approvals: [],
   leadMessages: [],
   voiceMuted: false,
-  quality: { level: 'high', auto: true },
+  quality: { level: 'low', auto: true },
 
   initFromRegistry: () =>
     set((state) => {
