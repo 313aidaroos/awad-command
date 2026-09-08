@@ -8,6 +8,9 @@ import { pointerGate } from '@/scene/lib/pointer';
 import { getProject } from '@/projects/registry';
 import { useCommandStore } from '@/store/useCommandStore';
 
+const _core = new THREE.Vector3();
+const _away = new THREE.Vector3();
+
 export function CameraRig() {
   const camera = useThree((s) => s.camera);
   const gl = useThree((s) => s.gl);
@@ -42,7 +45,7 @@ export function CameraRig() {
         const [lx, , lz] = target.lookAt;
         const dx = x - lx;
         const dz = z - lz;
-        rot.current.tZoom = Math.max(10, Math.min(22, Math.hypot(dx, dz)));
+        rot.current.tZoom = Math.max(14, Math.min(24, Math.hypot(dx, dz)));
         rot.current.zoom = rot.current.tZoom;
         rot.current.ty = Math.atan2(dx, dz);
         rot.current.y = rot.current.ty;
@@ -94,8 +97,8 @@ export function CameraRig() {
     const wheel = (e: WheelEvent) => {
       if (flying.current || useCommandStore.getState().followingAgent) return;
       const projectView = useCommandStore.getState().view !== 'universe';
-      const min = projectView ? 8 : 24;
-      const max = projectView ? 24 : 58;
+      const min = projectView ? 12 : 24;
+      const max = projectView ? 28 : 58;
       rot.current.tZoom = Math.max(min, Math.min(max, rot.current.tZoom + e.deltaY * 0.02));
     };
     el.addEventListener('pointerdown', down);
@@ -124,8 +127,14 @@ export function CameraRig() {
 
     if (followed && project) {
       agentWorldPosition(project.universePosition, followed, state.agents[followed.id], project.nodes, Date.now(), follow.current);
-      posT.current.set(follow.current.x + 6.4, follow.current.y + 4.2, follow.current.z + 9.6);
-      lookT.current.set(follow.current.x, follow.current.y + 0.35, follow.current.z);
+      _core.set(...project.universePosition);
+      _away.copy(follow.current).sub(_core);
+      if (_away.lengthSq() < 0.25) _away.set(1, 0.35, 1);
+      _away.normalize();
+      posT.current.copy(follow.current).addScaledVector(_away, 13.2);
+      posT.current.y = Math.max(follow.current.y + 6.8, posT.current.y);
+      lookT.current.copy(follow.current).lerp(_core, 0.34);
+      lookT.current.y += 0.15;
     } else if (view === 'universe' && !flying.current) {
       posT.current.set(Math.sin(r.y) * r.zoom, 9 + r.x * 8, Math.cos(r.y) * r.zoom);
       lookT.current.set(0, 0, 0);
@@ -135,8 +144,8 @@ export function CameraRig() {
       lookT.current.set(cx, cy, cz);
     }
 
-    camera.position.lerp(posT.current, flying.current ? 0.042 : followed ? 0.08 : 0.055);
-    look.current.lerp(lookT.current, followed ? 0.1 : 0.06);
+    camera.position.lerp(posT.current, flying.current ? 0.042 : followed ? 0.05 : 0.055);
+    look.current.lerp(lookT.current, followed ? 0.07 : 0.06);
     camera.lookAt(look.current);
   });
 

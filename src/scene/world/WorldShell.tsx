@@ -22,7 +22,7 @@ export function WorldShell({ accent }: { accent: string }) {
 
   return (
     <mesh ref={mesh}>
-      <sphereGeometry args={[11.4, 32, 24]} />
+      <sphereGeometry args={[11.4, 48, 32]} />
       <meshBasicMaterial color={accent} transparent opacity={0} depthWrite={false} side={THREE.DoubleSide} />
     </mesh>
   );

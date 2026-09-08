@@ -3,9 +3,11 @@
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { geoSegments } from '@/lib/quality';
 import { pointerGate } from '@/scene/lib/pointer';
 import { orbFrag, orbVert } from '@/scene/shaders/orb';
 import { STATUS_COLOR } from '@/scene/universe/statusColor';
+import { useCommandStore } from '@/store/useCommandStore';
 import type { ProjectStatus } from '@/types/project';
 
 interface OrbCoreProps {
@@ -50,6 +52,7 @@ export function OrbCore({
     [accent, status],
   );
   const hover = useRef(0);
+  const segs = geoSegments(useCommandStore((s) => s.quality.level), 48, 32, 20);
 
   useFrame((_, dt) => {
     mat.uniforms.uT.value = (mat.uniforms.uT.value as number) + dt;
@@ -76,7 +79,7 @@ export function OrbCore({
         document.body.style.cursor = 'grab';
       }}
     >
-      <sphereGeometry args={[radius, 48, 48]} />
+      <sphereGeometry args={[radius, segs, segs]} />
       <primitive object={mat} attach="material" />
     </mesh>
   );

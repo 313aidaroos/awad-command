@@ -2,11 +2,13 @@
 
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Html } from '@react-three/drei';
+import { Edges } from '@react-three/drei';
 import * as THREE from 'three';
 import { requestCeoOpen } from '@/lib/ceoBridge';
 import { particleCount } from '@/lib/quality';
+import { GlassMaterial } from '@/scene/materials/GlassMaterial';
 import { OrbCore } from '@/scene/universe/OrbCore';
+import { FloatingLabel } from '@/scene/ui/FloatingLabel';
 import { useCommandStore } from '@/store/useCommandStore';
 
 export function CeoCore() {
@@ -61,43 +63,33 @@ export function CeoCore() {
       />
       <group ref={spin}>
         <mesh>
-          <icosahedronGeometry args={[1.55, 1]} />
-          <meshBasicMaterial color="#ffffff" wireframe transparent opacity={0.12} />
+          <icosahedronGeometry args={[1.52, quality === 'low' ? 0 : 1]} />
+          <GlassMaterial accent="#E6E8EC" opacity={0.12} emissive={0.04} />
+          <Edges threshold={22} color="#E6E8EC" />
         </mesh>
         <mesh>
-          <octahedronGeometry args={[0.62, 0]} />
-          <meshStandardMaterial
-            color="#E6E8EC"
-            metalness={0.5}
-            roughness={0.28}
-            transparent
-            opacity={0.55}
-            emissive="#3D8BFF"
-            emissiveIntensity={0.18}
-          />
+          <octahedronGeometry args={[0.58, 0]} />
+          <GlassMaterial accent="#E6E8EC" opacity={0.58} emissive={0.12} />
         </mesh>
       </group>
       <mesh ref={pulse} rotation={[1.2, 0.2, 0.1]}>
-        <torusGeometry args={[2.05, 0.012, 8, 80]} />
-        <meshBasicMaterial color="#3D8BFF" transparent opacity={0.28} />
+        <torusGeometry args={[2.05, 0.01, 10, 80]} />
+        <meshBasicMaterial color="#3D8BFF" transparent opacity={0.24} />
       </mesh>
       <mesh rotation={[0.4, 0.8, 1.1]}>
-        <torusGeometry args={[2.45, 0.008, 8, 80]} />
-        <meshBasicMaterial color="#9aa3b2" transparent opacity={0.16} />
+        <torusGeometry args={[2.45, 0.007, 10, 80]} />
+        <meshBasicMaterial color="#9aa3b2" transparent opacity={0.14} />
       </mesh>
       <mesh rotation={[1.7, 0.3, 0]}>
-        <torusGeometry args={[2.85, 0.007, 8, 72]} />
-        <meshBasicMaterial color="#dfe4ee" transparent opacity={0.1} />
+        <torusGeometry args={[2.85, 0.006, 10, 72]} />
+        <meshBasicMaterial color="#dfe4ee" transparent opacity={0.09} />
       </mesh>
       <points geometry={halo}>
-        <pointsMaterial color="#dfe4ee" size={0.032} transparent opacity={0.55} depthWrite={false} sizeAttenuation />
+        <pointsMaterial color="#dfe4ee" size={0.028} transparent opacity={0.48} depthWrite={false} sizeAttenuation />
       </points>
-      <Html center position={[0, 2.15, 0]} style={{ pointerEvents: 'none' }}>
-        <div className="text-center whitespace-nowrap">
-          <div className="text-[12px] tracking-[0.28em] font-light text-[rgba(230,232,236,0.92)]">AWAD</div>
-          <div className="font-num text-[9.5px] text-[var(--muted)] mt-0.5">CEO · command core</div>
-        </div>
-      </Html>
+      <FloatingLabel id="ceo-core" priority={4} maxDist={58} fadeFrom={36} position={[0, 2.05, 0]}>
+        <div className="text-[10px] tracking-[0.28em] font-light text-[rgba(230,232,236,0.88)]">AWAD</div>
+      </FloatingLabel>
     </group>
   );
 }

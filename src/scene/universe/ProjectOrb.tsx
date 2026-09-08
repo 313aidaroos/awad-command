@@ -2,7 +2,6 @@
 
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { geoSegments } from '@/lib/quality';
 import { pointerGate } from '@/scene/lib/pointer';
@@ -11,6 +10,7 @@ import { EntityRings } from '@/scene/universe/EntityRings';
 import { EntitySilhouette } from '@/scene/universe/EntitySilhouette';
 import { identityOf } from '@/scene/universe/identities';
 import { OrbCore } from '@/scene/universe/OrbCore';
+import { FloatingLabel } from '@/scene/ui/FloatingLabel';
 import { useCommandStore } from '@/store/useCommandStore';
 import type { ProjectDefinition } from '@/types/project';
 
@@ -29,7 +29,7 @@ export function ProjectOrb({ project }: { project: ProjectDefinition }) {
   const identity = identityOf(project.slug);
   const other = Boolean(focused && focused !== project.slug);
   const selfInterior = focused === project.slug && enterPhase === 'interior';
-  const segs = geoSegments(quality, 28, 18, 12);
+  const segs = geoSegments(quality, 48, 32, 18);
 
   useFrame((state) => {
     const g = group.current;
@@ -79,13 +79,17 @@ export function ProjectOrb({ project }: { project: ProjectDefinition }) {
       <EntityField accent={project.accent} />
       <EntityRings count={identity.rings} accent={project.accent} />
       {!focused && (
-        <Html center position={[0, -2.05, 0]} style={{ pointerEvents: 'none' }}>
-          <div className="text-center whitespace-nowrap">
-            <div className="text-[11px] tracking-[0.22em] font-light text-[rgba(230,232,236,0.88)]">
-              {project.name}
-            </div>
+        <FloatingLabel
+          id={`orb-${project.slug}`}
+          priority={hovered ? 5 : 1}
+          maxDist={hovered ? 70 : 46}
+          fadeFrom={hovered ? 52 : 28}
+          position={[0, -2.15, 0]}
+        >
+          <div className="text-[9px] tracking-[0.2em] font-light text-[rgba(230,232,236,0.82)]">
+            {project.name}
           </div>
-        </Html>
+        </FloatingLabel>
       )}
     </group>
   );

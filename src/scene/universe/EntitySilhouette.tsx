@@ -2,27 +2,15 @@
 
 import { useMemo, useRef, type ReactNode } from 'react';
 import { useFrame } from '@react-three/fiber';
+import { Edges } from '@react-three/drei';
 import * as THREE from 'three';
+import { GlassMaterial } from '@/scene/materials/GlassMaterial';
 import type { SilhouetteKind } from '@/scene/universe/identities';
 
 interface Props {
   kind: SilhouetteKind;
   accent: string;
   segs: number;
-}
-
-function mat(accent: string, opacity = 0.62) {
-  return (
-    <meshStandardMaterial
-      color={accent}
-      metalness={0.46}
-      roughness={0.32}
-      transparent
-      opacity={opacity}
-      emissive={accent}
-      emissiveIntensity={0.12}
-    />
-  );
 }
 
 function Spin({ children, speed = 0.12 }: { children: ReactNode; speed?: number }) {
@@ -33,16 +21,22 @@ function Spin({ children, speed = 0.12 }: { children: ReactNode; speed?: number 
   return <group ref={ref}>{children}</group>;
 }
 
+function Rim({ accent }: { accent: string }) {
+  return <Edges threshold={18} color={accent} />;
+}
+
 function Strut({
   a,
   b,
   accent,
-  radius = 0.028,
+  radius = 0.024,
+  segs,
 }: {
   a: [number, number, number];
   b: [number, number, number];
   accent: string;
   radius?: number;
+  segs: number;
 }) {
   const { pos, quat, len } = useMemo(() => {
     const start = new THREE.Vector3(...a);
@@ -55,8 +49,8 @@ function Strut({
   }, [a, b]);
   return (
     <mesh position={pos} quaternion={quat}>
-      <cylinderGeometry args={[radius, radius, len, 6]} />
-      {mat(accent, 0.5)}
+      <cylinderGeometry args={[radius, radius, len, Math.max(8, Math.round(segs / 4))]} />
+      <GlassMaterial accent={accent} opacity={0.52} />
     </mesh>
   );
 }
@@ -71,30 +65,32 @@ const GRAPH: [number, number, number][] = [
 ];
 
 export function EntitySilhouette({ kind, accent, segs }: Props) {
-  const wire = <meshBasicMaterial color={accent} wireframe transparent opacity={0.22} />;
-  const hex = Math.max(5, Math.min(10, Math.round(segs / 4)));
+  const hex = Math.max(8, Math.min(16, Math.round(segs / 2.4)));
+  const radial = Math.max(16, segs);
+  const smooth = segs >= 28 ? 1 : 0;
 
   if (kind === 'lattice') {
     return (
       <Spin speed={0.07}>
         <mesh>
-          <boxGeometry args={[1.62, 1.62, 1.62]} />
-          {wire}
+          <boxGeometry args={[1.58, 1.58, 1.58]} />
+          <GlassMaterial accent={accent} opacity={0.16} emissive={0.03} />
+          <Rim accent={accent} />
         </mesh>
         <mesh>
-          <octahedronGeometry args={[0.42, 0]} />
-          {mat(accent, 0.82)}
+          <octahedronGeometry args={[0.44, 0]} />
+          <GlassMaterial accent={accent} opacity={0.78} />
         </mesh>
         {[-0.54, 0.54].map((x) =>
           [-0.54, 0.54].map((z) => (
             <mesh key={`${x}:${z}`} position={[x, 0, z]}>
-              <boxGeometry args={[0.2, 0.2, 0.2]} />
-              {mat('#E6E8EC', 0.55)}
+              <boxGeometry args={[0.18, 0.18, 0.18]} />
+              <GlassMaterial accent="#E6E8EC" opacity={0.55} />
             </mesh>
           )),
         )}
-        <Strut a={[-0.54, 0, -0.54]} b={[0.54, 0, 0.54]} accent={accent} radius={0.02} />
-        <Strut a={[-0.54, 0, 0.54]} b={[0.54, 0, -0.54]} accent={accent} radius={0.02} />
+        <Strut a={[-0.54, 0, -0.54]} b={[0.54, 0, 0.54]} accent={accent} radius={0.018} segs={segs} />
+        <Strut a={[-0.54, 0, 0.54]} b={[0.54, 0, -0.54]} accent={accent} radius={0.018} segs={segs} />
       </Spin>
     );
   }
@@ -111,13 +107,14 @@ export function EntitySilhouette({ kind, accent, segs }: Props) {
       <Spin speed={0.08}>
         {towers.map((tower) => (
           <mesh key={`${tower.p.join()}-${tower.h}`} position={[tower.p[0], tower.p[1] + tower.h / 2 - 0.45, tower.p[2]]}>
-            <cylinderGeometry args={[tower.r * 0.72, tower.r, tower.h, 6]} />
-            {mat(accent, 0.78)}
+            <cylinderGeometry args={[tower.r * 0.72, tower.r, tower.h, hex]} />
+            <GlassMaterial accent={accent} opacity={0.72} />
+            <Rim accent={accent} />
           </mesh>
         ))}
         <mesh position={[0, 0.62, 0]} rotation={[0.4, 0.2, 0.1]}>
-          <octahedronGeometry args={[0.22, 0]} />
-          {mat('#E6E8EC', 0.7)}
+          <octahedronGeometry args={[0.2, 0]} />
+          <GlassMaterial accent="#E6E8EC" opacity={0.7} />
         </mesh>
       </Spin>
     );
@@ -128,8 +125,8 @@ export function EntitySilhouette({ kind, accent, segs }: Props) {
       <Spin speed={0.16}>
         {[-0.55, -0.28, 0, 0.28, 0.55].map((y, i) => (
           <mesh key={y} rotation={[1.22, 0, i * 0.08]} position={[0, y, 0]}>
-            <cylinderGeometry args={[0.92 - Math.abs(y) * 0.22, 0.92 - Math.abs(y) * 0.22, 0.07, Math.max(18, segs)]} />
-            {mat(i === 2 ? '#E6E8EC' : accent, 0.5 + (i === 2 ? 0.18 : 0))}
+            <cylinderGeometry args={[0.92 - Math.abs(y) * 0.22, 0.92 - Math.abs(y) * 0.22, 0.055, radial]} />
+            <GlassMaterial accent={i === 2 ? '#E6E8EC' : accent} opacity={0.48 + (i === 2 ? 0.16 : 0)} />
           </mesh>
         ))}
       </Spin>
@@ -141,15 +138,12 @@ export function EntitySilhouette({ kind, accent, segs }: Props) {
       <Spin speed={0.07}>
         <mesh scale={[0.48, 1.72, 0.48]}>
           <octahedronGeometry args={[1, 0]} />
-          {mat(accent, 0.72)}
-        </mesh>
-        <mesh scale={[0.62, 1.95, 0.62]}>
-          <octahedronGeometry args={[1, 0]} />
-          {wire}
+          <GlassMaterial accent={accent} opacity={0.62} />
+          <Rim accent={accent} />
         </mesh>
         <mesh position={[0, 0.12, 0]}>
-          <octahedronGeometry args={[0.28, 0]} />
-          {mat('#E6E8EC', 0.7)}
+          <octahedronGeometry args={[0.26, 0]} />
+          <GlassMaterial accent="#E6E8EC" opacity={0.72} />
         </mesh>
       </Spin>
     );
@@ -157,18 +151,19 @@ export function EntitySilhouette({ kind, accent, segs }: Props) {
 
   if (kind === 'monolith') {
     const slabs = [
-      { y: -0.62, s: [1.05, 0.16, 0.72] as [number, number, number] },
-      { y: -0.28, s: [0.88, 0.18, 0.58] as [number, number, number] },
-      { y: 0.08, s: [0.7, 0.2, 0.48] as [number, number, number] },
-      { y: 0.46, s: [0.52, 0.22, 0.38] as [number, number, number] },
-      { y: 0.82, s: [0.32, 0.16, 0.28] as [number, number, number] },
+      { y: -0.62, s: [1.05, 0.14, 0.72] as [number, number, number] },
+      { y: -0.28, s: [0.88, 0.16, 0.58] as [number, number, number] },
+      { y: 0.08, s: [0.7, 0.18, 0.48] as [number, number, number] },
+      { y: 0.46, s: [0.52, 0.2, 0.38] as [number, number, number] },
+      { y: 0.82, s: [0.32, 0.14, 0.28] as [number, number, number] },
     ];
     return (
       <Spin speed={0.04}>
         {slabs.map((slab) => (
           <mesh key={slab.y} position={[0, slab.y, 0]}>
             <boxGeometry args={slab.s} />
-            {mat(accent, 0.72)}
+            <GlassMaterial accent={accent} opacity={0.68} />
+            <Rim accent={accent} />
           </mesh>
         ))}
       </Spin>
@@ -190,15 +185,15 @@ export function EntitySilhouette({ kind, accent, segs }: Props) {
       <Spin speed={0.09}>
         {GRAPH.map((p, i) => (
           <mesh key={p.join()} position={p}>
-            <sphereGeometry args={[i === 5 ? 0.18 : 0.13, hex, hex]} />
-            {mat(i === 5 ? '#E6E8EC' : accent, 0.82)}
+            <sphereGeometry args={[i === 5 ? 0.17 : 0.12, hex, hex]} />
+            <GlassMaterial accent={i === 5 ? '#E6E8EC' : accent} opacity={0.78} />
           </mesh>
         ))}
         {links.map(([ia, ib]) => {
           const a = GRAPH[ia];
           const b = GRAPH[ib];
           if (!a || !b) return null;
-          return <Strut key={`${ia}-${ib}`} a={a} b={b} accent={accent} radius={0.018} />;
+          return <Strut key={`${ia}-${ib}`} a={a} b={b} accent={accent} radius={0.016} segs={segs} />;
         })}
       </Spin>
     );
@@ -208,29 +203,30 @@ export function EntitySilhouette({ kind, accent, segs }: Props) {
     return (
       <Spin speed={0.14}>
         <mesh>
-          <boxGeometry args={[0.52, 0.52, 0.52]} />
-          {mat('#E6E8EC', 0.7)}
+          <boxGeometry args={[0.48, 0.48, 0.48]} />
+          <GlassMaterial accent="#E6E8EC" opacity={0.7} />
         </mesh>
         <mesh>
-          <icosahedronGeometry args={[1.05, 0]} />
-          {wire}
+          <icosahedronGeometry args={[1.02, smooth]} />
+          <GlassMaterial accent={accent} opacity={0.18} emissive={0.04} />
+          <Rim accent={accent} />
         </mesh>
         <mesh rotation={[Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[0.72, 0.045, 8, Math.max(16, segs)]} />
-          {mat(accent, 0.62)}
+          <torusGeometry args={[0.72, 0.038, 10, radial]} />
+          <GlassMaterial accent={accent} opacity={0.62} />
         </mesh>
         <mesh position={[0, 0.82, 0]}>
-          <cylinderGeometry args={[0.035, 0.035, 0.55, 8]} />
-          {mat(accent, 0.7)}
+          <cylinderGeometry args={[0.03, 0.03, 0.5, 10]} />
+          <GlassMaterial accent={accent} opacity={0.7} />
         </mesh>
         <mesh position={[0, 1.12, 0]} rotation={[1.2, 0, 0]}>
-          <torusGeometry args={[0.16, 0.03, 6, 16]} />
-          {mat(accent, 0.55)}
+          <torusGeometry args={[0.15, 0.026, 8, 20]} />
+          <GlassMaterial accent={accent} opacity={0.55} />
         </mesh>
         {[0, 1, 2, 3].map((i) => (
-          <mesh key={i} position={[Math.cos((i * Math.PI) / 2) * 0.58, 0, Math.sin((i * Math.PI) / 2) * 0.58]}>
-            <boxGeometry args={[0.12, 0.12, 0.12]} />
-            {mat(accent, 0.78)}
+          <mesh key={i} position={[Math.cos((i * Math.PI) / 2) * 0.56, 0, Math.sin((i * Math.PI) / 2) * 0.56]}>
+            <boxGeometry args={[0.1, 0.1, 0.1]} />
+            <GlassMaterial accent={accent} opacity={0.74} />
           </mesh>
         ))}
       </Spin>
@@ -242,8 +238,8 @@ export function EntitySilhouette({ kind, accent, segs }: Props) {
       <Spin speed={0.055}>
         {[-0.42, -0.21, 0, 0.21, 0.42].map((x, i) => (
           <mesh key={x} position={[x * 0.55, 0, 0]} rotation={[0.12, i * 0.16 - 0.32, 0.08]}>
-            <boxGeometry args={[0.035, 1.42, 1.02]} />
-            {mat(i === 2 ? '#E6E8EC' : accent, 0.62)}
+            <boxGeometry args={[0.032, 1.42, 1.02]} />
+            <GlassMaterial accent={i === 2 ? '#E6E8EC' : accent} opacity={0.6} />
           </mesh>
         ))}
       </Spin>
@@ -254,18 +250,19 @@ export function EntitySilhouette({ kind, accent, segs }: Props) {
     return (
       <Spin speed={0.11}>
         <mesh rotation={[0, 0, Math.PI / 2]}>
-          <cylinderGeometry args={[0.92, 0.92, 0.22, Math.max(16, segs)]} />
-          {mat(accent, 0.58)}
+          <cylinderGeometry args={[0.9, 0.9, 0.2, radial]} />
+          <GlassMaterial accent={accent} opacity={0.55} />
+          <Rim accent={accent} />
         </mesh>
         {[0, 1, 2, 3, 4, 5].map((i) => (
           <mesh key={i} rotation={[0, (i * Math.PI) / 3, 0]}>
-            <boxGeometry args={[0.08, 0.08, 1.55]} />
-            {mat('#E6E8EC', 0.45)}
+            <boxGeometry args={[0.06, 0.06, 1.48]} />
+            <GlassMaterial accent="#E6E8EC" opacity={0.42} />
           </mesh>
         ))}
         <mesh position={[0, -0.02, 0.72]} rotation={[0.15, 0.4, 0.1]}>
-          <boxGeometry args={[0.04, 0.55, 0.9]} />
-          {mat(accent, 0.5)}
+          <boxGeometry args={[0.035, 0.5, 0.86]} />
+          <GlassMaterial accent={accent} opacity={0.5} />
         </mesh>
       </Spin>
     );
@@ -275,16 +272,16 @@ export function EntitySilhouette({ kind, accent, segs }: Props) {
     return (
       <Spin speed={0.05}>
         <mesh rotation={[Math.PI, 0, 0]} position={[0, -0.12, 0]}>
-          <cylinderGeometry args={[0.72, 0.28, 0.62, Math.max(16, segs), 1, true]} />
-          {mat(accent, 0.7)}
+          <cylinderGeometry args={[0.72, 0.28, 0.62, radial, 1, true]} />
+          <GlassMaterial accent={accent} opacity={0.68} />
         </mesh>
         <mesh position={[0, 0.18, 0]} rotation={[1.57, 0, 0]}>
-          <torusGeometry args={[0.72, 0.05, 8, Math.max(16, segs)]} />
-          {mat('#E6E8EC', 0.55)}
+          <torusGeometry args={[0.72, 0.042, 10, radial]} />
+          <GlassMaterial accent="#E6E8EC" opacity={0.55} />
         </mesh>
         <mesh position={[0, -0.08, 0]}>
-          <sphereGeometry args={[0.38, hex, hex]} />
-          {mat(accent, 0.45)}
+          <sphereGeometry args={[0.36, hex, hex]} />
+          <GlassMaterial accent={accent} opacity={0.42} />
         </mesh>
       </Spin>
     );
@@ -293,16 +290,16 @@ export function EntitySilhouette({ kind, accent, segs }: Props) {
   return (
     <Spin speed={0.05}>
       <mesh>
-        <sphereGeometry args={[0.62, hex, hex]} />
-        {mat(accent, 0.55)}
+        <sphereGeometry args={[0.6, hex, hex]} />
+        <GlassMaterial accent={accent} opacity={0.52} />
       </mesh>
-      <mesh position={[0.42, 0.18, 0.12]}>
-        <sphereGeometry args={[0.32, hex, hex]} />
-        {mat(accent, 0.48)}
+      <mesh position={[0.4, 0.16, 0.12]}>
+        <sphereGeometry args={[0.3, hex, hex]} />
+        <GlassMaterial accent={accent} opacity={0.46} />
       </mesh>
-      <mesh position={[-0.34, -0.12, 0.22]}>
-        <sphereGeometry args={[0.28, hex, hex]} />
-        {mat('#E6E8EC', 0.4)}
+      <mesh position={[-0.32, -0.12, 0.2]}>
+        <sphereGeometry args={[0.26, hex, hex]} />
+        <GlassMaterial accent="#E6E8EC" opacity={0.4} />
       </mesh>
     </Spin>
   );

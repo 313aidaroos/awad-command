@@ -31,8 +31,8 @@ export function projectEnterSequence(pos: [number, number, number]): CameraTarge
       phase: 'shell',
     },
     {
-      position: [x + sx * 7.2 - dx * 1.4, y + 7.4, z + sz * 7.2 - dz * 1.4],
-      lookAt: [x, y - 0.2, z],
+      position: [x + sx * 8.8 - dx * 1.8, y + 8.4, z + sz * 8.8 - dz * 1.8],
+      lookAt: [x, y - 0.15, z],
       duration: 1.55,
       phase: 'interior',
     },

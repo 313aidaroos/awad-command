@@ -102,7 +102,7 @@ export function AgentEntity({
             document.body.style.cursor = 'grab';
           }}
         >
-          <coneGeometry args={[0.22, 0.62, 6]} />
+          <coneGeometry args={[0.2, 0.58, 10]} />
           <meshStandardMaterial
             color={color}
             metalness={0.4}
@@ -130,7 +130,7 @@ export function AgentEntity({
             <meshBasicMaterial color={color} transparent opacity={0.8} />
           </mesh>
         ) : null}
-        {workforce || following ? (
+        {workforce && !following ? (
           <Html center position={[0, 0.62, 0]} style={{ pointerEvents: 'none' }}>
             <div className="text-[8px] tracking-[0.1em] text-[var(--text)] whitespace-nowrap">{agent.name}</div>
           </Html>

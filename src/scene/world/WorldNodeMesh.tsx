@@ -1,6 +1,10 @@
 'use client';
 
-import { Html } from '@react-three/drei';
+import { useState } from 'react';
+import { Edges } from '@react-three/drei';
+import { GlassMaterial } from '@/scene/materials/GlassMaterial';
+import { FloatingLabel } from '@/scene/ui/FloatingLabel';
+import { useCommandStore } from '@/store/useCommandStore';
 import type { WorldNode } from '@/types/world';
 
 type Shape = 'cluster' | 'funnel' | 'filter' | 'stack' | 'rings' | 'chevron' | 'block' | 'hex' | 'crystal' | 'generic';
@@ -23,8 +27,8 @@ function Station({ shape, color }: { shape: Shape; color: string }) {
       <group>
         {([-0.22, 0.22] as const).map((x) => (
           <mesh key={x} position={[x, 0.08, x * 0.4]}>
-            <sphereGeometry args={[0.2, 14, 14]} />
-            <meshStandardMaterial color={color} metalness={0.3} roughness={0.45} transparent opacity={0.8} />
+            <sphereGeometry args={[0.2, 18, 18]} />
+            <GlassMaterial accent={color} opacity={0.78} />
           </mesh>
         ))}
       </group>
@@ -33,16 +37,17 @@ function Station({ shape, color }: { shape: Shape; color: string }) {
   if (shape === 'funnel') {
     return (
       <mesh rotation={[0, 0, Math.PI]}>
-        <coneGeometry args={[0.38, 0.68, 10]} />
-        <meshStandardMaterial color={color} metalness={0.28} roughness={0.4} transparent opacity={0.78} />
+        <coneGeometry args={[0.38, 0.68, 16]} />
+        <GlassMaterial accent={color} opacity={0.74} />
+        <Edges threshold={20} color={color} />
       </mesh>
     );
   }
   if (shape === 'filter') {
     return (
       <mesh rotation={[1.2, 0, 0]}>
-        <torusGeometry args={[0.34, 0.07, 8, 22]} />
-        <meshStandardMaterial color={color} metalness={0.35} roughness={0.38} transparent opacity={0.75} />
+        <torusGeometry args={[0.34, 0.06, 10, 28]} />
+        <GlassMaterial accent={color} opacity={0.72} />
       </mesh>
     );
   }
@@ -51,8 +56,8 @@ function Station({ shape, color }: { shape: Shape; color: string }) {
       <group>
         {[0, 0.16, 0.32].map((y) => (
           <mesh key={y} position={[0, y - 0.1, 0]}>
-            <cylinderGeometry args={[0.32 - y * 0.12, 0.32 - y * 0.12, 0.12, 12]} />
-            <meshStandardMaterial color={color} metalness={0.4} roughness={0.35} transparent opacity={0.8} />
+            <cylinderGeometry args={[0.32 - y * 0.12, 0.32 - y * 0.12, 0.11, 16]} />
+            <GlassMaterial accent={color} opacity={0.76} />
           </mesh>
         ))}
       </group>
@@ -62,12 +67,12 @@ function Station({ shape, color }: { shape: Shape; color: string }) {
     return (
       <group>
         <mesh rotation={[1.2, 0.3, 0]}>
-          <torusGeometry args={[0.32, 0.04, 8, 20]} />
-          <meshStandardMaterial color={color} metalness={0.3} roughness={0.4} transparent opacity={0.75} />
+          <torusGeometry args={[0.32, 0.035, 10, 28]} />
+          <GlassMaterial accent={color} opacity={0.72} />
         </mesh>
         <mesh rotation={[0.4, 0.8, 0.2]}>
-          <torusGeometry args={[0.26, 0.035, 8, 20]} />
-          <meshStandardMaterial color={color} metalness={0.3} roughness={0.4} transparent opacity={0.6} />
+          <torusGeometry args={[0.26, 0.03, 10, 24]} />
+          <GlassMaterial accent={color} opacity={0.55} />
         </mesh>
       </group>
     );
@@ -76,7 +81,8 @@ function Station({ shape, color }: { shape: Shape; color: string }) {
     return (
       <mesh rotation={[0.4, 0.6, 0.2]}>
         <tetrahedronGeometry args={[0.4, 0]} />
-        <meshStandardMaterial color={color} metalness={0.32} roughness={0.4} transparent opacity={0.8} />
+        <GlassMaterial accent={color} opacity={0.76} />
+        <Edges threshold={18} color={color} />
       </mesh>
     );
   }
@@ -84,15 +90,17 @@ function Station({ shape, color }: { shape: Shape; color: string }) {
     return (
       <mesh>
         <boxGeometry args={[0.5, 0.38, 0.5]} />
-        <meshStandardMaterial color={color} metalness={0.25} roughness={0.5} transparent opacity={0.78} />
+        <GlassMaterial accent={color} opacity={0.74} />
+        <Edges threshold={15} color={color} />
       </mesh>
     );
   }
   if (shape === 'hex') {
     return (
       <mesh rotation={[0.6, 0.2, 0]}>
-        <cylinderGeometry args={[0.32, 0.32, 0.18, 6]} />
-        <meshStandardMaterial color={color} metalness={0.3} roughness={0.42} transparent opacity={0.78} />
+        <cylinderGeometry args={[0.32, 0.32, 0.16, 6]} />
+        <GlassMaterial accent={color} opacity={0.74} />
+        <Edges threshold={18} color={color} />
       </mesh>
     );
   }
@@ -100,45 +108,51 @@ function Station({ shape, color }: { shape: Shape; color: string }) {
     return (
       <mesh>
         <octahedronGeometry args={[0.38, 0]} />
-        <meshStandardMaterial
-          color={color}
-          metalness={0.45}
-          roughness={0.28}
-          transparent
-          opacity={0.85}
-          emissive={color}
-          emissiveIntensity={0.2}
-        />
-      </mesh>
-    );
-  }
-  if (shape === 'generic' && color) {
-    return (
-      <mesh>
-        <octahedronGeometry args={[0.22, 0]} />
-        <meshStandardMaterial color={color} metalness={0.25} roughness={0.5} transparent opacity={0.65} />
+        <GlassMaterial accent={color} opacity={0.8} emissive={0.12} />
+        <Edges threshold={18} color={color} />
       </mesh>
     );
   }
   return (
     <mesh>
       <octahedronGeometry args={[0.22, 0]} />
-      <meshStandardMaterial color="#8A909A" metalness={0.2} roughness={0.55} transparent opacity={0.6} />
+      <GlassMaterial accent={color || '#8A909A'} opacity={0.6} />
     </mesh>
   );
 }
 
 export function WorldNodeMesh({ node, accent }: { node: WorldNode; accent: string }) {
+  const [hovered, setHovered] = useState(false);
+  const tracked = useCommandStore((s) => {
+    const id = s.followingAgent;
+    if (!id) return false;
+    const agent = s.agents[id];
+    return agent?.targetNodeId === node.id || agent?.fromNodeId === node.id;
+  });
   if (node.kind === 'screen') return null;
   const shape = SHAPE[node.label] ?? (node.kind === 'sink' ? 'crystal' : node.kind === 'source' ? 'cluster' : 'generic');
+  const priority = hovered ? 5 : tracked ? 4 : 1;
   return (
-    <group position={node.position}>
+    <group
+      position={node.position}
+      onPointerOver={(e) => {
+        e.stopPropagation();
+        setHovered(true);
+      }}
+      onPointerOut={() => setHovered(false)}
+    >
       <group scale={1.7}>
         <Station shape={shape} color={accent} />
       </group>
-      <Html center position={[0, 0.95, 0]} style={{ pointerEvents: 'none' }}>
-        <div className="text-[10px] tracking-[0.16em] text-[rgba(230,232,236,0.7)] whitespace-nowrap">{node.label}</div>
-      </Html>
+      <FloatingLabel
+        id={`node-${node.id}`}
+        priority={priority}
+        maxDist={hovered || tracked ? 28 : 16}
+        fadeFrom={hovered || tracked ? 18 : 9}
+        position={[0, 0.92, 0]}
+      >
+        <div className="text-[8px] tracking-[0.14em] text-[rgba(230,232,236,0.72)]">{node.label}</div>
+      </FloatingLabel>
     </group>
   );
 }
