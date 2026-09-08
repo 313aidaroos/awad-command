@@ -79,7 +79,7 @@ export function CommandCanvas() {
       onCreated={handleCreated}
       style={CANVAS_STYLE}
     >
-      <fog attach="fog" args={exterior ? ['#07080A', 16, 58] : ['#14181E', 6, 22]} />
+      <fog attach="fog" args={exterior ? ['#07080A', 26, 78] : ['#161A20', 16, 40]} />
       <Lighting />
       <StudioEnvironment />
       {exterior ? <Starfield /> : null}

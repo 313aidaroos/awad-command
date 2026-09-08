@@ -3,7 +3,7 @@
 import { useCommandStore } from '@/store/useCommandStore';
 
 /** Graphite that still reads as a solid on a void background — not chrome, not candy glass. */
-const GRAPHITE = '#3A414C';
+const GRAPHITE = '#454C57';
 
 export function ChassisMaterial({ roughness = 0.4 }: { roughness?: number }) {
   const level = useCommandStore((s) => s.quality.level);
