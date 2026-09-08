@@ -56,7 +56,7 @@ export function AgentEntity({
           document.body.style.cursor = 'grab';
         }}
       >
-        <octahedronGeometry args={[0.14, 0]} />
+        <octahedronGeometry args={[0.18, 0]} />
         <meshStandardMaterial
           color={color}
           metalness={0.4}

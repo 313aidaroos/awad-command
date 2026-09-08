@@ -8,7 +8,8 @@ export function detectQuality(): QualityLevel {
   const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
   const mobile = window.matchMedia('(max-width: 768px)').matches;
   const lowMemory = typeof memory === 'number' && memory <= 4;
-  if (mobile || cores <= 4 || lowMemory) return 'low';
+  if (mobile) return 'low';
+  if (cores <= 4 || lowMemory) return 'medium';
   if (cores <= 8) return 'medium';
   return 'high';
 }

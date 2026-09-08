@@ -8,7 +8,7 @@ import { useCommandStore } from '@/store/useCommandStore';
 export function EntityField({ accent, radius = 0.95 }: { accent: string; radius?: number }) {
   const quality = useCommandStore((s) => s.quality.level);
   const geo = useMemo(() => {
-    const n = particleCount(quality, 90, 48, 18);
+    const n = particleCount(quality, 110, 64, 36);
     const positions = new Float32Array(n * 3);
     for (let i = 0; i < n; i += 1) {
       const th = Math.random() * Math.PI * 2;

@@ -23,7 +23,7 @@ function Station({ shape, color }: { shape: Shape; color: string }) {
       <group>
         {([-0.22, 0.22] as const).map((x) => (
           <mesh key={x} position={[x, 0.08, x * 0.4]}>
-            <sphereGeometry args={[0.16, 14, 14]} />
+            <sphereGeometry args={[0.2, 14, 14]} />
             <meshStandardMaterial color={color} metalness={0.3} roughness={0.45} transparent opacity={0.8} />
           </mesh>
         ))}
@@ -33,7 +33,7 @@ function Station({ shape, color }: { shape: Shape; color: string }) {
   if (shape === 'funnel') {
     return (
       <mesh rotation={[0, 0, Math.PI]}>
-        <coneGeometry args={[0.32, 0.55, 10]} />
+        <coneGeometry args={[0.38, 0.68, 10]} />
         <meshStandardMaterial color={color} metalness={0.28} roughness={0.4} transparent opacity={0.78} />
       </mesh>
     );
@@ -41,7 +41,7 @@ function Station({ shape, color }: { shape: Shape; color: string }) {
   if (shape === 'filter') {
     return (
       <mesh rotation={[1.2, 0, 0]}>
-        <torusGeometry args={[0.28, 0.06, 8, 22]} />
+        <torusGeometry args={[0.34, 0.07, 8, 22]} />
         <meshStandardMaterial color={color} metalness={0.35} roughness={0.38} transparent opacity={0.75} />
       </mesh>
     );
@@ -51,7 +51,7 @@ function Station({ shape, color }: { shape: Shape; color: string }) {
       <group>
         {[0, 0.16, 0.32].map((y) => (
           <mesh key={y} position={[0, y - 0.1, 0]}>
-            <cylinderGeometry args={[0.26 - y * 0.12, 0.26 - y * 0.12, 0.1, 12]} />
+            <cylinderGeometry args={[0.32 - y * 0.12, 0.32 - y * 0.12, 0.12, 12]} />
             <meshStandardMaterial color={color} metalness={0.4} roughness={0.35} transparent opacity={0.8} />
           </mesh>
         ))}
@@ -62,11 +62,11 @@ function Station({ shape, color }: { shape: Shape; color: string }) {
     return (
       <group>
         <mesh rotation={[1.2, 0.3, 0]}>
-          <torusGeometry args={[0.26, 0.035, 8, 20]} />
+          <torusGeometry args={[0.32, 0.04, 8, 20]} />
           <meshStandardMaterial color={color} metalness={0.3} roughness={0.4} transparent opacity={0.75} />
         </mesh>
         <mesh rotation={[0.4, 0.8, 0.2]}>
-          <torusGeometry args={[0.22, 0.03, 8, 20]} />
+          <torusGeometry args={[0.26, 0.035, 8, 20]} />
           <meshStandardMaterial color={color} metalness={0.3} roughness={0.4} transparent opacity={0.6} />
         </mesh>
       </group>
@@ -75,7 +75,7 @@ function Station({ shape, color }: { shape: Shape; color: string }) {
   if (shape === 'chevron') {
     return (
       <mesh rotation={[0.4, 0.6, 0.2]}>
-        <tetrahedronGeometry args={[0.32, 0]} />
+        <tetrahedronGeometry args={[0.4, 0]} />
         <meshStandardMaterial color={color} metalness={0.32} roughness={0.4} transparent opacity={0.8} />
       </mesh>
     );
@@ -83,7 +83,7 @@ function Station({ shape, color }: { shape: Shape; color: string }) {
   if (shape === 'block') {
     return (
       <mesh>
-        <boxGeometry args={[0.42, 0.32, 0.42]} />
+        <boxGeometry args={[0.5, 0.38, 0.5]} />
         <meshStandardMaterial color={color} metalness={0.25} roughness={0.5} transparent opacity={0.78} />
       </mesh>
     );
@@ -91,7 +91,7 @@ function Station({ shape, color }: { shape: Shape; color: string }) {
   if (shape === 'hex') {
     return (
       <mesh rotation={[0.6, 0.2, 0]}>
-        <cylinderGeometry args={[0.26, 0.26, 0.16, 6]} />
+        <cylinderGeometry args={[0.32, 0.32, 0.18, 6]} />
         <meshStandardMaterial color={color} metalness={0.3} roughness={0.42} transparent opacity={0.78} />
       </mesh>
     );
@@ -99,7 +99,7 @@ function Station({ shape, color }: { shape: Shape; color: string }) {
   if (shape === 'crystal') {
     return (
       <mesh>
-        <octahedronGeometry args={[0.3, 0]} />
+        <octahedronGeometry args={[0.38, 0]} />
         <meshStandardMaterial
           color={color}
           metalness={0.45}

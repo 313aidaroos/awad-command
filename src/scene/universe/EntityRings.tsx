@@ -25,7 +25,7 @@ export function EntityRings({
       {Array.from({ length: rings }, (_, i) => (
         <mesh key={i} rotation={[1.15 + i * 0.28, i * 0.4, 0.15 * i]}>
           <torusGeometry args={[radius + i * 0.16, 0.01, 8, 64]} />
-          <meshBasicMaterial color={i === 0 ? accent : '#9aa3b2'} transparent opacity={0.28 - i * 0.05} />
+          <meshBasicMaterial color={i === 0 ? accent : '#9aa3b2'} transparent opacity={0.42 - i * 0.08} />
         </mesh>
       ))}
     </group>

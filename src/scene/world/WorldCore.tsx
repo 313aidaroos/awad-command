@@ -20,7 +20,7 @@ export function WorldCore({ project }: { project: ProjectDefinition }) {
 
   return (
     <mesh ref={spin}>
-      <octahedronGeometry args={[0.55, 0]} />
+      <octahedronGeometry args={[0.72, 0]} />
       <meshStandardMaterial
         color={project.accent}
         metalness={0.45}

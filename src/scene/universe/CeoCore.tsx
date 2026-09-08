@@ -17,7 +17,7 @@ export function CeoCore() {
   const openPanel = useCommandStore((s) => s.openPanel);
 
   const halo = useMemo(() => {
-    const n = particleCount(quality, 220, 120, 48);
+    const n = particleCount(quality, 260, 160, 90);
     const positions = new Float32Array(n * 3);
     for (let i = 0; i < n; i += 1) {
       const th = Math.random() * Math.PI * 2;

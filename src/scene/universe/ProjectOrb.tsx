@@ -70,7 +70,7 @@ export function ProjectOrb({ project }: { project: ProjectDefinition }) {
       />
       <EntitySilhouette kind={identity.kind} accent={project.accent} segs={segs} />
       <EntityField accent={project.accent} />
-      <EntityRings count={quality === 'low' ? 1 : identity.rings} accent={project.accent} />
+      <EntityRings count={identity.rings} accent={project.accent} />
       {!focused && (
         <Html center distanceFactor={16} position={[0, -1.85, 0]} style={{ pointerEvents: 'none' }}>
           <div className="text-center whitespace-nowrap">
