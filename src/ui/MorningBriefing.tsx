@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { money } from '@/lib/format';
 import { Glass } from '@/ui/Glass';
 import { Metric } from '@/ui/Metric';
@@ -19,14 +19,16 @@ export function MorningBriefing() {
   const enter = useCommandStore((s) => s.enterProject);
   const setMode = useCommandStore((s) => s.setMode);
   const projects = useCommandStore((s) => (s.contextPanel === 'briefing' ? s.projects : IDLE_PROJECTS));
+  const offered = useRef(false);
 
   useEffect(() => {
-    if (!booted || seen) return;
+    if (!booted || seen || offered.current) return;
     const key = `awad-briefing-${new Date().toDateString()}`;
     if (window.localStorage.getItem(key)) {
       setSeen(true);
       return;
     }
+    offered.current = true;
     const t = window.setTimeout(() => openPanel('briefing'), 1500);
     return () => window.clearTimeout(t);
   }, [booted, seen, openPanel, setSeen]);
@@ -46,7 +48,8 @@ export function MorningBriefing() {
   }
 
   return (
-    <Glass className="fixed left-1/2 top-[18vh] z-30 w-[min(640px,calc(100%-32px))] -translate-x-1/2 p-5">
+    <div className="pointer-events-auto fixed inset-0 z-30 grid place-items-start justify-center bg-black/35 pt-[16vh]" onClick={dismiss}>
+    <Glass className="w-[min(640px,calc(100%-32px))] p-5" onClick={(e) => e.stopPropagation()}>
       <h2 className="text-lg font-light tracking-[0.08em]">{hello}</h2>
       <div className="mt-4 space-y-2 text-sm">
         <div className="flex justify-between">
@@ -83,5 +86,6 @@ export function MorningBriefing() {
         </button>
       </div>
     </Glass>
+    </div>
   );
 }

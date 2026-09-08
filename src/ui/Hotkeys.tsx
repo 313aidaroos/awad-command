@@ -12,6 +12,10 @@ export function Hotkeys() {
           state.togglePalette(false);
           return;
         }
+        if (state.contextPanel === 'briefing' || state.contextPanel === 'computer' || state.contextPanel === 'approval') {
+          state.closePanel();
+          return;
+        }
         if (state.focusedProject) state.returnToUniverse();
       }
       if (e.key === '1') state.setMode('default');
