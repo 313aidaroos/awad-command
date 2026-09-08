@@ -46,7 +46,7 @@ const DPR_HIGH: [number, number] = [1, 2];
 function handleCreated({ gl }: { gl: WebGLRenderer }) {
   gl.setClearColor('#161A20', 1);
   gl.toneMapping = THREE.NeutralToneMapping;
-  gl.toneMappingExposure = 1.48;
+  gl.toneMappingExposure = 1.32;
   gl.outputColorSpace = THREE.SRGBColorSpace;
   gl.domElement.addEventListener(
     'webglcontextlost',

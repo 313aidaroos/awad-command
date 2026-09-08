@@ -16,12 +16,12 @@ function HallBackdrop() {
     scene.fog = null;
     scene.background = new THREE.Color('#1E242C');
     gl.setClearColor('#1E242C', 1);
-    gl.toneMappingExposure = 1.52;
+    gl.toneMappingExposure = 1.34;
     return () => {
       scene.fog = prevFog;
       scene.background = prevBg;
       gl.setClearColor('#161A20', 1);
-      gl.toneMappingExposure = 1.48;
+      gl.toneMappingExposure = 1.32;
     };
   }, [gl, scene]);
   return null;
@@ -83,7 +83,8 @@ export function ContraxisFacility({ accent }: { accent: string }) {
       </mesh>
       <hemisphereLight args={['#eef1f5', '#2a3038', 0.4]} />
       <ambientLight intensity={0.12} color="#d5dbe3" />
-      <pointLight color="#f7f8fa" intensity={2.55} distance={24} position={[-9, 3.1, 0.4]} />
+      <spotLight color="#ffffff" intensity={2.8} position={[-8.4, 4.1, 2.1]} angle={0.48} penumbra={0.42} distance={22} />
+      <pointLight color="#f7f8fa" intensity={2.15} distance={24} position={[-9, 3.1, 0.4]} />
       <pointLight color="#eef2f6" intensity={1.85} distance={20} position={[2, 3.3, 0.2]} />
       <pointLight color={accent} intensity={0.55} distance={14} position={[13.5, 2.8, 0]} />
       <ContactShadows position={[0, -0.02, 0]} opacity={0.36} scale={40} blur={2.4} far={10} color="#000000" />

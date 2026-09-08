@@ -22,14 +22,14 @@ export function Graphite({ roughness = 0.22, metalness = 0.94 }: { roughness?: n
   }
   return (
     <meshPhysicalMaterial
-      color="#6E7682"
+      color="#5C646E"
       roughnessMap={suite?.graphiteRough}
       normalMap={suite?.graphiteNormal}
       metalness={metalness}
       roughness={roughness}
-      envMapIntensity={2.85}
-      clearcoat={0.55}
-      clearcoatRoughness={0.22}
+      envMapIntensity={2.55}
+      clearcoat={0.4}
+      clearcoatRoughness={0.28}
       normalScale={NORMAL}
     />
   );
@@ -84,14 +84,14 @@ export function FloorMetal({ roughness = 0.28 }: { roughness?: number }) {
   const suite = usePbrSuite();
   return (
     <meshPhysicalMaterial
-      color="#4A535E"
+      color="#323940"
       roughnessMap={suite?.floorRough}
       normalMap={suite?.graphiteNormal}
-      metalness={0.78}
+      metalness={0.7}
       roughness={roughness}
-      envMapIntensity={2.35}
-      clearcoat={0.2}
-      clearcoatRoughness={0.4}
+      envMapIntensity={1.85}
+      clearcoat={0.08}
+      clearcoatRoughness={0.5}
       normalScale={new THREE.Vector2(0.35, 0.35)}
     />
   );
