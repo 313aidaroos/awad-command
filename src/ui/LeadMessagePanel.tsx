@@ -9,7 +9,8 @@ export function LeadMessagePanel({ slug }: { slug: string }) {
   const lead = getLeadBySlug(slug);
   const queue = useCommandStore((s) => s.queueLeadMessage);
   const applyEvent = useCommandStore((s) => s.applyEvent);
-  const messages = useCommandStore((s) => s.leadMessages.filter((m) => m.projectSlug === slug).slice(0, 4));
+  const leadMessages = useCommandStore((s) => s.leadMessages);
+  const messages = leadMessages.filter((m) => m.projectSlug === slug).slice(0, 4);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [hint, setHint] = useState<string | null>(null);

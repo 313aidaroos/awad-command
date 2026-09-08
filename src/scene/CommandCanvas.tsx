@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type ComponentType } from 'react';
+import { useEffect, useState, type ComponentType, type CSSProperties } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { CameraRig } from '@/scene/CameraRig';
 import { Lighting } from '@/scene/Environment/Lighting';
@@ -9,6 +9,20 @@ import { Universe } from '@/scene/universe/Universe';
 import { ProjectWorld } from '@/scene/world/ProjectWorld';
 import { useCommandStore } from '@/store/useCommandStore';
 import { ClientErrorBoundary } from '@/ui/CanvasErrorBoundary';
+
+const CAMERA_INIT = { position: [0, 4, 22] as [number, number, number], fov: 45, near: 0.1, far: 300 };
+const GL_INIT = {
+  antialias: true,
+  alpha: false,
+  stencil: false,
+  powerPreference: 'default' as const,
+  failIfMajorPerformanceCaveat: false,
+};
+const CANVAS_STYLE: CSSProperties = { width: '100%', height: '100%', display: 'block' };
+const RESIZE = { scroll: false, debounce: { scroll: 50, resize: 75 } };
+const DPR_LOW = 1;
+const DPR_MED: [number, number] = [1, 1.5];
+const DPR_HIGH: [number, number] = [1, 2];
 
 function EffectsGate() {
   const level = useCommandStore((s) => s.quality.level);
@@ -38,19 +52,14 @@ function EffectsGate() {
 
 export function CommandCanvas() {
   const level = useCommandStore((s) => s.quality.level);
-  const dpr: number | [number, number] = level === 'low' ? 1 : level === 'medium' ? [1, 1.5] : [1, 2];
+  const dpr = level === 'low' ? DPR_LOW : level === 'medium' ? DPR_MED : DPR_HIGH;
 
   return (
     <Canvas
-      camera={{ position: [0, 4, 22], fov: 45, near: 0.1, far: 300 }}
+      camera={CAMERA_INIT}
       dpr={dpr}
-      gl={{
-        antialias: true,
-        alpha: false,
-        stencil: false,
-        powerPreference: 'default',
-        failIfMajorPerformanceCaveat: false,
-      }}
+      gl={GL_INIT}
+      resize={RESIZE}
       onCreated={({ gl }) => {
         gl.setClearColor('#07080A', 1);
         gl.domElement.addEventListener(
@@ -61,7 +70,7 @@ export function CommandCanvas() {
           false,
         );
       }}
-      style={{ position: 'fixed', inset: 0 }}
+      style={CANVAS_STYLE}
     >
       <Lighting />
       <Starfield />

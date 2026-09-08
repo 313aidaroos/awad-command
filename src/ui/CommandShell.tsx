@@ -41,13 +41,15 @@ export function CommandShell() {
   }, []);
 
   return (
-    <div className="relative h-dvh w-full overflow-hidden bg-[var(--void)]">
+    <div className="relative h-svh w-full overflow-hidden bg-[var(--void)]">
       {webgl === false ? (
         <WebGLFallback />
       ) : webgl ? (
-        <ClientErrorBoundary fallback={<WebGLFallback />}>
-          <CommandCanvas />
-        </ClientErrorBoundary>
+        <div className="absolute inset-0">
+          <ClientErrorBoundary fallback={<WebGLFallback />}>
+            <CommandCanvas />
+          </ClientErrorBoundary>
+        </div>
       ) : null}
       <BootSequence />
       <TopBar />

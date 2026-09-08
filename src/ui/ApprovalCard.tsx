@@ -5,7 +5,8 @@ import { Glass } from '@/ui/Glass';
 import { useCommandStore } from '@/store/useCommandStore';
 
 export function ApprovalCard() {
-  const approvals = useCommandStore((s) => s.approvals.filter((a) => a.status === 'pending'));
+  const allApprovals = useCommandStore((s) => s.approvals);
+  const approvals = allApprovals.filter((a) => a.status === 'pending');
   const resolve = useCommandStore((s) => s.resolveApproval);
   const close = useCommandStore((s) => s.closePanel);
   const open = useCommandStore((s) => s.contextPanel === 'approval');
