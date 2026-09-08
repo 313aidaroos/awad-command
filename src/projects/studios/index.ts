@@ -20,7 +20,7 @@ export const studios = defineProject({
   name: 'AWAD STUDIOS',
   tagline: 'Entertainment and show production',
   accent: '#FF7A93',
-  universePosition: [11, 1.6, -3],
+  universePosition: [18.6, 2.8, -5.2],
   connections: [{ to: 'socixis', kind: 'publishing' }],
   agents,
   nodes,

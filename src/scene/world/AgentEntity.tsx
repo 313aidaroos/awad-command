@@ -1,10 +1,15 @@
 'use client';
 
+import { useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
+import * as THREE from 'three';
+import { agentLocalPosition } from '@/scene/lib/agentMotion';
+import { pointerGate } from '@/scene/lib/pointer';
 import { STATUS_COLOR } from '@/scene/universe/statusColor';
 import { useCommandStore } from '@/store/useCommandStore';
-import type { AgentDefinition } from '@/types/agent';
-import type { AgentStatus } from '@/types/agent';
+import type { AgentDefinition, AgentStatus } from '@/types/agent';
+import type { WorldNode } from '@/types/world';
 
 const AGENT_TINT: Record<AgentStatus, string> = {
   working: STATUS_COLOR.active,
@@ -15,23 +20,59 @@ const AGENT_TINT: Record<AgentStatus, string> = {
   needs_approval: STATUS_COLOR.attention,
 };
 
-export function AgentEntity({ agent }: { agent: AgentDefinition }) {
+export function AgentEntity({
+  agent,
+  nodes,
+}: {
+  agent: AgentDefinition;
+  nodes: WorldNode[];
+}) {
+  const group = useRef<THREE.Group>(null);
   const state = useCommandStore((s) => s.agents[agent.id]);
-  const enterAgent = useCommandStore((s) => s.enterAgent);
+  const followAgent = useCommandStore((s) => s.followAgent);
+  const following = useCommandStore((s) => s.followingAgent === agent.id);
+  const workforce = useCommandStore((s) => s.mode === 'workforce');
   const status = state?.status ?? 'idle';
+  const color = AGENT_TINT[status];
+
+  useFrame(() => {
+    if (!group.current) return;
+    agentLocalPosition(agent, state, nodes, Date.now(), group.current.position);
+    group.current.rotation.y += 0.012;
+  });
+
   return (
-    <group position={agent.homePosition}>
+    <group ref={group} position={agent.homePosition}>
       <mesh
         onClick={(e) => {
           e.stopPropagation();
-          enterAgent(agent.id);
+          if (pointerGate.suppressClick) return;
+          followAgent(agent.id);
+        }}
+        onPointerOver={() => {
+          document.body.style.cursor = 'pointer';
+        }}
+        onPointerOut={() => {
+          document.body.style.cursor = 'grab';
         }}
       >
-        <sphereGeometry args={[0.16, 16, 16]} />
-        <meshBasicMaterial color={AGENT_TINT[status]} transparent opacity={0.9} />
+        <octahedronGeometry args={[0.14, 0]} />
+        <meshStandardMaterial
+          color={color}
+          metalness={0.4}
+          roughness={0.3}
+          emissive={color}
+          emissiveIntensity={following ? 0.45 : 0.18}
+        />
       </mesh>
-      <Html distanceFactor={18} position={[0, 0.32, 0]} style={{ pointerEvents: 'none' }}>
-        <div className="text-[9px] tracking-[0.08em] text-[var(--muted)] whitespace-nowrap">
+      {following ? (
+        <mesh rotation={[1.4, 0, 0]}>
+          <torusGeometry args={[0.28, 0.012, 8, 24]} />
+          <meshBasicMaterial color={color} transparent opacity={0.7} />
+        </mesh>
+      ) : null}
+      <Html distanceFactor={18} position={[0, 0.34, 0]} style={{ pointerEvents: 'none' }}>
+        <div className={`text-[9px] tracking-[0.08em] whitespace-nowrap ${workforce || following ? 'text-[var(--text)]' : 'text-[var(--muted)]'}`}>
           {agent.name}
         </div>
       </Html>

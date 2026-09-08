@@ -2,7 +2,7 @@
 
 import { CommandCanvas } from '@/scene/CommandCanvas';
 
-/** Isolated R3F mount. Never imported from CommandShell on WebKit. */
+/** Isolated R3F mount. Loaded after hydration on every browser, including Safari. */
 export function CanvasHost() {
   return (
     <div className="absolute inset-0">

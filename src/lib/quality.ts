@@ -18,3 +18,9 @@ export function particleCount(level: QualityLevel, high: number, medium: number,
   if (level === 'medium') return medium;
   return low;
 }
+
+export function geoSegments(level: QualityLevel, high: number, medium: number, low: number): number {
+  if (level === 'high') return high;
+  if (level === 'medium') return medium;
+  return low;
+}

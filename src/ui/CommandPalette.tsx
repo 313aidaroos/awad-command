@@ -94,6 +94,15 @@ export function CommandPalette() {
             <Command.Item className="cursor-pointer rounded-md px-2 py-1.5" onSelect={() => { setQuality('high'); toggle(false); }}>
               Quality High
             </Command.Item>
+            <Command.Item className="cursor-pointer rounded-md px-2 py-1.5" onSelect={() => { setQuality('medium'); toggle(false); }}>
+              Quality Medium
+            </Command.Item>
+            <Command.Item className="cursor-pointer rounded-md px-2 py-1.5" onSelect={() => { setQuality('low'); toggle(false); }}>
+              Quality Low
+            </Command.Item>
+            <Command.Item className="cursor-pointer rounded-md px-2 py-1.5" onSelect={() => { toggle(false); }}>
+              Time machine · coming
+            </Command.Item>
             <Command.Item className="cursor-pointer rounded-md px-2 py-1.5" onSelect={() => { finishBoot(); toggle(false); }}>
               Rerun boot
             </Command.Item>

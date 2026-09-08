@@ -54,7 +54,7 @@ export function Connections() {
           <bufferGeometry>
             <bufferAttribute attach="attributes-position" args={[line.positions, 3]} />
           </bufferGeometry>
-          <lineBasicMaterial color={line.color} transparent opacity={i % 2 === 0 ? 0.05 : 0.14} />
+          <lineBasicMaterial color={line.color} transparent opacity={i % 2 === 0 ? 0.07 : 0.18} />
         </line>
       ))}
     </group>

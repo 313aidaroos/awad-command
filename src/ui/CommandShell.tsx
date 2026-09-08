@@ -3,8 +3,10 @@
 import { useEffect, useState, type ComponentType } from 'react';
 import { startDataLayer, stopDataLayer } from '@/data';
 import { detectQuality } from '@/lib/quality';
-import { isSafariLike } from '@/lib/safari';
 import { isWebGLAvailable } from '@/lib/webgl';
+import { AdaptiveQuality } from '@/ui/AdaptiveQuality';
+import { AgentFollowHud } from '@/ui/AgentFollowHud';
+import { ModeStub } from '@/ui/ModeStub';
 import { ApprovalCard } from '@/ui/ApprovalCard';
 import { BootSequence } from '@/ui/BootSequence';
 import { BootFallback, ClientErrorBoundary, WebGLFallback } from '@/ui/CanvasErrorBoundary';
@@ -22,15 +24,13 @@ import { TopBar } from '@/ui/TopBar';
 import { useCommandStore } from '@/store/useCommandStore';
 
 export function CommandShell() {
-  // Closed until after hydration so SSR and Safari never mount R3F/three.
+  // Closed until after hydration so SSR never mounts R3F/three. Safari gets Canvas.
   const [canvasEnabled, setCanvasEnabled] = useState(false);
   const [webgl, setWebgl] = useState<boolean | null>(null);
   const [CanvasSlot, setCanvasSlot] = useState<ComponentType | null>(null);
 
   useEffect(() => {
-    const canvasEnabled = !isSafariLike();
-    setCanvasEnabled(canvasEnabled);
-    if (!canvasEnabled) return;
+    setCanvasEnabled(true);
     let live = true;
     setWebgl(isWebGLAvailable());
     useCommandStore.getState().setQuality(detectQuality(), true);
@@ -73,6 +73,9 @@ export function CommandShell() {
       <EventStream />
       <NewsCorner />
       <ProjectHud />
+      <AgentFollowHud />
+      <ModeStub />
+      <AdaptiveQuality />
       <ComputerPanel />
       <ApprovalCard />
       <MorningBriefing />

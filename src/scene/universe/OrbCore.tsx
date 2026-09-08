@@ -3,6 +3,7 @@
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { pointerGate } from '@/scene/lib/pointer';
 import { orbFrag, orbVert } from '@/scene/shaders/orb';
 import { STATUS_COLOR } from '@/scene/universe/statusColor';
 import type { ProjectStatus } from '@/types/project';
@@ -62,6 +63,7 @@ export function OrbCore({
     <mesh
       onClick={(e) => {
         e.stopPropagation();
+        if (pointerGate.suppressClick) return;
         onClick?.();
       }}
       onPointerOver={(e) => {

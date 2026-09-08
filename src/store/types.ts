@@ -17,10 +17,20 @@ export type ContextPanel =
   | 'computer'
   | 'lead';
 
+export type EnterPhase = 'universe' | 'approach' | 'shell' | 'interior';
+
 export interface CameraTarget {
   position: [number, number, number];
   lookAt: [number, number, number];
   duration: number;
+  phase?: EnterPhase;
+}
+
+export interface CameraSlice {
+  target: CameraTarget | null;
+  sequence: CameraTarget[];
+  index: number;
+  requestId: number;
 }
 
 export interface CommandState {
@@ -28,10 +38,12 @@ export interface CommandState {
   mode: ModeName;
   focusedProject?: string;
   focusedAgent?: string;
+  followingAgent?: string;
   hoveredProject?: string;
+  enterPhase: EnterPhase;
   dataMode: DataMode;
   booted: boolean;
-  camera: { target: CameraTarget | null; requestId: number };
+  camera: CameraSlice;
   projects: Record<string, ProjectRuntime>;
   agents: Record<string, AgentState>;
   flows: Record<string, FlowInstance>;
@@ -52,10 +64,15 @@ export interface CommandActions {
   finishBoot: () => void;
   enterProject: (slug: string) => void;
   enterAgent: (id: string) => void;
+  followAgent: (id: string) => void;
+  stopFollow: () => void;
   returnToUniverse: () => void;
   setMode: (mode: ModeName) => void;
   hoverProject: (slug: string | undefined) => void;
   flyTo: (target: CameraTarget) => void;
+  flySequence: (targets: CameraTarget[]) => void;
+  advanceCamera: () => void;
+  setEnterPhase: (phase: EnterPhase) => void;
   openPanel: (kind: ContextPanel) => void;
   closePanel: () => void;
   togglePalette: (open?: boolean) => void;

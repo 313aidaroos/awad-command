@@ -1,6 +1,8 @@
 # AWAD COMMAND
 
-Private 3D AI command center for Awad (Apixis Dev). The universe **is** the UI — orbs, not a card grid.
+Private 3D AI command center for Awad (Apixis Dev). The universe **is** the UI — project worlds, not a card grid.
+
+Visual V2: each company is a distinct 3D entity (shell, silhouette, rings, particles) around a dominant AWAD CEO core. Click flies through the shell into the internal ecosystem. Contraxis is the showcase world — Customer → Lead Gen → Qualification → Database → Matching → Sales → Contractor → Job → Revenue — with moving agents and a Follow path. Safari now renders the canvas (postprocessing stays off on WebKit).
 
 Mood reference (not app code): [public/awad-command-preview.html](public/awad-command-preview.html)  
 Master handoff: [docs/MASTER_HANDOFF.md](docs/MASTER_HANDOFF.md)

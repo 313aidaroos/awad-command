@@ -14,7 +14,7 @@ export function Starfield() {
     const positions = new Float32Array(count * 3);
     const sizes = new Float32Array(count);
     for (let i = 0; i < count; i += 1) {
-      const r = 60 + Math.random() * 60;
+      const r = 70 + Math.random() * 90;
       const t = Math.random() * Math.PI * 2;
       const ph = Math.acos(2 * Math.random() - 1);
       positions[i * 3] = r * Math.sin(ph) * Math.cos(t);

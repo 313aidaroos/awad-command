@@ -15,7 +15,7 @@ export const qahwahworld = defineProject({
   name: 'QAHWAHWORLD',
   tagline: 'Coffee-house world — coming online',
   accent: '#D4A574',
-  universePosition: [-8.2, -2.4, 3],
+  universePosition: [-14.1, -4.2, 5.3],
   connections: [{ to: 'socixis', kind: 'marketing' }],
   agents,
   nodes,

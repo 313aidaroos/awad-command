@@ -15,7 +15,13 @@ export function ringPositions(
 
 export function makeAgents(
   projectSlug: string,
-  members: { name: string; role: string; objective: string; tools: string[] }[],
+  members: {
+    name: string;
+    role: string;
+    objective: string;
+    tools: string[];
+    position?: [number, number, number];
+  }[],
   radius = 4.5,
 ): AgentDefinition[] {
   const spots = ringPositions(members.length, radius, 0.4);
@@ -26,13 +32,13 @@ export function makeAgents(
     role: member.role,
     objective: member.objective,
     tools: member.tools,
-    homePosition: spots[i] ?? [radius, 0, 0],
+    homePosition: member.position ?? spots[i] ?? [radius, 0, 0],
   }));
 }
 
 export function makeNodes(
   projectSlug: string,
-  labels: { label: string; kind: WorldNode['kind'] }[],
+  labels: { label: string; kind: WorldNode['kind']; position?: [number, number, number] }[],
   radius = 7.5,
 ): WorldNode[] {
   const spots = ringPositions(labels.length, radius, -0.2);
@@ -40,7 +46,7 @@ export function makeNodes(
     id: `${projectSlug}.node.${node.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
     label: node.label,
     kind: node.kind,
-    position: spots[i] ?? [radius, 0, 0],
+    position: node.position ?? spots[i] ?? [radius, 0, 0],
   }));
 }
 

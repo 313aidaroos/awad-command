@@ -11,7 +11,7 @@ import { Universe } from '@/scene/universe/Universe';
 import { ProjectWorld } from '@/scene/world/ProjectWorld';
 import { useCommandStore } from '@/store/useCommandStore';
 
-const CAMERA_INIT = { position: [0, 4, 22] as [number, number, number], fov: 45, near: 0.1, far: 300 };
+const CAMERA_INIT = { position: [0, 8, 38] as [number, number, number], fov: 42, near: 0.1, far: 420 };
 const GL_INIT = {
   antialias: true,
   alpha: false,
@@ -66,8 +66,6 @@ export function CommandCanvas() {
   const level = useCommandStore((s) => s.quality.level);
   const safari = isSafariLike();
   const dpr = safari || level === 'low' ? DPR_LOW : level === 'medium' ? DPR_MED : DPR_HIGH;
-
-  if (safari) return null;
 
   return (
     <Canvas

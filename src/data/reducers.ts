@@ -57,6 +57,11 @@ export function applyEventToState(state: CommandState, event: CommandEvent): voi
       agent.status = 'working';
       agent.currentTask = event.summary;
     }
+    if (event.nodeId) {
+      agent.fromNodeId = agent.targetNodeId;
+      agent.targetNodeId = event.nodeId;
+      agent.moveStartedAt = event.ts;
+    }
     agent.recentActions = [{ ts: event.ts, text: event.summary, eventId: event.id }, ...agent.recentActions].slice(0, 20);
   }
 

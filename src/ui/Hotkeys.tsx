@@ -16,6 +16,10 @@ export function Hotkeys() {
           state.closePanel();
           return;
         }
+        if (state.followingAgent) {
+          state.stopFollow();
+          return;
+        }
         if (state.focusedProject) state.returnToUniverse();
       }
       if (e.key === '1') state.setMode('default');

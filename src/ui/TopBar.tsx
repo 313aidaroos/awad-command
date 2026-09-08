@@ -5,7 +5,10 @@ import { useCommandStore } from '@/store/useCommandStore';
 
 export function TopBar() {
   const dataMode = useCommandStore((s) => s.dataMode);
+  const quality = useCommandStore((s) => s.quality.level);
   const togglePalette = useCommandStore((s) => s.togglePalette);
+  const toggleEventStream = useCommandStore((s) => s.toggleEventStream);
+  const toggleNews = useCommandStore((s) => s.toggleNews);
   const [time, setTime] = useState('');
 
   useEffect(() => {
@@ -29,7 +32,16 @@ export function TopBar() {
       >
         ⌘K
       </button>
-      <div className="font-num text-[11px] text-[var(--muted)]">{time}</div>
+      <div className="flex items-center gap-3 font-num text-[11px] text-[var(--muted)]">
+        <button type="button" onClick={() => toggleEventStream()} className="hover:text-[var(--text)]">
+          Events
+        </button>
+        <button type="button" onClick={() => toggleNews()} className="hover:text-[var(--text)]">
+          News
+        </button>
+        <span>{quality.toUpperCase()}</span>
+        <span>{time}</span>
+      </div>
     </header>
   );
 }
