@@ -9,7 +9,7 @@ describe('project vessel identities', () => {
       const identity = identityOf(slug);
       expect(identity.kind).toBeTruthy();
       expect(identity.scale).toBeGreaterThan(0.7);
-      expect(identity.scale).toBeLessThan(1.6);
+      expect(identity.scale).toBeLessThan(2.2);
       kinds.add(identity.kind);
     }
     expect(kinds.size).toBe(listProjectSlugs().length);

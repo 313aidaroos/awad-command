@@ -46,7 +46,7 @@ export function CompanyStation({ project }: { project: ProjectDefinition }) {
           priority={5}
           maxDist={48}
           fadeFrom={36}
-          position={[0, 2.55, 0]}
+          position={[0, 2.2, 0]}
         >
           <WorldName primary>{project.name}</WorldName>
         </FloatingLabel>

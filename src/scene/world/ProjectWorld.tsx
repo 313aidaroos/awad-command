@@ -15,7 +15,7 @@ export function ProjectWorld() {
   const slug = useCommandStore((s) => s.focusedProject);
   const enterPhase = useCommandStore((s) => s.enterPhase);
   const project = slug ? getProject(slug) : undefined;
-  const interior = !showExterior(enterPhase);
+  const interior = !showExterior(enterPhase) || slug === 'contraxis';
 
   if (!project || !interior) return null;
   const contraxis = project.slug === 'contraxis';

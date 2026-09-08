@@ -7,12 +7,13 @@ import { useCommandStore } from '@/store/useCommandStore';
 /** Never mounted on Safari/WebKit — CommandCanvas never loads EffectsGate there. */
 export function Effects() {
   const level = useCommandStore((s) => s.quality.level);
-  if (isSafariLike() || level === 'low') return null;
+  const view = useCommandStore((s) => s.view);
+  if (isSafariLike() || level === 'low' || view !== 'universe') return null;
 
   return (
     <EffectComposer multisampling={0} enableNormalPass={false}>
-      <Bloom intensity={level === 'high' ? 0.42 : 0.22} luminanceThreshold={level === 'high' ? 0.55 : 0.62} />
-      <Vignette eskil={false} offset={0.18} darkness={0.42} />
+      <Bloom intensity={level === 'high' ? 0.36 : 0.18} luminanceThreshold={level === 'high' ? 0.58 : 0.66} />
+      <Vignette eskil={false} offset={0.22} darkness={0.22} />
     </EffectComposer>
   );
 }

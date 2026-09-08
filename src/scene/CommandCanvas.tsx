@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, type ComponentType, type CSSProperties } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { WebGLRenderer } from 'three';
 import { isSafariLike } from '@/lib/safari';
@@ -9,14 +9,24 @@ import { CameraRig } from '@/scene/CameraRig';
 import { Lighting } from '@/scene/Environment/Lighting';
 import { StudioEnvironment } from '@/scene/Environment/StudioEnvironment';
 import { showExterior } from '@/scene/lib/cameraPaths';
+import { StudioCyc } from '@/scene/universe/StudioCyc';
 import { Universe } from '@/scene/universe/Universe';
 import { ProjectWorld } from '@/scene/world/ProjectWorld';
 import { useCommandStore } from '@/store/useCommandStore';
 
-function InteriorFog() {
+function SceneAtmosphere() {
+  const { scene, gl } = useThree();
   const interior = !showExterior(useCommandStore((s) => s.enterPhase));
+  useEffect(() => {
+    if (interior) {
+      scene.fog = null;
+      gl.setClearColor('#1C222A', 1);
+      return;
+    }
+    gl.setClearColor('#12151A', 1);
+  }, [gl, interior, scene]);
   if (interior) return null;
-  return <fog attach="fog" args={['#12151A', 42, 78]} />;
+  return <fog attach="fog" args={['#12151A', 48, 92]} />;
 }
 
 const CAMERA_INIT = { position: [0, 5.8, 20] as [number, number, number], fov: 36, near: 0.1, far: 220 };
@@ -80,9 +90,10 @@ export function CommandCanvas() {
       onCreated={handleCreated}
       style={CANVAS_STYLE}
     >
-      <InteriorFog />
+      <SceneAtmosphere />
       <Lighting />
       <StudioEnvironment />
+      <StudioCyc />
       <Universe />
       <ProjectWorld />
       <CameraRig />

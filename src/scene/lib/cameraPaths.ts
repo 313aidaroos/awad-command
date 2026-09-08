@@ -8,7 +8,7 @@ export const INTERIOR_ORIGIN: [number, number, number] = [0, 0, 0];
 
 export const UNIVERSE_CAM: CameraTarget = {
   position: [0, 5.8, UNIVERSE_ZOOM],
-  lookAt: [0, 1.35, 0],
+  lookAt: [0, 1.55, 0],
   duration: 1.8,
   phase: 'universe',
 };
@@ -22,11 +22,14 @@ export function showExterior(enterPhase: CameraTarget['phase'] | string): boolea
   return enterPhase === 'universe' || enterPhase === 'approach';
 }
 
-/** Contraxis hall cameras — local to the sealed facility at the origin. */
+/**
+ * Standing in the nave, looking +X down the Customer→Revenue spine.
+ * Must stay inside x∈(-17,17), z∈(-6.2,6.2) or the camera sees a wall as a grey field.
+ */
 export const CONTRAXIS_HALL_CAM: CameraTarget = {
-  position: [-11.4, 2.15, 2.35],
-  lookAt: [4.2, 1.05, 0],
-  duration: 0.05,
+  position: [-10.6, 2.05, 1.85],
+  lookAt: [5.2, 1.15, 0],
+  duration: 0.01,
   phase: 'interior',
   cut: true,
 };
@@ -35,9 +38,11 @@ export function projectEnterSequence(
   pos: [number, number, number],
   slug?: string,
 ): CameraTarget[] {
+  if (slug === 'contraxis') {
+    return [CONTRAXIS_HALL_CAM];
+  }
   const [x, y, z] = pos;
   const [dx, , dz] = dirOf(pos);
-  const hall = slug === 'contraxis';
   return [
     {
       position: [x + dx * 8.2, y + 3.6, z + dz * 8.2],
@@ -45,29 +50,19 @@ export function projectEnterSequence(
       duration: 1.35,
       phase: 'approach',
     },
-    hall
-      ? {
-          position: [-12.2, 2.25, 2.55],
-          lookAt: [3.4, 1.05, 0],
-          duration: 0.05,
-          phase: 'shell',
-          cut: true,
-        }
-      : {
-          position: [6.4, 2.7, 8.2],
-          lookAt: [0, 0.7, 0],
-          duration: 0.05,
-          phase: 'shell',
-          cut: true,
-        },
-    hall
-      ? CONTRAXIS_HALL_CAM
-      : {
-          position: [5.2, 2.5, 7.4],
-          lookAt: [0, 0.55, 0],
-          duration: 1.1,
-          phase: 'interior',
-        },
+    {
+      position: [6.4, 2.7, 8.2],
+      lookAt: [0, 0.7, 0],
+      duration: 0.05,
+      phase: 'shell',
+      cut: true,
+    },
+    {
+      position: [5.2, 2.5, 7.4],
+      lookAt: [0, 0.55, 0],
+      duration: 1.1,
+      phase: 'interior',
+    },
   ];
 }
 

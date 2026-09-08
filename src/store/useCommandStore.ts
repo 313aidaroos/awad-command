@@ -88,7 +88,7 @@ export const useCommandStore = create<CommandState & CommandActions>((set, get) 
       focusedProject: slug,
       focusedAgent: undefined,
       followingAgent: undefined,
-      enterPhase: 'approach',
+      enterPhase: sequence[0]?.phase ?? 'interior',
       contextPanel: 'none',
       camera: cameraFrom(sequence, get().camera.requestId + 1),
     });

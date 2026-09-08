@@ -1,26 +1,23 @@
 'use client';
 
 import { Anodized, Brushed, Graphite } from '@/scene/kit/materials';
-import { Column, FramedPanel, Plinth, Slit } from '@/scene/kit/parts';
+import { FramedPanel, Slit } from '@/scene/kit/parts';
 import type { VesselKind } from '@/scene/universe/identities';
 
 export function Vessel({ kind, accent }: { kind: VesselKind; accent: string }) {
   return (
     <group>
-      <Plinth size={[1.72, 0.16, 1.72]} steps={2} />
-      <group position={[0, 0.22, 0]}>
-        {kind === 'hall' ? <Hall accent={accent} /> : null}
-        {kind === 'mast' ? <Mast accent={accent} /> : null}
-        {kind === 'discs' ? <Discs accent={accent} /> : null}
-        {kind === 'spire' ? <Spire accent={accent} /> : null}
-        {kind === 'stack' ? <Stack accent={accent} /> : null}
-        {kind === 'cabinet' ? <Cabinet accent={accent} /> : null}
-        {kind === 'cluster' ? <Cluster accent={accent} /> : null}
-        {kind === 'folios' ? <Folios accent={accent} /> : null}
-        {kind === 'stage' ? <Stage accent={accent} /> : null}
-        {kind === 'tent' ? <Tent accent={accent} /> : null}
-        {kind === 'urn' ? <Urn accent={accent} /> : null}
-      </group>
+      {kind === 'hall' ? <Hall accent={accent} /> : null}
+      {kind === 'mast' ? <Mast accent={accent} /> : null}
+      {kind === 'discs' ? <Discs accent={accent} /> : null}
+      {kind === 'spire' ? <Spire accent={accent} /> : null}
+      {kind === 'stack' ? <Stack accent={accent} /> : null}
+      {kind === 'cabinet' ? <Cabinet accent={accent} /> : null}
+      {kind === 'cluster' ? <Cluster accent={accent} /> : null}
+      {kind === 'folios' ? <Folios accent={accent} /> : null}
+      {kind === 'stage' ? <Stage accent={accent} /> : null}
+      {kind === 'tent' ? <Tent accent={accent} /> : null}
+      {kind === 'urn' ? <Urn accent={accent} /> : null}
     </group>
   );
 }
@@ -28,39 +25,25 @@ export function Vessel({ kind, accent }: { kind: VesselKind; accent: string }) {
 function Hall({ accent }: { accent: string }) {
   return (
     <group>
-      {[
-        [-0.62, -0.52],
-        [0.62, -0.52],
-        [-0.62, 0.52],
-        [0.62, 0.52],
-      ].map(([x, z]) => (
-        <group key={`${x}${z}`} position={[x, 0, z]}>
-          <Column height={1.85} width={0.12} />
-        </group>
-      ))}
-      <mesh position={[0, 1.92, 0]}>
-        <boxGeometry args={[1.48, 0.08, 1.28]} />
-        <Graphite roughness={0.36} />
-      </mesh>
-      <mesh position={[0, 2.02, 0]}>
-        <boxGeometry args={[1.2, 0.06, 0.08]} />
-        <Brushed roughness={0.24} />
-      </mesh>
-      <group position={[0, 0.95, 0.64]}>
-        <FramedPanel width={1.28} height={1.35} accent={accent} />
-      </group>
-      <group position={[0, 0.95, -0.64]}>
-        <FramedPanel width={1.28} height={1.35} accent={accent} />
-      </group>
-      <group position={[0.72, 0.95, 0]} rotation={[0, Math.PI / 2, 0]}>
-        <FramedPanel width={1.05} height={1.35} accent={accent} />
-      </group>
       <mesh position={[0, 0.08, 0]}>
-        <boxGeometry args={[1.35, 0.06, 1.15]} />
-        <Brushed roughness={0.3} />
+        <boxGeometry args={[2.35, 0.16, 1.55]} />
+        <Graphite roughness={0.4} />
       </mesh>
-      <Slit position={[0, 0.08, 0.7]} size={[0.7, 0.02, 0.02]} accent={accent} />
-      <Slit position={[0, 1.88, 0]} size={[0.9, 0.02, 0.02]} accent={accent} intensity={0.55} />
+      <mesh position={[0, 0.95, 0]}>
+        <boxGeometry args={[2.15, 1.55, 1.28]} />
+        <Anodized roughness={0.26} />
+      </mesh>
+      <mesh position={[0, 1.78, 0]}>
+        <boxGeometry args={[2.28, 0.12, 1.4]} />
+        <Brushed roughness={0.2} />
+      </mesh>
+      <group position={[0, 0.95, 0.66]}>
+        <FramedPanel width={1.7} height={1.2} accent={accent} />
+      </group>
+      <group position={[1.1, 0.95, 0]} rotation={[0, Math.PI / 2, 0]}>
+        <FramedPanel width={1.05} height={1.2} accent={accent} />
+      </group>
+      <Slit position={[0, 1.86, 0.72]} size={[0.9, 0.03, 0.03]} accent={accent} intensity={0.7} />
     </group>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Anodized, Graphite } from '@/scene/kit/materials';
+import { Anodized } from '@/scene/kit/materials';
 import { FramedPanel, Slit } from '@/scene/kit/parts';
 import { FloatingLabel } from '@/scene/ui/FloatingLabel';
 import { WorldName } from '@/scene/ui/WorldName';
@@ -47,13 +47,13 @@ function Bay({ accent, kind }: { accent: string; kind: WorldNode['kind'] }) {
   const w = kind === 'sink' ? 1.7 : kind === 'source' ? 1.55 : 1.4;
   return (
     <group>
-      <mesh position={[0, 0.08, 0]}>
-        <boxGeometry args={[w, 0.12, 1.15]} />
-        <Graphite roughness={0.42} />
+      <mesh position={[0, 0.1, 0]}>
+        <boxGeometry args={[w, 0.16, 1.25]} />
+        <meshStandardMaterial color="#3A424C" metalness={0.4} roughness={0.45} />
       </mesh>
-      <mesh position={[0, 0.72, -0.42]}>
-        <boxGeometry args={[w * 0.92, 1.15, 0.1]} />
-        <Anodized roughness={0.3} />
+      <mesh position={[0, 0.78, -0.42]}>
+        <boxGeometry args={[w * 0.92, 1.25, 0.1]} />
+        <Anodized roughness={0.28} />
       </mesh>
       <group position={[0, 0.78, -0.36]}>
         <FramedPanel width={w * 0.78} height={0.85} accent={accent} thickness={0.03} />

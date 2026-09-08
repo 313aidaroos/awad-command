@@ -35,10 +35,14 @@ export function CameraRig() {
     if (!target) return;
     posT.current.set(...target.position);
     lookT.current.set(...target.lookAt);
+    const hall = useCommandStore.getState().focusedProject === 'contraxis';
     if (target.cut) {
       camera.position.set(...target.position);
       look.current.set(...target.lookAt);
       flying.current = false;
+      if (hall) {
+        rot.current = { x: 0, y: 0, tx: 0, ty: 0, zoom: 2.2, tZoom: 2.2 };
+      }
     } else {
       flying.current = true;
     }
@@ -57,12 +61,12 @@ export function CameraRig() {
         const [lx, , lz] = target.lookAt;
         const dx = x - lx;
         const dz = z - lz;
-        const hall = focus.slug === 'contraxis';
-        rot.current.tZoom = hall ? 2.4 : Math.max(7, Math.min(12, Math.hypot(dx, dz)));
+        const inside = focus.slug === 'contraxis';
+        rot.current.tZoom = inside ? 2.2 : Math.max(7, Math.min(12, Math.hypot(dx, dz)));
         rot.current.zoom = rot.current.tZoom;
-        rot.current.ty = hall ? 0 : Math.atan2(dx, dz);
+        rot.current.ty = inside ? 0 : Math.atan2(dx, dz);
         rot.current.y = rot.current.ty;
-        rot.current.tx = hall ? 0 : Math.max(-0.35, Math.min(0.35, (y - 2.2) / 5));
+        rot.current.tx = inside ? 0 : Math.max(-0.35, Math.min(0.35, (y - 2.2) / 5));
         rot.current.x = rot.current.tx;
       }
       if (state.view === 'universe') {
@@ -179,8 +183,8 @@ export function CameraRig() {
       followBias.current = 0;
       followDrop.current = 0;
       if (project.slug === 'contraxis') {
-        posT.current.set(-11.4 + Math.sin(r.y) * 1.1, 2.15 + r.x * 0.7, 2.35 + Math.cos(r.y) * 0.7);
-        lookT.current.set(4.2, 1.05, 0);
+        posT.current.set(-10.6 + Math.sin(r.y) * 0.8, 2.05 + r.x * 0.45, 1.85 + Math.cos(r.y) * 0.45);
+        lookT.current.set(5.2, 1.15, 0);
       } else {
         posT.current.set(Math.sin(r.y) * r.zoom, 2.5 + r.x * 1.6, Math.cos(r.y) * r.zoom);
         lookT.current.set(0, 0.55, 0);

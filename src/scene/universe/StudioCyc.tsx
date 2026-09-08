@@ -1,18 +1,16 @@
 'use client';
 
-import { Graphite } from '@/scene/kit/materials';
-
-/** Soft studio cyc so the plaza is not a toy in a black void. */
+/** Soft studio cyc — stays mounted so an interior cut never reveals a void. */
 export function StudioCyc() {
   return (
     <group>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.16, 0]}>
-        <circleGeometry args={[42, 72]} />
-        <meshStandardMaterial color="#12151A" metalness={0.22} roughness={0.86} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.18, 0]}>
+        <circleGeometry args={[48, 80]} />
+        <meshStandardMaterial color="#101318" metalness={0.18} roughness={0.9} />
       </mesh>
-      <mesh position={[0, 10, -28]}>
-        <cylinderGeometry args={[36, 36, 22, 48, 1, true, Math.PI * 0.15, Math.PI * 0.7]} />
-        <Graphite roughness={0.72} metalness={0.28} />
+      <mesh position={[0, 9, -30]}>
+        <cylinderGeometry args={[40, 40, 24, 48, 1, true, Math.PI * 0.12, Math.PI * 0.76]} />
+        <meshStandardMaterial color="#171B21" metalness={0.24} roughness={0.78} side={2} />
       </mesh>
     </group>
   );

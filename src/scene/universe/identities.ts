@@ -17,7 +17,7 @@ export interface EntityIdentity {
 }
 
 const IDENTITIES: Record<string, EntityIdentity> = {
-  contraxis: { kind: 'hall', scale: 1.48 },
+  contraxis: { kind: 'hall', scale: 1.58 },
   socixis: { kind: 'mast', scale: 1.08 },
   lyrixis: { kind: 'discs', scale: 1.05 },
   halaxis: { kind: 'spire', scale: 1.12 },
