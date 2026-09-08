@@ -10,9 +10,9 @@ export function EventStream() {
   const view = useCommandStore((s) => s.view);
   const buffer = useCommandStore((s) => s.events.buffer);
   const events = buffer.slice(0, 6);
-  if (!open || view === 'boot') return null;
+  if (!open || view !== 'universe') return null;
   return (
-    <Glass className="fixed left-4 bottom-24 z-20 hidden md:block w-[280px] p-3.5 text-[11px]">
+    <Glass className="fixed left-4 bottom-4 z-20 hidden md:block w-[280px] p-3.5 text-[11px]">
       <h4 className="mb-2 flex items-center justify-between text-[10px] tracking-[0.14em] text-[var(--muted)] font-normal">
         <span>Event stream</span>
         <span className="tag" style={{ margin: 0 }}>

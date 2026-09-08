@@ -57,9 +57,8 @@ export function applyCeoClientActions(actions: CeoClientAction[], store: Store):
       if (action.projectSlug && (action.status === 'delivered' || action.status === 'queued')) {
         if (store.getState().focusedProject !== action.projectSlug) {
           store.getState().enterProject(action.projectSlug);
-        } else {
-          store.getState().openPanel('lead');
         }
+        store.getState().openPanel('lead');
       }
       if (action.status === 'delivered') {
         notes.push(`Message delivered to ${action.leadName ?? 'lead'}`);

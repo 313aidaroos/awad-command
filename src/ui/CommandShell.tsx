@@ -4,6 +4,9 @@ import { useEffect, useState, type ComponentType } from 'react';
 import { startDataLayer, stopDataLayer } from '@/data';
 import { detectQuality } from '@/lib/quality';
 import { isWebGLAvailable } from '@/lib/webgl';
+import { AdaptiveQuality } from '@/ui/AdaptiveQuality';
+import { AgentFollowHud } from '@/ui/AgentFollowHud';
+import { ModeStub } from '@/ui/ModeStub';
 import { ApprovalCard } from '@/ui/ApprovalCard';
 import { BootSequence } from '@/ui/BootSequence';
 import { BootFallback, ClientErrorBoundary, WebGLFallback } from '@/ui/CanvasErrorBoundary';
@@ -21,7 +24,7 @@ import { TopBar } from '@/ui/TopBar';
 import { useCommandStore } from '@/store/useCommandStore';
 
 export function CommandShell() {
-  // Closed until after hydration so SSR never mounts R3F/three.
+  // Closed until after hydration so SSR never mounts R3F/three. Safari gets Canvas.
   const [canvasEnabled, setCanvasEnabled] = useState(false);
   const [webgl, setWebgl] = useState<boolean | null>(null);
   const [CanvasSlot, setCanvasSlot] = useState<ComponentType | null>(null);
@@ -53,6 +56,7 @@ export function CommandShell() {
   }, []);
 
   const mountCanvas = canvasEnabled && webgl === true && CanvasSlot;
+  const booted = useCommandStore((s) => s.booted);
 
   return (
     <div className="relative h-svh w-full overflow-hidden bg-[var(--void)]">
@@ -67,17 +71,24 @@ export function CommandShell() {
       <ClientErrorBoundary fallback={<BootFallback />}>
         <BootSequence />
       </ClientErrorBoundary>
-      <TopBar />
-      <ModeBar />
-      <HoverHud />
-      <EventStream />
-      <NewsCorner />
-      <ProjectHud />
-      <ComputerPanel />
-      <ApprovalCard />
-      <MorningBriefing />
-      <CeoConsole />
-      <CommandPalette />
+      {booted ? (
+        <>
+          <TopBar />
+          <ModeBar />
+          <HoverHud />
+          <EventStream />
+          <NewsCorner />
+          <ProjectHud />
+          <AgentFollowHud />
+          <ModeStub />
+          <ComputerPanel />
+          <ApprovalCard />
+          <MorningBriefing />
+          <CeoConsole />
+          <CommandPalette />
+        </>
+      ) : null}
+      <AdaptiveQuality />
       <Hotkeys />
     </div>
   );

@@ -18,7 +18,7 @@ export const rawixis = defineProject({
   name: 'RAWIXIS',
   tagline: 'Critical and rare earth materials marketplace',
   accent: '#C9A66B',
-  universePosition: [9, -2.6, -9],
+  universePosition: [15.6, -4.4, -15.2],
   connections: [],
   agents,
   nodes,

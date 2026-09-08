@@ -27,6 +27,8 @@ export interface AgentState {
   status: AgentStatus;
   currentTask?: string;
   targetNodeId?: string;
+  fromNodeId?: string;
+  moveStartedAt?: number;
   completedToday: number;
   successRate: number;
   activeSince: number;

@@ -3,17 +3,25 @@ import type { QualityLevel } from '@/store/types';
 
 export function detectQuality(): QualityLevel {
   if (typeof window === 'undefined') return 'medium';
-  if (isSafariLike()) return 'low';
+  if (isSafariLike()) return 'medium';
   const cores = navigator.hardwareConcurrency ?? 4;
   const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
   const mobile = window.matchMedia('(max-width: 768px)').matches;
+  const coarse = window.matchMedia('(pointer: coarse)').matches;
   const lowMemory = typeof memory === 'number' && memory <= 4;
-  if (mobile || cores <= 4 || lowMemory) return 'low';
+  if (mobile && coarse) return 'low';
+  if (cores <= 4 || lowMemory) return 'medium';
   if (cores <= 8) return 'medium';
   return 'high';
 }
 
 export function particleCount(level: QualityLevel, high: number, medium: number, low: number): number {
+  if (level === 'high') return high;
+  if (level === 'medium') return medium;
+  return low;
+}
+
+export function geoSegments(level: QualityLevel, high: number, medium: number, low: number): number {
   if (level === 'high') return high;
   if (level === 'medium') return medium;
   return low;

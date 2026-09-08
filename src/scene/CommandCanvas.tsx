@@ -2,16 +2,18 @@
 
 import { useEffect, useState, type ComponentType, type CSSProperties } from 'react';
 import { Canvas } from '@react-three/fiber';
+import * as THREE from 'three';
 import type { WebGLRenderer } from 'three';
 import { isSafariLike } from '@/lib/safari';
 import { CameraRig } from '@/scene/CameraRig';
 import { Lighting } from '@/scene/Environment/Lighting';
+import { StudioEnvironment } from '@/scene/Environment/StudioEnvironment';
 import { Starfield } from '@/scene/Environment/Starfield';
 import { Universe } from '@/scene/universe/Universe';
 import { ProjectWorld } from '@/scene/world/ProjectWorld';
 import { useCommandStore } from '@/store/useCommandStore';
 
-const CAMERA_INIT = { position: [0, 4, 22] as [number, number, number], fov: 45, near: 0.1, far: 300 };
+const CAMERA_INIT = { position: [0, 9, 42] as [number, number, number], fov: 40, near: 0.1, far: 420 };
 const GL_INIT = {
   antialias: true,
   alpha: false,
@@ -27,6 +29,9 @@ const DPR_HIGH: [number, number] = [1, 2];
 
 function handleCreated({ gl }: { gl: WebGLRenderer }) {
   gl.setClearColor('#07080A', 1);
+  gl.toneMapping = THREE.ACESFilmicToneMapping;
+  gl.toneMappingExposure = 1.16;
+  gl.outputColorSpace = THREE.SRGBColorSpace;
   gl.domElement.addEventListener(
     'webglcontextlost',
     (event) => {
@@ -70,7 +75,9 @@ export function CommandCanvas() {
       onCreated={handleCreated}
       style={CANVAS_STYLE}
     >
+      <fog attach="fog" args={['#07080A', 26, 92]} />
       <Lighting />
+      <StudioEnvironment />
       <Starfield />
       <Universe />
       <ProjectWorld />

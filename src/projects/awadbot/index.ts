@@ -20,7 +20,7 @@ export const awadbot = defineProject({
   name: 'AWADBOT',
   tagline: 'Personal financial AI · paper portfolio only',
   accent: '#6FE3B4',
-  universePosition: [0.5, -2.2, 10.5],
+  universePosition: [1.0, -3.8, 17.6],
   connections: [],
   agents,
   nodes,

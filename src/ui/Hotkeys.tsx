@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { requestCeoOpen } from '@/lib/ceoBridge';
 import { useCommandStore } from '@/store/useCommandStore';
 
 export function Hotkeys() {
@@ -12,8 +13,12 @@ export function Hotkeys() {
           state.togglePalette(false);
           return;
         }
-        if (state.contextPanel === 'briefing' || state.contextPanel === 'computer' || state.contextPanel === 'approval') {
+        if (state.contextPanel === 'briefing' || state.contextPanel === 'computer' || state.contextPanel === 'approval' || state.contextPanel === 'lead' || state.contextPanel === 'analytics') {
           state.closePanel();
+          return;
+        }
+        if (state.followingAgent) {
+          state.stopFollow();
           return;
         }
         if (state.focusedProject) state.returnToUniverse();
@@ -25,7 +30,7 @@ export function Hotkeys() {
       if (e.key.toLowerCase() === 'e' && !isTyping(e)) state.toggleEventStream();
       if (e.key === '/' && !isTyping(e)) {
         e.preventDefault();
-        document.querySelector<HTMLInputElement>('input[placeholder*="Ask AWAD CEO"]')?.focus();
+        requestCeoOpen();
       }
     };
     window.addEventListener('keydown', onKey);

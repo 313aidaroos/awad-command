@@ -2,15 +2,10 @@ import { create } from 'zustand';
 import { applyEventToState } from '@/data/reducers';
 import { uid } from '@/lib/ids';
 import { getProject, projects } from '@/projects/registry';
-import type { CommandActions, CommandState } from '@/store/types';
+import { projectEnterSequence, projectInteriorCam, UNIVERSE_CAM } from '@/scene/lib/cameraPaths';
+import type { CameraTarget, CommandActions, CommandState } from '@/store/types';
 import type { AgentStatus } from '@/types/agent';
 import type { Approval } from '@/types/approval';
-
-const UNIVERSE_CAM: CommandState['camera']['target'] = {
-  position: [0, 4, 22],
-  lookAt: [0, 0, 0],
-  duration: 1.4,
-};
 
 function initialAgentStatus(slug: string): AgentStatus {
   if (slug === 'rawixis') return 'needs_approval';
@@ -18,19 +13,29 @@ function initialAgentStatus(slug: string): AgentStatus {
   return 'working';
 }
 
+function findAgentProject(id: string): string | undefined {
+  return projects.find((project) => project.agents.some((agent) => agent.id === id))?.slug;
+}
+
+function cameraFrom(targets: CameraTarget[], requestId: number): CommandState['camera'] {
+  const sequence = targets.length > 0 ? targets : [UNIVERSE_CAM];
+  return { sequence, index: 0, target: sequence[0] ?? null, requestId };
+}
+
 export const useCommandStore = create<CommandState & CommandActions>((set, get) => ({
   view: 'boot',
   mode: 'default',
+  enterPhase: 'universe',
   dataMode: 'demo',
   booted: false,
-  camera: { target: null, requestId: 0 },
+  camera: { target: UNIVERSE_CAM, sequence: [UNIVERSE_CAM], index: 0, requestId: 1 },
   projects: {},
   agents: {},
   flows: {},
   events: { buffer: [], unread: 0 },
   paletteOpen: false,
-  eventStreamOpen: true,
-  newsOpen: true,
+  eventStreamOpen: false,
+  newsOpen: false,
   contextPanel: 'none',
   briefingSeen: false,
   approvals: [],
@@ -70,45 +75,97 @@ export const useCommandStore = create<CommandState & CommandActions>((set, get) 
     set({
       booted: true,
       view: 'universe',
-      camera: { target: UNIVERSE_CAM, requestId: get().camera.requestId + 1 },
+      enterPhase: 'universe',
     });
   },
 
   enterProject: (slug) => {
     const project = getProject(slug);
     if (!project) return;
-    const [x, y, z] = project.universePosition;
-    const len = Math.max(0.001, Math.hypot(x, y, z));
-    get().flyTo({
-      position: [x + (x / len) * 6, y + 1.2, z + (z / len) * 6],
-      lookAt: [x, y, z],
-      duration: 1.4,
-    });
+    const sequence = projectEnterSequence(project.universePosition);
     set({
       view: 'project',
       focusedProject: slug,
       focusedAgent: undefined,
-      contextPanel: 'lead',
+      followingAgent: undefined,
+      enterPhase: 'approach',
+      contextPanel: 'none',
+      camera: cameraFrom(sequence, get().camera.requestId + 1),
     });
   },
 
-  enterAgent: (id) => set({ view: 'agent', focusedAgent: id, contextPanel: 'agent' }),
+  enterAgent: (id) => get().followAgent(id),
+
+  followAgent: (id) => {
+    const slug = findAgentProject(id) ?? get().focusedProject;
+    if (!slug || !get().agents[id]) return;
+    set({
+      view: 'agent',
+      focusedProject: slug,
+      focusedAgent: id,
+      followingAgent: id,
+      contextPanel: 'agent',
+    });
+  },
+
+  stopFollow: () => {
+    const slug = get().focusedProject;
+    const project = slug ? getProject(slug) : undefined;
+    if (!project) {
+      get().returnToUniverse();
+      return;
+    }
+    set({
+      view: 'project',
+      focusedAgent: undefined,
+      followingAgent: undefined,
+      contextPanel: 'none',
+      enterPhase: 'interior',
+      camera: cameraFrom([projectInteriorCam(project.universePosition)], get().camera.requestId + 1),
+    });
+  },
 
   returnToUniverse: () => {
-    get().flyTo(UNIVERSE_CAM);
     set({
       view: 'universe',
       focusedProject: undefined,
       focusedAgent: undefined,
+      followingAgent: undefined,
+      enterPhase: 'universe',
       contextPanel: 'none',
       mode: 'default',
+      camera: cameraFrom([UNIVERSE_CAM], get().camera.requestId + 1),
     });
   },
 
   setMode: (mode) => set({ mode, contextPanel: mode === 'analytics' ? 'analytics' : get().contextPanel }),
   hoverProject: (slug) => set({ hoveredProject: slug }),
   flyTo: (target) =>
-    set((state) => ({ camera: { target, requestId: state.camera.requestId + 1 } })),
+    set((state) => ({
+      camera: cameraFrom([target], state.camera.requestId + 1),
+      enterPhase: target.phase ?? state.enterPhase,
+    })),
+  flySequence: (targets) =>
+    set((state) => ({
+      camera: cameraFrom(targets, state.camera.requestId + 1),
+      enterPhase: targets[0]?.phase ?? state.enterPhase,
+    })),
+  advanceCamera: () =>
+    set((state) => {
+      const nextIndex = state.camera.index + 1;
+      const next = state.camera.sequence[nextIndex];
+      if (!next) return state;
+      return {
+        camera: {
+          ...state.camera,
+          index: nextIndex,
+          target: next,
+          requestId: state.camera.requestId + 1,
+        },
+        enterPhase: next.phase ?? state.enterPhase,
+      };
+    }),
+  setEnterPhase: (phase) => set({ enterPhase: phase }),
   openPanel: (kind) => set({ contextPanel: kind }),
   closePanel: () => set({ contextPanel: 'none' }),
   togglePalette: (open) => set({ paletteOpen: open ?? !get().paletteOpen }),

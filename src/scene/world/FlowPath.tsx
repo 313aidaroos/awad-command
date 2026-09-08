@@ -2,33 +2,36 @@
 
 import { useMemo } from 'react';
 import * as THREE from 'three';
+import { geoSegments } from '@/lib/quality';
+import { GlassMaterial } from '@/scene/materials/GlassMaterial';
+import { useCommandStore } from '@/store/useCommandStore';
 import type { Flow } from '@/types/world';
 import type { ProjectDefinition } from '@/types/project';
 
-export function FlowPath({ project, flow }: { project: ProjectDefinition; flow: Flow }) {
-  const points = useMemo(() => {
-    const pts: THREE.Vector3[] = [];
-    for (const stage of flow.stages) {
-      const agent = project.agents.find((a) => a.id === stage.atAgentId);
-      const node = project.nodes.find((n) => n.id === stage.atNodeId);
-      const pos = agent?.homePosition ?? node?.position;
-      if (pos) pts.push(new THREE.Vector3(...pos));
-    }
-    if (pts.length < 2) return [];
-    return new THREE.CatmullRomCurve3(pts).getPoints(32);
-  }, [flow, project]);
+function stagePoint(project: ProjectDefinition, stage: Flow['stages'][number]) {
+  const node = project.nodes.find((item) => item.id === stage.atNodeId);
+  const agent = project.agents.find((item) => item.id === stage.atAgentId);
+  const pos = node?.position ?? agent?.homePosition;
+  return pos ? new THREE.Vector3(...pos) : null;
+}
 
-  if (points.length < 2) return null;
+export function flowCurve(project: ProjectDefinition, flow: Flow): THREE.CatmullRomCurve3 | null {
+  const pts = flow.stages.map((stage) => stagePoint(project, stage)).filter((p): p is THREE.Vector3 => Boolean(p));
+  if (pts.length < 2) return null;
+  return new THREE.CatmullRomCurve3(pts);
+}
+
+export function FlowPath({ project, flow }: { project: ProjectDefinition; flow: Flow }) {
+  const quality = useCommandStore((s) => s.quality.level);
+  const curve = useMemo(() => flowCurve(project, flow), [flow, project]);
+  const tubular = geoSegments(quality, 80, 48, 24);
+  const radial = geoSegments(quality, 10, 8, 6);
+  if (!curve) return null;
 
   return (
-    <line>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          args={[new Float32Array(points.flatMap((p) => [p.x, p.y, p.z])), 3]}
-        />
-      </bufferGeometry>
-      <lineBasicMaterial color={project.accent} transparent opacity={0.18} />
-    </line>
+    <mesh>
+      <tubeGeometry args={[curve, tubular, quality === 'low' ? 0.028 : 0.032, radial, false]} />
+      <GlassMaterial accent={project.accent} opacity={0.32} emissive={0.04} />
+    </mesh>
   );
 }

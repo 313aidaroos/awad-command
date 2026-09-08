@@ -26,12 +26,10 @@ float n3(vec3 p) {
 }
 void main() {
   vec3 v = normalize(cameraPosition - vW);
-  float fr = pow(1.0 - max(dot(vN, v), 0.0), 2.6);
-  float sp = 0.4 + uAct * 1.2;
-  float n = n3(vP * 1.4 + vec3(uT * 0.05 * sp));
-  n = n * 0.6 + n3(vP * 3.2 - vec3(0.0, uT * 0.08 * sp, 0.0)) * 0.4;
-  vec3 col = uA * (0.12 + 0.45 * n * (0.3 + uAct)) + uA * fr * (1.15 + uH * 0.35) + uS * fr * 0.25 + vec3(0.04, 0.045, 0.05);
-  float a = uAlpha * (0.55 + 0.42 * fr);
+  float fr = pow(1.0 - max(dot(vN, v), 0.0), 2.05);
+  float n = n3(vP * 1.15 + vec3(uT * 0.03));
+  vec3 col = uA * (0.02 + 0.06 * n * (0.1 + uAct)) + uA * fr * (1.55 + uH * 0.38) + uS * fr * 0.22 + vec3(0.03, 0.032, 0.038);
+  float a = uAlpha * (0.06 + 0.86 * pow(fr, 1.15));
   gl_FragColor = vec4(col, a);
 }
 `;
