@@ -37,7 +37,7 @@ export function GlassMaterial({
       thickness={0.72}
       attenuationDistance={2.1}
       attenuationColor={accent}
-      envMapIntensity={1.32}
+      envMapIntensity={0.55}
       transparent
       opacity={opacity}
       emissive={accent}

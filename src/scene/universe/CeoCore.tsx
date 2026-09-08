@@ -9,15 +9,88 @@ import { FloatingLabel } from '@/scene/ui/FloatingLabel';
 import { WorldName } from '@/scene/ui/WorldName';
 import { useCommandStore } from '@/store/useCommandStore';
 
-/** Multi-part MegaKit command core — columns, pipes, consoles. Not a drum. */
-export function CeoCore() {
+const STATIONS: Array<[number, number, number]> = [
+  [1.7, 0, 0.55],
+  [-1.65, 0, 0.7],
+  [0.15, 0, -1.75],
+  [1.45, 0, -1.15],
+  [-1.35, 0, -1.2],
+];
+
+function IntelligenceHeart() {
   const spin = useRef<THREE.Group>(null);
-  const focused = useCommandStore((s) => s.focusedProject);
-  const flyTo = useCommandStore((s) => s.flyTo);
+  const level = useCommandStore((s) => s.quality.level);
+  const rich = level !== 'low';
 
   useFrame((_, dt) => {
-    if (spin.current) spin.current.rotation.y += dt * 0.08;
+    if (spin.current) {
+      spin.current.rotation.y += dt * 0.06;
+      spin.current.rotation.x += dt * 0.018;
+    }
   });
+
+  return (
+    <group position={[0, 1.15, 0]}>
+      <mesh>
+        <icosahedronGeometry args={[0.52, 1]} />
+        <meshPhysicalMaterial
+          color="#2A2E35"
+          metalness={0.92}
+          roughness={0.28}
+          envMapIntensity={0.45}
+          emissive="#1A2230"
+          emissiveIntensity={0.22}
+        />
+      </mesh>
+      <mesh>
+        <icosahedronGeometry args={[0.78, 1]} />
+        {rich ? (
+          <meshPhysicalMaterial
+            color="#C9D0DA"
+            metalness={0.12}
+            roughness={0.1}
+            transmission={0.62}
+            thickness={0.55}
+            ior={1.45}
+            transparent
+            opacity={0.88}
+            envMapIntensity={0.5}
+            attenuationColor="#8A909A"
+            attenuationDistance={1.8}
+            clearcoat={0.7}
+            clearcoatRoughness={0.12}
+          />
+        ) : (
+          <meshStandardMaterial
+            color="#C9D0DA"
+            metalness={0.35}
+            roughness={0.16}
+            transparent
+            opacity={0.42}
+            envMapIntensity={0.45}
+          />
+        )}
+      </mesh>
+      <group ref={spin}>
+        <mesh rotation={[1.15, 0.2, 0.1]}>
+          <torusGeometry args={[1.05, 0.012, 8, 64]} />
+          <meshPhysicalMaterial color="#C5CAD3" metalness={0.9} roughness={0.2} envMapIntensity={0.5} />
+        </mesh>
+        <mesh rotation={[0.35, 1.1, 0.4]}>
+          <torusGeometry args={[0.92, 0.01, 8, 56]} />
+          <meshPhysicalMaterial color="#8A909A" metalness={0.86} roughness={0.24} envMapIntensity={0.45} />
+        </mesh>
+      </group>
+      <pointLight color="#3D8BFF" intensity={0.28} distance={6} position={[0, 0.15, 0]} />
+      <pointLight color="#D7DCE4" intensity={0.22} distance={5} position={[0.4, 0.8, 0.5]} />
+    </group>
+  );
+}
+
+/** Graphite/silver intelligence center — kit consoles around a glass core. Not a drum. */
+export function CeoCore() {
+  const focused = useCommandStore((s) => s.focusedProject);
+  const flyTo = useCommandStore((s) => s.flyTo);
 
   if (focused) return null;
 
@@ -25,7 +98,7 @@ export function CeoCore() {
     <group
       onClick={(e) => {
         e.stopPropagation();
-        flyTo({ position: [0, 3.15, 11], lookAt: [0, 1.2, 0], duration: 1.1, phase: 'universe' });
+        flyTo({ position: [0, 2.35, 6.4], lookAt: [0, 1.15, 0], duration: 1.05, phase: 'universe' });
         requestCeoOpen();
       }}
       onPointerOver={() => {
@@ -35,26 +108,20 @@ export function CeoCore() {
         document.body.style.cursor = 'grab';
       }}
     >
-      <KitModel name="floorMetal" scale={0.85} />
-      <KitModel name="columnLarge" scale={0.95} />
-      <KitModel name="columnAstra" position={[0, 0, 0]} scale={0.72} />
-      <KitModel name="columnPipes" position={[0.85, 0, 0.15]} scale={0.55} />
-      <KitModel name="columnPipes" position={[-0.85, 0, -0.15]} scale={0.55} rotation={[0, Math.PI, 0]} />
-      <KitModel name="columnRound" position={[0.15, 0, -0.95]} scale={0.7} />
-      <KitModel name="columnHollow" position={[-0.2, 0, 0.95]} scale={0.65} />
-      <KitModel name="computer" position={[1.15, 0, 0.85]} scale={0.95} rotation={[0, -0.6, 0]} />
-      <KitModel name="computer" position={[-1.1, 0, -0.75]} scale={0.9} rotation={[0, 2.3, 0]} />
-      <KitModel name="accessPoint" position={[1.35, 0, -0.55]} scale={0.85} />
-      <KitModel name="deskComputer" metalize position={[-1.25, 0, 0.7]} scale={1.7} rotation={[0, 0.8, 0]} />
-      <group ref={spin}>
-        <KitModel name="dishDetailed" metalize position={[1.55, 2.55, 0.15]} scale={1.35} rotation={[0.35, 0.4, 0]} />
-        <KitModel name="dish" metalize position={[-1.4, 2.35, 0.95]} scale={1.2} rotation={[0.2, -0.8, 0]} />
-        <KitModel name="dishLarge" metalize position={[0.1, 2.75, -1.45]} scale={1.15} rotation={[0.15, 2.4, 0]} />
-      </group>
-      <KitModel name="lightWide" position={[0, 3.35, 0]} sit={false} />
-      <pointLight color="#e8edf4" intensity={2.4} distance={14} position={[0, 3.6, 1.2]} />
-      <pointLight color="#3D8BFF" intensity={0.45} distance={10} position={[0, 2.2, 0]} />
-      <FloatingLabel id="ceo-core" priority={4} maxDist={42} fadeFrom={28} position={[0, 4.55, 0]}>
+      <IntelligenceHeart />
+      {STATIONS.map(([x, y, z], i) => (
+        <KitModel
+          key={`st-${i}`}
+          name={i % 2 === 0 ? 'computer' : 'accessPoint'}
+          position={[x, y, z]}
+          rotation={[0, Math.atan2(x, z) + Math.PI, 0]}
+          scale={i % 2 === 0 ? 0.92 : 0.8}
+          grade="#9AA0A8"
+        />
+      ))}
+      <KitModel name="deskChair" metalize position={[2.05, 0, 0.95]} scale={1.55} rotation={[0, -2.2, 0]} grade="#7A8088" />
+      <KitModel name="deskChair" metalize position={[-2.0, 0, 1.05]} scale={1.5} rotation={[0, 2.1, 0]} grade="#7A8088" />
+      <FloatingLabel id="ceo-core" priority={4} maxDist={42} fadeFrom={28} position={[0, 2.65, 0]}>
         <WorldName primary>AWAD</WorldName>
       </FloatingLabel>
     </group>

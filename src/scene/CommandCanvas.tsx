@@ -10,6 +10,7 @@ import { Lighting } from '@/scene/Environment/Lighting';
 import { StudioEnvironment } from '@/scene/Environment/StudioEnvironment';
 import { Starfield } from '@/scene/Environment/Starfield';
 import { preloadCommandKit } from '@/scene/kit/preload';
+import { UNIVERSE_EXPOSURE } from '@/scene/lib/exposure';
 import { UNIVERSE_ZOOM } from '@/scene/lib/cameraPaths';
 import { Universe } from '@/scene/universe/Universe';
 import { ProjectWorld } from '@/scene/world/ProjectWorld';
@@ -32,7 +33,7 @@ const DPR_HIGH: [number, number] = [1, 2];
 function handleCreated({ gl }: { gl: WebGLRenderer }) {
   gl.setClearColor('#07080A', 1);
   gl.toneMapping = THREE.ACESFilmicToneMapping;
-  gl.toneMappingExposure = 1.12;
+  gl.toneMappingExposure = UNIVERSE_EXPOSURE;
   gl.outputColorSpace = THREE.SRGBColorSpace;
   gl.domElement.addEventListener(
     'webglcontextlost',
@@ -78,7 +79,7 @@ export function CommandCanvas() {
       onCreated={handleCreated}
       style={CANVAS_STYLE}
     >
-      <fog attach="fog" args={['#07080A', 22, 48]} />
+      <fog attach="fog" args={['#07080A', 14, 36]} />
       <Lighting />
       <StudioEnvironment />
       <Starfield />

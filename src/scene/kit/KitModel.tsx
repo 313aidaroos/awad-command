@@ -12,23 +12,30 @@ export type KitModelProps = ThreeElements['group'] & {
   /** Kenney unlit/colormap pieces become studio metals. MegaKit PBR stays. */
   metalize?: boolean;
   tint?: string;
+  /** Multiplies albedo even when a map is present — graphite grade, not a wash. */
+  grade?: string;
   sit?: boolean;
 };
 
-function treatMaterial(mat: THREE.Material, metalize: boolean, tint?: string): THREE.Material {
+function applyGrade(color: THREE.Color, grade?: string, tint?: string, hasMap?: boolean) {
+  if (tint && !hasMap) color.multiply(new THREE.Color(tint));
+  if (grade) color.multiply(new THREE.Color(grade));
+}
+
+function treatMaterial(mat: THREE.Material, metalize: boolean, tint?: string, grade?: string): THREE.Material {
   const std = mat as THREE.MeshStandardMaterial;
   const map = 'map' in std ? std.map : null;
   const unlit = mat.type === 'MeshBasicMaterial' || Boolean(mat.userData?.gltfExtensions?.KHR_materials_unlit);
   if (metalize || unlit) {
     // Keep authored colormap/PBR maps. Never wash a kit piece into a flat accent slab.
     const color = std.color ? std.color.clone() : new THREE.Color('#ffffff');
-    if (tint && !map) color.multiply(new THREE.Color(tint));
+    applyGrade(color, grade, tint, Boolean(map));
     const next = new THREE.MeshStandardMaterial({
       map,
       color,
-      metalness: map ? 0.55 : 0.78,
-      roughness: map ? 0.38 : 0.28,
-      envMapIntensity: 1.15,
+      metalness: map ? 0.62 : 0.78,
+      roughness: map ? 0.46 : 0.34,
+      envMapIntensity: 0.55,
       emissive: std.emissive?.clone?.() ?? new THREE.Color('#000000'),
       emissiveMap: std.emissiveMap ?? null,
       emissiveIntensity: std.emissiveIntensity ?? 0,
@@ -41,14 +48,15 @@ function treatMaterial(mat: THREE.Material, metalize: boolean, tint?: string): T
   }
   if (std.isMeshStandardMaterial) {
     const next = std.clone();
-    next.envMapIntensity = Math.max(next.envMapIntensity ?? 1, 1.12);
-    if (tint && !next.map) next.color.multiply(new THREE.Color(tint));
+    next.envMapIntensity = 0.55;
+    next.roughness = Math.max(next.roughness ?? 0.4, 0.36);
+    applyGrade(next.color, grade, tint, Boolean(next.map));
     return next;
   }
   return mat;
 }
 
-export function KitModel({ name, metalize = false, tint, sit = true, ...props }: KitModelProps) {
+export function KitModel({ name, metalize = false, tint, grade, sit = true, ...props }: KitModelProps) {
   const url = kitUrl(name);
   const gltf = useGLTF(url);
   const scene = useMemo(() => {
@@ -59,7 +67,7 @@ export function KitModel({ name, metalize = false, tint, sit = true, ...props }:
       mesh.castShadow = true;
       mesh.receiveShadow = true;
       const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-      const treated = mats.map((mat) => treatMaterial(mat, metalize, tint));
+      const treated = mats.map((mat) => treatMaterial(mat, metalize, tint, grade));
       mesh.material = Array.isArray(mesh.material) ? treated : treated[0]!;
     });
     if (sit) {
@@ -70,7 +78,7 @@ export function KitModel({ name, metalize = false, tint, sit = true, ...props }:
       cloned.position.y -= box.min.y;
     }
     return cloned;
-  }, [gltf.scene, metalize, sit, tint]);
+  }, [gltf.scene, grade, metalize, sit, tint]);
 
   return (
     <group {...props}>

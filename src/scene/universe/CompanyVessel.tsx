@@ -22,12 +22,7 @@ const HULL: Record<VesselKind, { ship: KitName; scale: number; yaw: number }> = 
 
 function VesselBody({ kind }: { kind: VesselKind }) {
   const hull = HULL[kind];
-  return (
-    <group>
-      <KitModel name="floorDark" scale={0.55} />
-      <KitModel name={hull.ship} position={[0, 0.08, 0]} scale={hull.scale} rotation={[0, hull.yaw, 0]} />
-    </group>
-  );
+  return <KitModel name={hull.ship} position={[0, 0.02, 0]} scale={hull.scale} rotation={[0, hull.yaw, 0]} />;
 }
 
 export function CompanyVessel({ project }: { project: ProjectDefinition }) {
