@@ -26,7 +26,7 @@ function Station({ shape, color }: { shape: Shape; color: string }) {
       <group>
         {([-0.22, 0.22] as const).map((x) => (
           <mesh key={x} position={[x, 0.08, x * 0.4]}>
-            <sphereGeometry args={[0.2, 18, 18]} />
+            <sphereGeometry args={[0.2, 24, 24]} />
             <GlassMaterial accent={color} opacity={0.78} />
           </mesh>
         ))}
@@ -36,7 +36,7 @@ function Station({ shape, color }: { shape: Shape; color: string }) {
   if (shape === 'funnel') {
     return (
       <mesh rotation={[0, 0, Math.PI]}>
-        <coneGeometry args={[0.38, 0.68, 16]} />
+        <coneGeometry args={[0.38, 0.68, 24]} />
         <GlassMaterial accent={color} opacity={0.82} />
       </mesh>
     );
