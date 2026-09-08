@@ -16,7 +16,15 @@ export function FlowCouriers({ project }: { project: ProjectDefinition }) {
       {instances.map((item) => {
         const flow = project.flows.find((def) => def.id === item.flowId);
         if (!flow) return null;
-        return <Courier key={item.flowId + item.startedAt} project={project} flowId={item.flowId} stageIndex={item.stageIndex} started={item.stageStartedAt} />;
+        return (
+          <Courier
+            key={item.flowId + item.startedAt}
+            project={project}
+            flowId={item.flowId}
+            stageIndex={item.stageIndex}
+            started={item.stageStartedAt}
+          />
+        );
       })}
     </group>
   );
@@ -43,20 +51,16 @@ function Courier({
     const local = Math.min(1, Math.max(0, (Date.now() - started) / (stage?.durationMs ?? 2400)));
     const u = Math.min(0.999, (stageIndex + local) / Math.max(1, flow.stages.length));
     const p = curve.getPointAt(u);
+    const t = curve.getTangentAt(u);
     mesh.current.position.copy(p);
+    mesh.current.lookAt(p.clone().add(t));
   });
 
   if (!curve) return null;
   return (
     <mesh ref={mesh}>
-      <sphereGeometry args={[0.07, 10, 10]} />
-      <meshStandardMaterial
-        color={project.accent}
-        emissive={project.accent}
-        emissiveIntensity={0.4}
-        metalness={0.3}
-        roughness={0.3}
-      />
+      <capsuleGeometry args={[0.05, 0.16, 4, 8]} />
+      <meshBasicMaterial color={project.accent} transparent opacity={0.9} toneMapped={false} />
     </mesh>
   );
 }

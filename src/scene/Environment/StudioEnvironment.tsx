@@ -3,17 +3,16 @@
 import { Environment, Lightformer } from '@react-three/drei';
 import { useCommandStore } from '@/store/useCommandStore';
 
-/** One-shot studio lights so clearcoat glass has something to reflect. Off on LOW. */
+/** Thin studio strips so graphite metal reads as a product, not a floodlit toy. */
 export function StudioEnvironment() {
   const level = useCommandStore((s) => s.quality.level);
   if (level === 'low') return null;
   return (
-    <Environment resolution={level === 'high' ? 256 : 176} frames={1} environmentIntensity={1.02}>
-      <Lightformer intensity={6.4} position={[3, 13, 5]} scale={[3.2, 1.1, 1]} color="#ffffff" />
-      <Lightformer intensity={4.2} position={[5, 10, 6]} scale={[14, 8, 1]} color="#f7f9fc" />
-      <Lightformer intensity={2.4} position={[-8, 5, 3]} scale={[6, 10, 1]} color="#ffffff" />
-      <Lightformer intensity={1.55} position={[8, 2, -8]} scale={[10, 4, 1]} color="#3D8BFF" />
-      <Lightformer intensity={1} position={[0, -7, 5]} scale={[16, 4, 1]} color="#c5ccd6" />
+    <Environment resolution={level === 'high' ? 256 : 128} frames={1} environmentIntensity={level === 'high' ? 0.58 : 0.42}>
+      <Lightformer intensity={3.4} position={[4, 16, 6]} scale={[9, 0.45, 1]} color="#f4f6fa" />
+      <Lightformer intensity={1.7} position={[-12, 7, 4]} scale={[0.4, 9, 1]} color="#e8edf5" />
+      <Lightformer intensity={0.55} position={[10, 2, -12]} scale={[8, 2.4, 1]} color="#3D8BFF" />
+      <Lightformer intensity={0.35} position={[0, -9, 3]} scale={[18, 3, 1]} color="#6a7380" />
     </Environment>
   );
 }

@@ -6,6 +6,9 @@ import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { agentLocalPosition, agentTravelEndpoints } from '@/scene/lib/agentMotion';
 import { pointerGate } from '@/scene/lib/pointer';
+import { AccentGlow } from '@/scene/materials/AccentGlow';
+import { ChassisMaterial } from '@/scene/materials/ChassisMaterial';
+import { SilverMaterial } from '@/scene/materials/SilverMaterial';
 import { STATUS_COLOR } from '@/scene/universe/statusColor';
 import { useCommandStore } from '@/store/useCommandStore';
 import type { AgentDefinition, AgentStatus } from '@/types/agent';
@@ -42,6 +45,7 @@ export function AgentEntity({
   const followAgent = useCommandStore((s) => s.followAgent);
   const following = useCommandStore((s) => s.followingAgent === agent.id);
   const workforce = useCommandStore((s) => s.mode === 'workforce');
+  const quality = useCommandStore((s) => s.quality.level);
   const status = state?.status ?? 'idle';
   const color = AGENT_TINT[status];
   const glow = useMemo(() => new THREE.Color(color), [color]);
@@ -64,7 +68,7 @@ export function AgentEntity({
     }
     group.current.position.copy(_next);
     last.current.copy(_next);
-    if (!moving) group.current.rotation.y += 0.018;
+    if (!moving) group.current.rotation.y += 0.004;
 
     const travel = agentTravelEndpoints(agent, state, nodes);
     if (path.current) {
@@ -85,8 +89,8 @@ export function AgentEntity({
   return (
     <group>
       <mesh ref={path} visible={false}>
-        <cylinderGeometry args={[0.035, 0.035, 1, 6]} />
-        <meshBasicMaterial color={color} transparent opacity={0.42} />
+        <cylinderGeometry args={[0.02, 0.02, 1, 6]} />
+        <meshBasicMaterial color={color} transparent opacity={0.28} />
       </mesh>
       <group ref={group} position={agent.homePosition}>
         <mesh
@@ -102,46 +106,47 @@ export function AgentEntity({
             document.body.style.cursor = 'grab';
           }}
         >
-          <coneGeometry args={[0.22, 0.64, 12]} />
-          <meshStandardMaterial
-            color={color}
-            metalness={0.55}
-            roughness={0.16}
-            emissive={glow}
-            emissiveIntensity={following || status === 'working' ? 0.82 : 0.28}
-          />
+          <capsuleGeometry args={[0.1, 0.28, 4, 10]} />
+          <ChassisMaterial roughness={0.22} />
         </mesh>
-        <pointLight color={color} intensity={following || status === 'working' ? 1.1 : 0.35} distance={3.4} />
+        <mesh position={[0, 0, 0.2]} rotation={[Math.PI / 2, 0, 0]}>
+          <sphereGeometry args={[0.055, 10, 8]} />
+          <AccentGlow accent={color} opacity={following || status === 'working' ? 0.95 : 0.7} />
+        </mesh>
+        <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, -0.06]}>
+          <torusGeometry args={[0.12, 0.012, 6, 16]} />
+          <SilverMaterial />
+        </mesh>
+        {quality !== 'low' ? (
+          <pointLight color={glow} intensity={following || status === 'working' ? 0.7 : 0.22} distance={2.8} />
+        ) : null}
         <mesh ref={t0} visible={false}>
-          <sphereGeometry args={[0.09, 8, 8]} />
-          <meshBasicMaterial color={color} transparent opacity={0.45} />
+          <sphereGeometry args={[0.07, 8, 8]} />
+          <meshBasicMaterial color={color} transparent opacity={0.4} />
         </mesh>
         <mesh ref={t1} visible={false}>
-          <sphereGeometry args={[0.07, 8, 8]} />
-          <meshBasicMaterial color={color} transparent opacity={0.28} />
+          <sphereGeometry args={[0.05, 8, 8]} />
+          <meshBasicMaterial color={color} transparent opacity={0.24} />
         </mesh>
         <mesh ref={t2} visible={false}>
-          <sphereGeometry args={[0.05, 8, 8]} />
-          <meshBasicMaterial color={color} transparent opacity={0.16} />
+          <sphereGeometry args={[0.04, 8, 8]} />
+          <meshBasicMaterial color={color} transparent opacity={0.14} />
         </mesh>
         {following ? (
           <mesh rotation={[1.4, 0, 0]}>
-            <torusGeometry args={[0.48, 0.016, 8, 28]} />
-            <meshBasicMaterial color={color} transparent opacity={0.8} />
+            <torusGeometry args={[0.42, 0.012, 8, 28]} />
+            <meshBasicMaterial color={color} transparent opacity={0.75} />
           </mesh>
         ) : null}
         {following ? (
           <Html center transform={false} position={[0, -0.58, 0]} style={{ pointerEvents: 'none' }}>
             <div
               style={{
-                fontSize: 12,
-                letterSpacing: '0.12em',
-                fontWeight: 560,
-                color: '#FFFFFF',
-                padding: '4px 10px',
-                borderRadius: 999,
-                background: 'rgba(7,8,10,0.78)',
-                border: '1px solid rgba(255,255,255,0.2)',
+                fontSize: 11,
+                letterSpacing: '0.18em',
+                fontWeight: 400,
+                color: '#E6E8EC',
+                textShadow: '0 2px 14px rgba(0,0,0,0.9)',
                 whiteSpace: 'nowrap',
               }}
             >
@@ -151,7 +156,7 @@ export function AgentEntity({
         ) : null}
         {workforce && !following ? (
           <Html center transform={false} position={[0, 0.62, 0]} style={{ pointerEvents: 'none' }}>
-            <div className="text-[8px] tracking-[0.1em] text-[var(--text)] whitespace-nowrap">{agent.name}</div>
+            <div className="text-[8px] tracking-[0.12em] text-[var(--text)] whitespace-nowrap">{agent.name}</div>
           </Html>
         ) : null}
       </group>

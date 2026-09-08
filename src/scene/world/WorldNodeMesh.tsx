@@ -1,7 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { GlassMaterial } from '@/scene/materials/GlassMaterial';
+import { AccentGlow } from '@/scene/materials/AccentGlow';
+import { ChassisMaterial } from '@/scene/materials/ChassisMaterial';
+import { SilverMaterial } from '@/scene/materials/SilverMaterial';
+import { Deck } from '@/scene/universe/parts';
 import { FloatingLabel } from '@/scene/ui/FloatingLabel';
 import { WorldName } from '@/scene/ui/WorldName';
 import { useCommandStore } from '@/store/useCommandStore';
@@ -25,40 +28,60 @@ function Station({ shape, color }: { shape: Shape; color: string }) {
   if (shape === 'cluster') {
     return (
       <group>
-        {([-0.22, 0.22] as const).map((x) => (
-          <mesh key={x} position={[x, 0.08, x * 0.4]}>
-            <sphereGeometry args={[0.2, 24, 24]} />
-            <GlassMaterial accent={color} opacity={0.78} />
+        {([-0.2, 0.2] as const).map((x) => (
+          <mesh key={x} position={[x, 0.12, x * 0.35]}>
+            <sphereGeometry args={[0.18, 20, 16]} />
+            <ChassisMaterial />
           </mesh>
         ))}
+        <mesh position={[0, 0.12, 0]}>
+          <sphereGeometry args={[0.07, 10, 8]} />
+          <AccentGlow accent={color} />
+        </mesh>
       </group>
     );
   }
   if (shape === 'funnel') {
     return (
-      <mesh rotation={[0, 0, Math.PI]}>
-        <coneGeometry args={[0.38, 0.68, 24]} />
-        <GlassMaterial accent={color} opacity={0.82} />
-      </mesh>
+      <group>
+        <mesh rotation={[0, 0, Math.PI]}>
+          <coneGeometry args={[0.34, 0.62, 20]} />
+          <ChassisMaterial roughness={0.24} />
+        </mesh>
+        <mesh position={[0, 0.28, 0]}>
+          <torusGeometry args={[0.2, 0.016, 8, 20]} />
+          <SilverMaterial />
+        </mesh>
+      </group>
     );
   }
   if (shape === 'filter') {
     return (
-      <mesh rotation={[1.2, 0, 0]}>
-        <torusGeometry args={[0.34, 0.06, 10, 28]} />
-        <GlassMaterial accent={color} opacity={0.72} />
-      </mesh>
+      <group>
+        <mesh rotation={[1.2, 0, 0]}>
+          <torusGeometry args={[0.3, 0.045, 8, 24]} />
+          <ChassisMaterial />
+        </mesh>
+        <mesh rotation={[1.2, 0, 0]}>
+          <torusGeometry args={[0.3, 0.012, 8, 24]} />
+          <SilverMaterial />
+        </mesh>
+      </group>
     );
   }
   if (shape === 'stack') {
     return (
       <group>
         {[0, 0.16, 0.32].map((y) => (
-          <mesh key={y} position={[0, y - 0.1, 0]}>
-            <cylinderGeometry args={[0.32 - y * 0.12, 0.32 - y * 0.12, 0.11, 16]} />
-            <GlassMaterial accent={color} opacity={0.76} />
+          <mesh key={y} position={[0, y - 0.08, 0]}>
+            <cylinderGeometry args={[0.3 - y * 0.1, 0.3 - y * 0.1, 0.1, 16]} />
+            <ChassisMaterial />
           </mesh>
         ))}
+        <mesh position={[0, 0.08, 0]}>
+          <cylinderGeometry args={[0.04, 0.04, 0.5, 8]} />
+          <AccentGlow accent={color} opacity={0.7} />
+        </mesh>
       </group>
     );
   }
@@ -66,52 +89,70 @@ function Station({ shape, color }: { shape: Shape; color: string }) {
     return (
       <group>
         <mesh rotation={[1.2, 0.3, 0]}>
-          <torusGeometry args={[0.32, 0.035, 10, 28]} />
-          <GlassMaterial accent={color} opacity={0.72} />
+          <torusGeometry args={[0.3, 0.04, 8, 24]} />
+          <ChassisMaterial />
         </mesh>
         <mesh rotation={[0.4, 0.8, 0.2]}>
-          <torusGeometry args={[0.26, 0.03, 10, 24]} />
-          <GlassMaterial accent={color} opacity={0.55} />
+          <torusGeometry args={[0.22, 0.018, 8, 20]} />
+          <SilverMaterial />
         </mesh>
       </group>
     );
   }
   if (shape === 'chevron') {
     return (
-      <mesh rotation={[0.4, 0.6, 0.2]}>
-        <tetrahedronGeometry args={[0.4, 0]} />
-        <GlassMaterial accent={color} opacity={0.84} />
-      </mesh>
+      <group>
+        <mesh rotation={[0.35, 0.5, 0.15]}>
+          <tetrahedronGeometry args={[0.36, 0]} />
+          <ChassisMaterial />
+        </mesh>
+        <mesh position={[0, 0.08, 0]}>
+          <octahedronGeometry args={[0.08, 0]} />
+          <AccentGlow accent={color} />
+        </mesh>
+      </group>
     );
   }
   if (shape === 'block') {
     return (
-      <mesh>
-        <boxGeometry args={[0.5, 0.38, 0.5]} />
-        <GlassMaterial accent={color} opacity={0.82} />
-      </mesh>
+      <group>
+        <mesh>
+          <boxGeometry args={[0.48, 0.34, 0.48]} />
+          <ChassisMaterial />
+        </mesh>
+        <mesh>
+          <boxGeometry args={[0.5, 0.04, 0.5]} />
+          <SilverMaterial />
+        </mesh>
+      </group>
     );
   }
   if (shape === 'hex') {
     return (
-      <mesh rotation={[0.6, 0.2, 0]}>
-        <cylinderGeometry args={[0.32, 0.32, 0.16, 8]} />
-        <GlassMaterial accent={color} opacity={0.82} />
+      <mesh rotation={[0.5, 0.15, 0]}>
+        <cylinderGeometry args={[0.3, 0.3, 0.16, 8]} />
+        <ChassisMaterial />
       </mesh>
     );
   }
   if (shape === 'crystal') {
     return (
-      <mesh>
-        <octahedronGeometry args={[0.38, 0]} />
-        <GlassMaterial accent={color} opacity={0.88} emissive={0.12} />
-      </mesh>
+      <group>
+        <mesh>
+          <octahedronGeometry args={[0.34, 0]} />
+          <ChassisMaterial roughness={0.2} />
+        </mesh>
+        <mesh>
+          <octahedronGeometry args={[0.1, 0]} />
+          <AccentGlow accent={color} />
+        </mesh>
+      </group>
     );
   }
   return (
     <mesh>
-      <octahedronGeometry args={[0.22, 0]} />
-      <GlassMaterial accent={color || '#8A909A'} opacity={0.6} />
+      <octahedronGeometry args={[0.2, 0]} />
+      <ChassisMaterial />
     </mesh>
   );
 }
@@ -138,7 +179,8 @@ export function WorldNodeMesh({ node, accent }: { node: WorldNode; accent: strin
       }}
       onPointerOut={() => setHovered(false)}
     >
-      <group scale={1.7}>
+      <Deck radius={0.52} />
+      <group scale={1.35}>
         <Station shape={shape} color={accent} />
       </group>
       {showLabel ? (

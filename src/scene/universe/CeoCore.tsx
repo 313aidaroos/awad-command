@@ -5,88 +5,109 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { requestCeoOpen } from '@/lib/ceoBridge';
 import { particleCount } from '@/lib/quality';
-import { GlassMaterial } from '@/scene/materials/GlassMaterial';
-import { OrbCore } from '@/scene/universe/OrbCore';
+import { AccentGlow } from '@/scene/materials/AccentGlow';
+import { ChassisMaterial } from '@/scene/materials/ChassisMaterial';
+import { FresnelShell } from '@/scene/materials/FresnelShell';
+import { SilverMaterial } from '@/scene/materials/SilverMaterial';
+import { HitSphere } from '@/scene/universe/HitSphere';
+import { pointerGate } from '@/scene/lib/pointer';
 import { FloatingLabel } from '@/scene/ui/FloatingLabel';
 import { WorldName } from '@/scene/ui/WorldName';
 import { useCommandStore } from '@/store/useCommandStore';
 
 export function CeoCore() {
-  const spin = useRef<THREE.Group>(null);
-  const pulse = useRef<THREE.Mesh>(null);
-  const focused = useCommandStore((s) => s.focusedProject);
+  const inner = useRef<THREE.Group>(null);
+  const rings = useRef<THREE.Group>(null);
   const quality = useCommandStore((s) => s.quality.level);
   const flyTo = useCommandStore((s) => s.flyTo);
+  const detail = quality !== 'low';
 
-  const halo = useMemo(() => {
-    const n = particleCount(quality, 260, 160, 90);
+  const disc = useMemo(() => {
+    const n = particleCount(quality, 420, 240, 110);
     const positions = new Float32Array(n * 3);
     for (let i = 0; i < n; i += 1) {
       const th = Math.random() * Math.PI * 2;
-      const ph = Math.acos(2 * Math.random() - 1);
-      const rr = 1.15 + Math.random() * 0.85;
-      positions.set(
-        [rr * Math.sin(ph) * Math.cos(th), rr * Math.sin(ph) * Math.sin(th) * 0.72, rr * Math.cos(ph)],
-        i * 3,
-      );
+      const rr = 1.15 + Math.pow(Math.random(), 0.55) * 1.85;
+      const y = (Math.random() - 0.5) * 0.12;
+      positions.set([Math.cos(th) * rr, y, Math.sin(th) * rr], i * 3);
     }
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     return geo;
   }, [quality]);
 
-  useFrame((state, dt) => {
-    if (spin.current) {
-      spin.current.rotation.y += dt * 0.12;
-      spin.current.rotation.x += dt * 0.045;
-    }
-    if (pulse.current) {
-      const s = 1.05 + Math.sin(state.clock.elapsedTime * 0.7) * 0.035;
-      pulse.current.scale.setScalar(s);
-    }
+  useFrame((_, dt) => {
+    if (inner.current) inner.current.rotation.y += dt * 0.035;
+    if (rings.current) rings.current.rotation.y -= dt * 0.018;
   });
 
-  if (focused) return null;
+  const openCeo = () => {
+    if (pointerGate.suppressClick) return;
+    flyTo({ position: [0, 3.2, 11], lookAt: [0, 0.2, 0], duration: 1.2, phase: 'universe' });
+    requestCeoOpen();
+  };
 
   return (
-    <group>
-      <OrbCore
-        accent="#dfe4ee"
-        status="operational"
-        activity={0.62}
-        hovered={false}
-        radius={0.88}
-        onClick={() => {
-          flyTo({ position: [0, 3.2, 11], lookAt: [0, 0, 0], duration: 1.2, phase: 'universe' });
-          requestCeoOpen();
-        }}
-      />
-      <group ref={spin}>
-        <mesh>
-          <icosahedronGeometry args={[1.38, quality === 'low' ? 0 : 1]} />
-          <GlassMaterial accent="#E6E8EC" opacity={0.34} emissive={0.08} />
-        </mesh>
-        <mesh>
-          <octahedronGeometry args={[0.58, 0]} />
-          <GlassMaterial accent="#E6E8EC" opacity={0.72} emissive={0.14} />
+    <group
+      onClick={(e) => {
+        e.stopPropagation();
+        openCeo();
+      }}
+      onPointerOver={() => {
+        document.body.style.cursor = 'pointer';
+      }}
+      onPointerOut={() => {
+        document.body.style.cursor = 'grab';
+      }}
+    >
+      <HitSphere radius={1.7} />
+      <mesh>
+        <sphereGeometry args={[0.78, 48, 36]} />
+        <ChassisMaterial roughness={0.2} />
+      </mesh>
+      <mesh>
+        <sphereGeometry args={[0.16, 16, 12]} />
+        <AccentGlow accent="#E6E8EC" opacity={0.95} />
+      </mesh>
+      <pointLight color="#e8edf5" intensity={1.15} distance={14} />
+      <pointLight color="#3D8BFF" intensity={0.22} distance={10} position={[0, 0.4, 0]} />
+      <group ref={inner}>
+        <mesh rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.8, 0.018, 8, 64]} />
+          <SilverMaterial roughness={0.14} />
         </mesh>
       </group>
-      <mesh ref={pulse} rotation={[1.2, 0.2, 0.1]}>
-        <torusGeometry args={[2.05, 0.01, 10, 80]} />
-        <meshBasicMaterial color="#3D8BFF" transparent opacity={0.24} />
-      </mesh>
-      <mesh rotation={[0.4, 0.8, 1.1]}>
-        <torusGeometry args={[2.45, 0.007, 10, 80]} />
-        <meshBasicMaterial color="#9aa3b2" transparent opacity={0.14} />
-      </mesh>
-      <mesh rotation={[1.7, 0.3, 0]}>
-        <torusGeometry args={[2.85, 0.006, 10, 72]} />
-        <meshBasicMaterial color="#dfe4ee" transparent opacity={0.09} />
-      </mesh>
-      <points geometry={halo}>
-        <pointsMaterial color="#dfe4ee" size={0.028} transparent opacity={0.48} depthWrite={false} sizeAttenuation />
+      <FresnelShell radius={1.08} accent="#9BB7E8" amp={0.35} alpha={0.78} />
+      {detail ? <FresnelShell radius={1.55} accent="#3D8BFF" amp={0.22} alpha={0.42} /> : null}
+      <group ref={rings}>
+        <mesh rotation={[1.22, 0.18, 0.08]}>
+          <torusGeometry args={[1.92, 0.016, 8, 96]} />
+          <SilverMaterial roughness={0.14} />
+        </mesh>
+        <mesh rotation={[0.42, 0.9, 1.05]}>
+          <torusGeometry args={[2.28, 0.009, 8, 80]} />
+          <meshBasicMaterial color="#C9D0DA" transparent opacity={0.42} />
+        </mesh>
+        <mesh rotation={[1.68, 0.22, 0.12]}>
+          <torusGeometry args={[2.68, 0.007, 8, 72]} />
+          <meshBasicMaterial color="#E6E8EC" transparent opacity={0.22} />
+        </mesh>
+        {detail
+          ? Array.from({ length: 24 }, (_, i) => {
+              const a = (i / 24) * Math.PI * 2;
+              return (
+                <mesh key={i} position={[Math.cos(a) * 1.92, Math.sin(a) * 0.22, Math.sin(a) * 1.92]} rotation={[1.22, 0, a]}>
+                  <boxGeometry args={[0.012, 0.05, 0.012]} />
+                  <SilverMaterial />
+                </mesh>
+              );
+            })
+          : null}
+      </group>
+      <points geometry={disc} rotation={[0.12, 0, 0.08]}>
+        <pointsMaterial color="#dfe4ee" size={0.026} transparent opacity={0.42} depthWrite={false} sizeAttenuation />
       </points>
-      <FloatingLabel id="ceo-core" priority={4} maxDist={58} fadeFrom={36} position={[0, 2.05, 0]}>
+      <FloatingLabel id="ceo-core" priority={4} maxDist={62} fadeFrom={38} position={[0, 2.25, 0]}>
         <WorldName primary>AWAD</WorldName>
       </FloatingLabel>
     </group>

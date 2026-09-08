@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import * as THREE from 'three';
 import { geoSegments } from '@/lib/quality';
-import { GlassMaterial } from '@/scene/materials/GlassMaterial';
+import { ChassisMaterial } from '@/scene/materials/ChassisMaterial';
 import { useCommandStore } from '@/store/useCommandStore';
 import type { Flow } from '@/types/world';
 import type { ProjectDefinition } from '@/types/project';
@@ -25,13 +25,19 @@ export function FlowPath({ project, flow }: { project: ProjectDefinition; flow: 
   const quality = useCommandStore((s) => s.quality.level);
   const curve = useMemo(() => flowCurve(project, flow), [flow, project]);
   const tubular = geoSegments(quality, 80, 48, 24);
-  const radial = geoSegments(quality, 10, 8, 6);
+  const radial = geoSegments(quality, 8, 6, 5);
   if (!curve) return null;
 
   return (
-    <mesh>
-      <tubeGeometry args={[curve, tubular, quality === 'low' ? 0.028 : 0.032, radial, false]} />
-      <GlassMaterial accent={project.accent} opacity={0.32} emissive={0.04} />
-    </mesh>
+    <group>
+      <mesh>
+        <tubeGeometry args={[curve, tubular, quality === 'low' ? 0.048 : 0.058, radial, false]} />
+        <ChassisMaterial roughness={0.36} />
+      </mesh>
+      <mesh>
+        <tubeGeometry args={[curve, tubular, 0.016, Math.max(4, radial - 2), false]} />
+        <meshBasicMaterial color={project.accent} transparent opacity={0.55} toneMapped={false} />
+      </mesh>
+    </group>
   );
 }
