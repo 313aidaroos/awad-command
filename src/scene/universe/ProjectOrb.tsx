@@ -82,9 +82,9 @@ export function ProjectOrb({ project }: { project: ProjectDefinition }) {
         <FloatingLabel
           id={`orb-${project.slug}`}
           priority={hovered ? 5 : 1}
-          maxDist={hovered ? 70 : 46}
-          fadeFrom={hovered ? 52 : 28}
-          position={[0, -2.15, 0]}
+          maxDist={hovered ? 70 : 38}
+          fadeFrom={hovered ? 52 : 20}
+          position={[0, -2.45, 0]}
         >
           <div className="text-[9px] tracking-[0.2em] font-light text-[rgba(230,232,236,0.82)]">
             {project.name}

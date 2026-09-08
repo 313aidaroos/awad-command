@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { Edges } from '@react-three/drei';
 import { GlassMaterial } from '@/scene/materials/GlassMaterial';
 import { FloatingLabel } from '@/scene/ui/FloatingLabel';
 import { useCommandStore } from '@/store/useCommandStore';
@@ -38,8 +37,7 @@ function Station({ shape, color }: { shape: Shape; color: string }) {
     return (
       <mesh rotation={[0, 0, Math.PI]}>
         <coneGeometry args={[0.38, 0.68, 16]} />
-        <GlassMaterial accent={color} opacity={0.74} />
-        <Edges threshold={20} color={color} />
+        <GlassMaterial accent={color} opacity={0.82} />
       </mesh>
     );
   }
@@ -81,8 +79,7 @@ function Station({ shape, color }: { shape: Shape; color: string }) {
     return (
       <mesh rotation={[0.4, 0.6, 0.2]}>
         <tetrahedronGeometry args={[0.4, 0]} />
-        <GlassMaterial accent={color} opacity={0.76} />
-        <Edges threshold={18} color={color} />
+        <GlassMaterial accent={color} opacity={0.84} />
       </mesh>
     );
   }
@@ -90,17 +87,15 @@ function Station({ shape, color }: { shape: Shape; color: string }) {
     return (
       <mesh>
         <boxGeometry args={[0.5, 0.38, 0.5]} />
-        <GlassMaterial accent={color} opacity={0.74} />
-        <Edges threshold={15} color={color} />
+        <GlassMaterial accent={color} opacity={0.82} />
       </mesh>
     );
   }
   if (shape === 'hex') {
     return (
       <mesh rotation={[0.6, 0.2, 0]}>
-        <cylinderGeometry args={[0.32, 0.32, 0.16, 6]} />
-        <GlassMaterial accent={color} opacity={0.74} />
-        <Edges threshold={18} color={color} />
+        <cylinderGeometry args={[0.32, 0.32, 0.16, 8]} />
+        <GlassMaterial accent={color} opacity={0.82} />
       </mesh>
     );
   }
@@ -108,8 +103,7 @@ function Station({ shape, color }: { shape: Shape; color: string }) {
     return (
       <mesh>
         <octahedronGeometry args={[0.38, 0]} />
-        <GlassMaterial accent={color} opacity={0.8} emissive={0.12} />
-        <Edges threshold={18} color={color} />
+        <GlassMaterial accent={color} opacity={0.88} emissive={0.12} />
       </mesh>
     );
   }

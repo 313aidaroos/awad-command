@@ -28,10 +28,10 @@ export function GlassMaterial({
   return (
     <meshPhysicalMaterial
       color={accent}
-      metalness={level === 'high' ? 0.14 : 0.2}
-      roughness={level === 'high' ? 0.1 : 0.16}
-      clearcoat={level === 'high' ? 0.78 : 0.52}
-      clearcoatRoughness={level === 'high' ? 0.12 : 0.2}
+      metalness={level === 'high' ? 0.22 : 0.28}
+      roughness={level === 'high' ? 0.08 : 0.14}
+      clearcoat={level === 'high' ? 0.86 : 0.62}
+      clearcoatRoughness={level === 'high' ? 0.08 : 0.16}
       transparent
       opacity={opacity}
       emissive={accent}

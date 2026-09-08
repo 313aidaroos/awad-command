@@ -2,7 +2,6 @@
 
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Edges } from '@react-three/drei';
 import * as THREE from 'three';
 import { requestCeoOpen } from '@/lib/ceoBridge';
 import { particleCount } from '@/lib/quality';
@@ -63,13 +62,12 @@ export function CeoCore() {
       />
       <group ref={spin}>
         <mesh>
-          <icosahedronGeometry args={[1.52, quality === 'low' ? 0 : 1]} />
-          <GlassMaterial accent="#E6E8EC" opacity={0.12} emissive={0.04} />
-          <Edges threshold={22} color="#E6E8EC" />
+          <icosahedronGeometry args={[1.38, quality === 'low' ? 0 : 1]} />
+          <GlassMaterial accent="#E6E8EC" opacity={0.34} emissive={0.08} />
         </mesh>
         <mesh>
           <octahedronGeometry args={[0.58, 0]} />
-          <GlassMaterial accent="#E6E8EC" opacity={0.58} emissive={0.12} />
+          <GlassMaterial accent="#E6E8EC" opacity={0.72} emissive={0.14} />
         </mesh>
       </group>
       <mesh ref={pulse} rotation={[1.2, 0.2, 0.1]}>

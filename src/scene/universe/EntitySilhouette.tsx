@@ -2,7 +2,6 @@
 
 import { useMemo, useRef, type ReactNode } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Edges } from '@react-three/drei';
 import * as THREE from 'three';
 import { GlassMaterial } from '@/scene/materials/GlassMaterial';
 import type { SilhouetteKind } from '@/scene/universe/identities';
@@ -19,10 +18,6 @@ function Spin({ children, speed = 0.12 }: { children: ReactNode; speed?: number 
     if (ref.current) ref.current.rotation.y += dt * speed;
   });
   return <group ref={ref}>{children}</group>;
-}
-
-function Rim({ accent }: { accent: string }) {
-  return <Edges threshold={18} color={accent} />;
 }
 
 function Strut({
@@ -73,13 +68,12 @@ export function EntitySilhouette({ kind, accent, segs }: Props) {
     return (
       <Spin speed={0.07}>
         <mesh>
-          <boxGeometry args={[1.58, 1.58, 1.58]} />
-          <GlassMaterial accent={accent} opacity={0.16} emissive={0.03} />
-          <Rim accent={accent} />
+          <boxGeometry args={[1.42, 1.42, 1.42]} />
+          <GlassMaterial accent={accent} opacity={0.42} emissive={0.05} />
         </mesh>
         <mesh>
-          <octahedronGeometry args={[0.44, 0]} />
-          <GlassMaterial accent={accent} opacity={0.78} />
+          <octahedronGeometry args={[0.5, 0]} />
+          <GlassMaterial accent={accent} opacity={0.88} emissive={0.1} />
         </mesh>
         {[-0.54, 0.54].map((x) =>
           [-0.54, 0.54].map((z) => (
@@ -108,8 +102,7 @@ export function EntitySilhouette({ kind, accent, segs }: Props) {
         {towers.map((tower) => (
           <mesh key={`${tower.p.join()}-${tower.h}`} position={[tower.p[0], tower.p[1] + tower.h / 2 - 0.45, tower.p[2]]}>
             <cylinderGeometry args={[tower.r * 0.72, tower.r, tower.h, hex]} />
-            <GlassMaterial accent={accent} opacity={0.72} />
-            <Rim accent={accent} />
+            <GlassMaterial accent={accent} opacity={0.78} />
           </mesh>
         ))}
         <mesh position={[0, 0.62, 0]} rotation={[0.4, 0.2, 0.1]}>
@@ -138,8 +131,7 @@ export function EntitySilhouette({ kind, accent, segs }: Props) {
       <Spin speed={0.07}>
         <mesh scale={[0.48, 1.72, 0.48]}>
           <octahedronGeometry args={[1, 0]} />
-          <GlassMaterial accent={accent} opacity={0.62} />
-          <Rim accent={accent} />
+          <GlassMaterial accent={accent} opacity={0.7} />
         </mesh>
         <mesh position={[0, 0.12, 0]}>
           <octahedronGeometry args={[0.26, 0]} />
@@ -162,8 +154,7 @@ export function EntitySilhouette({ kind, accent, segs }: Props) {
         {slabs.map((slab) => (
           <mesh key={slab.y} position={[0, slab.y, 0]}>
             <boxGeometry args={slab.s} />
-            <GlassMaterial accent={accent} opacity={0.68} />
-            <Rim accent={accent} />
+            <GlassMaterial accent={accent} opacity={0.76} />
           </mesh>
         ))}
       </Spin>
@@ -207,9 +198,8 @@ export function EntitySilhouette({ kind, accent, segs }: Props) {
           <GlassMaterial accent="#E6E8EC" opacity={0.7} />
         </mesh>
         <mesh>
-          <icosahedronGeometry args={[1.02, smooth]} />
-          <GlassMaterial accent={accent} opacity={0.18} emissive={0.04} />
-          <Rim accent={accent} />
+          <icosahedronGeometry args={[0.92, smooth]} />
+          <GlassMaterial accent={accent} opacity={0.48} emissive={0.06} />
         </mesh>
         <mesh rotation={[Math.PI / 2, 0, 0]}>
           <torusGeometry args={[0.72, 0.038, 10, radial]} />
@@ -251,8 +241,7 @@ export function EntitySilhouette({ kind, accent, segs }: Props) {
       <Spin speed={0.11}>
         <mesh rotation={[0, 0, Math.PI / 2]}>
           <cylinderGeometry args={[0.9, 0.9, 0.2, radial]} />
-          <GlassMaterial accent={accent} opacity={0.55} />
-          <Rim accent={accent} />
+          <GlassMaterial accent={accent} opacity={0.62} />
         </mesh>
         {[0, 1, 2, 3, 4, 5].map((i) => (
           <mesh key={i} rotation={[0, (i * Math.PI) / 3, 0]}>

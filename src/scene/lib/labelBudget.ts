@@ -32,7 +32,7 @@ export function resolveLabels() {
     const onScreen = item.z > 0 && item.z < 1 && Math.abs(item.x) < 0.92 && Math.abs(item.y) < 0.9;
     const nearEdge = Math.abs(item.x) > 0.74 || Math.abs(item.y) > 0.72;
     if (onScreen && item.fade > 0.04) {
-      const clash = kept.some((other) => Math.hypot(other.x - item.x, (other.y - item.y) * 1.55) < 0.12);
+      const clash = kept.some((other) => Math.hypot(other.x - item.x, (other.y - item.y) * 1.7) < 0.16);
       if (!clash && (item.priority >= 5 || !nearEdge)) {
         opacity = nearEdge && item.priority >= 5 ? item.fade * 0.85 : item.fade;
         kept.push(item);
