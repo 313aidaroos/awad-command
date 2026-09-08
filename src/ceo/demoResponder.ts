@@ -1,4 +1,4 @@
-import { getLeadBySlug, PRODUCT_LEADS } from '@/config/orbLeads';
+import { ALL_LEADS, getLeadBySlug, SYSTEM_CONTACTS } from '@/config/orbLeads';
 import { attentionItems } from '@/ceo/buildContext';
 import { money } from '@/lib/format';
 import { projects } from '@/projects/registry';
@@ -40,8 +40,16 @@ export function demoResponder(
       }
       return { text: `${caveat}${hit.name} has no hub lead wired yet.` };
     }
+    const systemHit = SYSTEM_CONTACTS.find(
+      (c) => q.includes(c.slug.replace(/^_/, '')) || q.includes(c.leadName.toLowerCase()),
+    );
+    if (systemHit) {
+      return {
+        text: `${caveat}${systemHit.leadName} is a system contact (${systemHit.agentId}), not an orb.`,
+      };
+    }
     return {
-      text: `${caveat}Lead map:\n${PRODUCT_LEADS.map((l) => `• ${l.slug} → ${l.leadName}`).join('\n')}`,
+      text: `${caveat}Lead map:\n${ALL_LEADS.map((l) => `• ${l.slug} → ${l.leadName}`).join('\n')}`,
     };
   }
 

@@ -76,13 +76,13 @@ export const SYSTEM_CONTACTS: LeadContact[] = [
   {
     slug: '_developer',
     leadName: 'Developer Bot',
-    agentId: 'dashboard-developer-bot',
+    agentId: 'c64d032d-537d-47b9-95b3-17c382830b8a',
     kind: 'system',
   },
   {
     slug: '_dashboard',
     leadName: 'Dashboard Lead',
-    agentId: 'dashboard-lead',
+    agentId: 'bad5c7cd-197f-4a32-a586-606e2d01cb70',
     kind: 'system',
   },
 ];
@@ -98,8 +98,9 @@ export function getLeadByAgentId(agentId: string): LeadContact | undefined {
 }
 
 export function describeLeadOwnership(): string {
-  return PRODUCT_LEADS.map((lead) => {
+  return ALL_LEADS.map((lead) => {
     const soon = lead.comingSoon ? ' (coming soon)' : '';
-    return `${lead.slug} is owned by ${lead.leadName} (${lead.agentId})${soon}`;
+    const role = lead.kind === 'system' ? 'system contact' : 'owned by';
+    return `${lead.slug} is ${role} ${lead.leadName} (${lead.agentId})${soon}`;
   }).join('\n');
 }
