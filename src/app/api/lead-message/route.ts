@@ -14,8 +14,8 @@ export async function POST(request: Request) {
   }
   const { projectSlug, message } = parsed.data;
   const lead = getLeadBySlug(projectSlug);
-  if (!lead || lead.kind !== 'product') {
-    return NextResponse.json({ error: 'Unknown project lead' }, { status: 404 });
+  if (!lead) {
+    return NextResponse.json({ error: 'Unknown lead' }, { status: 404 });
   }
 
   const webhook = process.env.LEAD_MESSAGE_WEBHOOK_URL;
