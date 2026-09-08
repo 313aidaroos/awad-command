@@ -52,11 +52,12 @@ Hub contract (outbound):
 ```http
 POST $LEAD_MESSAGE_WEBHOOK_URL
 Authorization: Bearer $LEAD_MESSAGE_WEBHOOK_SECRET
-X-Webhook-Secret: $LEAD_MESSAGE_WEBHOOK_SECRET
 Content-Type: application/json
 
 { "agentId": "<uuid>", "message": "<text>", "projectSlug": "<slug>" }
 ```
+
+Header chosen: **`Authorization: Bearer`** (not `X-Webhook-Secret`).
 
 1. Set `LEAD_MESSAGE_WEBHOOK_URL` and `LEAD_MESSAGE_WEBHOOK_SECRET` (or alias `GROK_BOT_API_KEY`).
 2. Delivery is claimed **only** after the webhook returns 2xx. Non-2xx is surfaced as failed.
