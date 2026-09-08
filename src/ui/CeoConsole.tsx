@@ -1,7 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { applyCeoClientActions } from '@/ceo/applyClientActions';
 import { parseIntents } from '@/ceo/intents';
+import type { CeoClientAction } from '@/ceo/tools.types';
 import { useVoice } from '@/lib/voice';
 import { Glass } from '@/ui/Glass';
 import { useCommandStore } from '@/store/useCommandStore';
@@ -100,11 +102,16 @@ export function CeoConsole() {
             kind: 'deploy' | 'campaign' | 'financial' | 'other';
             risk: 'low' | 'medium' | 'high';
           };
+          actions?: CeoClientAction[];
         };
+        const actionNotes = applyCeoClientActions(body.actions ?? [], store);
         const reply = (body.text ?? '').trim() || body.error || 'CEO did not return a reply.';
-        if (body.approval) snapshot.requestApproval(body.approval);
-        setTurns((prev) => [...prev, { role: 'ceo', text: reply, note }]);
-        if (!voiceMutedRef.current && body.text) speak(reply);
+        if (body.approval && !(body.actions ?? []).some((action) => action.name === 'propose_approval')) {
+          snapshot.requestApproval(body.approval);
+        }
+        const combinedNote = [note, ...actionNotes].filter(Boolean).join(' · ') || undefined;
+        setTurns((prev) => [...prev, { role: 'ceo', text: reply, note: combinedNote }]);
+        if (!voiceMutedRef.current && reply) speak(reply);
       } catch {
         const fallback = 'CEO is unreachable. Try again in a moment.';
         setTurns((prev) => [...prev, { role: 'ceo', text: fallback }]);
