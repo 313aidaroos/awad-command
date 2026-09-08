@@ -5,6 +5,7 @@ import { kitUrl, type KitName } from '@/scene/kit/catalog';
 
 /** First-paint pieces only — skip unused Kenney hangars/rooms. */
 const BOOT: KitName[] = [
+  'plazaDeck',
   'floorDark',
   'computer',
   'accessPoint',
