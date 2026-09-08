@@ -92,7 +92,7 @@ export function CeoCore() {
       <points geometry={halo}>
         <pointsMaterial color="#dfe4ee" size={0.032} transparent opacity={0.55} depthWrite={false} sizeAttenuation />
       </points>
-      <Html center distanceFactor={14} position={[0, 2.15, 0]} style={{ pointerEvents: 'none' }}>
+      <Html center position={[0, 2.15, 0]} style={{ pointerEvents: 'none' }}>
         <div className="text-center whitespace-nowrap">
           <div className="text-[12px] tracking-[0.28em] font-light text-[rgba(230,232,236,0.92)]">AWAD</div>
           <div className="font-num text-[9.5px] text-[var(--muted)] mt-0.5">CEO · command core</div>
