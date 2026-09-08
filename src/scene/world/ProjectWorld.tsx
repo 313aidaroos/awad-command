@@ -9,6 +9,7 @@ import { FlowCouriers } from '@/scene/world/FlowCourier';
 import { FlowPath } from '@/scene/world/FlowPath';
 import { WorldCore } from '@/scene/world/WorldCore';
 import { WorldNodeMesh } from '@/scene/world/WorldNodeMesh';
+import { WorldHorizon } from '@/scene/world/WorldHorizon';
 import { WorldShell } from '@/scene/world/WorldShell';
 import { useCommandStore } from '@/store/useCommandStore';
 
@@ -35,6 +36,7 @@ export function ProjectWorld() {
       <pointLight color={project.accent} intensity={1.35} distance={22} position={[0, 1.2, 0]} />
       <pointLight color="#e8ecf4" intensity={0.55} distance={18} position={[4, 3, 5]} />
       <group ref={group} scale={0.001} visible={false}>
+        <WorldHorizon accent={project.accent} />
         <WorldCore project={project} />
         {project.agents.map((agent) => (
           <AgentEntity key={agent.id} agent={agent} nodes={project.nodes} />

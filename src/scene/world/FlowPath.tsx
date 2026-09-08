@@ -28,8 +28,8 @@ export function FlowPath({ project, flow }: { project: ProjectDefinition; flow: 
 
   return (
     <mesh>
-      <tubeGeometry args={[curve, tubular, quality === 'low' ? 0.028 : 0.038, 6, false]} />
-      <meshStandardMaterial color={project.accent} transparent opacity={0.32} metalness={0.25} roughness={0.5} />
+      <tubeGeometry args={[curve, tubular, quality === 'low' ? 0.04 : 0.055, 6, false]} />
+      <meshStandardMaterial color={project.accent} transparent opacity={0.38} metalness={0.28} roughness={0.45} />
     </mesh>
   );
 }

@@ -11,16 +11,16 @@ interface Props {
   segs: number;
 }
 
-function mat(accent: string, opacity = 0.55) {
+function mat(accent: string, opacity = 0.62) {
   return (
     <meshStandardMaterial
       color={accent}
-      metalness={0.38}
-      roughness={0.42}
+      metalness={0.46}
+      roughness={0.32}
       transparent
       opacity={opacity}
       emissive={accent}
-      emissiveIntensity={0.12}
+      emissiveIntensity={0.1}
     />
   );
 }
@@ -34,25 +34,23 @@ function Spin({ children, speed = 0.12 }: { children: ReactNode; speed?: number 
 }
 
 export function EntitySilhouette({ kind, accent, segs }: Props) {
-  const wire = (
-    <meshBasicMaterial color={accent} wireframe transparent opacity={0.22} />
-  );
+  const wire = <meshBasicMaterial color={accent} wireframe transparent opacity={0.28} />;
 
   if (kind === 'lattice') {
     return (
-      <Spin speed={0.08}>
+      <Spin speed={0.07}>
         <mesh>
-          <boxGeometry args={[1.15, 1.15, 1.15]} />
+          <boxGeometry args={[1.55, 1.55, 1.55]} />
           {wire}
         </mesh>
         <mesh>
-          <octahedronGeometry args={[0.42, 0]} />
-          {mat(accent, 0.7)}
+          <octahedronGeometry args={[0.58, 0]} />
+          {mat(accent, 0.78)}
         </mesh>
-        {[-0.38, 0.38].map((x) =>
-          [-0.38, 0.38].map((z) => (
+        {[-0.52, 0.52].map((x) =>
+          [-0.52, 0.52].map((z) => (
             <mesh key={`${x}${z}`} position={[x, 0, z]}>
-              <sphereGeometry args={[0.09, segs, segs]} />
+              <boxGeometry args={[0.18, 0.18, 0.18]} />
               {mat('#E6E8EC', 0.55)}
             </mesh>
           )),
@@ -64,12 +62,12 @@ export function EntitySilhouette({ kind, accent, segs }: Props) {
   if (kind === 'crystal') {
     return (
       <Spin speed={0.1}>
-        <mesh rotation={[0.4, 0.2, 0.1]}>
-          <octahedronGeometry args={[0.72, 0]} />
-          {mat(accent, 0.62)}
+        <mesh rotation={[0.45, 0.25, 0.12]}>
+          <octahedronGeometry args={[1.05, 0]} />
+          {mat(accent, 0.7)}
         </mesh>
-        <mesh rotation={[0.2, 0.8, 0.4]}>
-          <tetrahedronGeometry args={[0.38, 0]} />
+        <mesh rotation={[0.2, 0.9, 0.4]}>
+          <tetrahedronGeometry args={[0.55, 0]} />
           {wire}
         </mesh>
       </Spin>
@@ -78,11 +76,11 @@ export function EntitySilhouette({ kind, accent, segs }: Props) {
 
   if (kind === 'rings') {
     return (
-      <Spin speed={0.16}>
-        {[-0.28, 0, 0.28].map((y, i) => (
-          <mesh key={y} rotation={[1.2 + i * 0.15, 0, i * 0.2]} position={[0, y, 0]}>
-            <torusGeometry args={[0.55 - i * 0.06, 0.035, 8, Math.max(16, segs)]} />
-            {mat(accent, 0.5)}
+      <Spin speed={0.15}>
+        {[-0.42, 0, 0.42].map((y, i) => (
+          <mesh key={y} rotation={[1.15 + i * 0.18, 0, i * 0.22]} position={[0, y, 0]}>
+            <torusGeometry args={[0.82 - i * 0.08, 0.05, 8, Math.max(18, segs)]} />
+            {mat(accent, 0.58)}
           </mesh>
         ))}
       </Spin>
@@ -91,13 +89,13 @@ export function EntitySilhouette({ kind, accent, segs }: Props) {
 
   if (kind === 'octa') {
     return (
-      <Spin speed={0.09}>
+      <Spin speed={0.08}>
         <mesh>
-          <octahedronGeometry args={[0.78, 0]} />
-          {mat(accent, 0.5)}
+          <octahedronGeometry args={[1.12, 0]} />
+          {mat(accent, 0.58)}
         </mesh>
-        <mesh scale={1.18}>
-          <octahedronGeometry args={[0.78, 0]} />
+        <mesh scale={1.22}>
+          <octahedronGeometry args={[1.12, 0]} />
           {wire}
         </mesh>
       </Spin>
@@ -106,14 +104,14 @@ export function EntitySilhouette({ kind, accent, segs }: Props) {
 
   if (kind === 'monolith') {
     return (
-      <Spin speed={0.05}>
+      <Spin speed={0.045}>
         <mesh>
-          <boxGeometry args={[0.55, 1.15, 0.4]} />
-          {mat(accent, 0.58)}
+          <boxGeometry args={[0.72, 1.7, 0.48]} />
+          {mat(accent, 0.68)}
         </mesh>
-        <mesh position={[0, 0.78, 0]}>
-          <cylinderGeometry args={[0.04, 0.04, 0.35, 8]} />
-          {mat('#E6E8EC', 0.45)}
+        <mesh position={[0, 1.08, 0]}>
+          <cylinderGeometry args={[0.05, 0.05, 0.42, 8]} />
+          {mat('#E6E8EC', 0.5)}
         </mesh>
       </Spin>
     );
@@ -121,18 +119,18 @@ export function EntitySilhouette({ kind, accent, segs }: Props) {
 
   if (kind === 'constellation') {
     const spots: [number, number, number][] = [
-      [0.42, 0.12, 0.1],
-      [-0.38, 0.22, -0.18],
-      [0.08, -0.36, 0.32],
-      [-0.12, 0.4, 0.28],
-      [0.22, -0.18, -0.4],
+      [0.62, 0.18, 0.14],
+      [-0.55, 0.32, -0.26],
+      [0.12, -0.5, 0.46],
+      [-0.18, 0.58, 0.4],
+      [0.32, -0.26, -0.58],
     ];
     return (
-      <Spin speed={0.11}>
+      <Spin speed={0.1}>
         {spots.map((p) => (
           <mesh key={p.join()} position={p}>
-            <sphereGeometry args={[0.11, segs, segs]} />
-            {mat(accent, 0.7)}
+            <sphereGeometry args={[0.16, segs, segs]} />
+            {mat(accent, 0.78)}
           </mesh>
         ))}
       </Spin>
@@ -141,13 +139,13 @@ export function EntitySilhouette({ kind, accent, segs }: Props) {
 
   if (kind === 'icosa') {
     return (
-      <Spin speed={0.14}>
+      <Spin speed={0.13}>
         <mesh>
-          <icosahedronGeometry args={[0.7, 0]} />
-          {mat(accent, 0.55)}
+          <icosahedronGeometry args={[1.02, 0]} />
+          {mat(accent, 0.62)}
         </mesh>
         <mesh>
-          <icosahedronGeometry args={[0.88, 0]} />
+          <icosahedronGeometry args={[1.28, 0]} />
           {wire}
         </mesh>
       </Spin>
@@ -156,11 +154,11 @@ export function EntitySilhouette({ kind, accent, segs }: Props) {
 
   if (kind === 'folios') {
     return (
-      <Spin speed={0.07}>
-        {[-0.18, 0, 0.18].map((x, i) => (
-          <mesh key={x} position={[x, 0, 0]} rotation={[0.15, i * 0.25, 0.08]}>
-            <boxGeometry args={[0.02, 0.95, 0.68]} />
-            {mat(accent, 0.5)}
+      <Spin speed={0.06}>
+        {[-0.28, 0, 0.28].map((x, i) => (
+          <mesh key={x} position={[x, 0, 0]} rotation={[0.18, i * 0.28, 0.1]}>
+            <boxGeometry args={[0.03, 1.35, 0.95]} />
+            {mat(accent, 0.58)}
           </mesh>
         ))}
       </Spin>
@@ -169,14 +167,14 @@ export function EntitySilhouette({ kind, accent, segs }: Props) {
 
   if (kind === 'reel') {
     return (
-      <Spin speed={0.13}>
+      <Spin speed={0.12}>
         <mesh rotation={[0, 0, Math.PI / 2]}>
-          <cylinderGeometry args={[0.62, 0.62, 0.28, segs]} />
-          {mat(accent, 0.5)}
+          <cylinderGeometry args={[0.88, 0.88, 0.36, segs]} />
+          {mat(accent, 0.58)}
         </mesh>
         <mesh rotation={[Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[0.72, 0.03, 8, segs]} />
-          {mat('#E6E8EC', 0.35)}
+          <torusGeometry args={[1.02, 0.04, 8, segs]} />
+          {mat('#E6E8EC', 0.4)}
         </mesh>
       </Spin>
     );
@@ -184,24 +182,24 @@ export function EntitySilhouette({ kind, accent, segs }: Props) {
 
   if (kind === 'vessel') {
     return (
-      <Spin speed={0.06}>
+      <Spin speed={0.055}>
         <mesh>
-          <sphereGeometry args={[0.42, segs, segs]} />
-          {mat(accent, 0.6)}
+          <sphereGeometry args={[0.58, segs, segs]} />
+          {mat(accent, 0.68)}
         </mesh>
-        <mesh position={[0, 0.12, 0]} rotation={[1.2, 0, 0]}>
-          <torusGeometry args={[0.52, 0.045, 8, segs]} />
-          {mat(accent, 0.4)}
+        <mesh position={[0, 0.16, 0]} rotation={[1.2, 0, 0]}>
+          <torusGeometry args={[0.78, 0.055, 8, segs]} />
+          {mat(accent, 0.45)}
         </mesh>
       </Spin>
     );
   }
 
   return (
-    <Spin speed={0.07}>
+    <Spin speed={0.06}>
       <mesh>
-        <sphereGeometry args={[0.55, segs, segs]} />
-        {mat(accent, 0.45)}
+        <dodecahedronGeometry args={[0.82, 0]} />
+        {mat(accent, 0.52)}
       </mesh>
     </Spin>
   );

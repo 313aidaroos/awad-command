@@ -13,7 +13,7 @@ export function WorldShell({ accent }: { accent: string }) {
   useFrame((_, dt) => {
     if (!mesh.current) return;
     const mat = mesh.current.material as THREE.MeshBasicMaterial;
-    const target = enterPhase === 'shell' ? 0.16 : enterPhase === 'interior' ? 0.045 : 0;
+    const target = enterPhase === 'shell' ? 0.28 : enterPhase === 'interior' ? 0.07 : 0;
     opacity.current += (target - opacity.current) * Math.min(1, dt * 2.2);
     mat.opacity = opacity.current;
     mesh.current.visible = opacity.current > 0.01;

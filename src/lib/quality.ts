@@ -3,7 +3,7 @@ import type { QualityLevel } from '@/store/types';
 
 export function detectQuality(): QualityLevel {
   if (typeof window === 'undefined') return 'medium';
-  if (isSafariLike()) return 'low';
+  if (isSafariLike()) return 'medium';
   const cores = navigator.hardwareConcurrency ?? 4;
   const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
   const mobile = window.matchMedia('(max-width: 768px)').matches;

@@ -53,7 +53,7 @@ export function CeoCore() {
         status="operational"
         activity={0.62}
         hovered={false}
-        radius={1.05}
+        radius={0.88}
         onClick={() => {
           flyTo({ position: [0, 3.2, 11], lookAt: [0, 0, 0], duration: 1.2, phase: 'universe' });
           openPanel('none');

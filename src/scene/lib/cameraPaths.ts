@@ -1,9 +1,9 @@
 import type { CameraTarget } from '@/store/types';
 
 export const UNIVERSE_CAM: CameraTarget = {
-  position: [0, 8, 38],
+  position: [0, 9, 42],
   lookAt: [0, 0, 0],
-  duration: 1.7,
+  duration: 1.8,
   phase: 'universe',
 };
 
@@ -15,23 +15,25 @@ function dirOf(pos: [number, number, number]): [number, number, number] {
 export function projectEnterSequence(pos: [number, number, number]): CameraTarget[] {
   const [x, y, z] = pos;
   const [dx, , dz] = dirOf(pos);
+  const sx = -dz;
+  const sz = dx;
   return [
     {
-      position: [x + dx * 20, y + 6.8, z + dz * 20],
+      position: [x + dx * 22, y + 8.2, z + dz * 22],
       lookAt: [x, y, z],
-      duration: 1.7,
+      duration: 1.75,
       phase: 'approach',
     },
     {
-      position: [x + dx * 3.4, y + 1.35, z + dz * 3.4],
+      position: [x + dx * 2.6, y + 1.05, z + dz * 2.6],
       lookAt: [x, y, z],
-      duration: 1.2,
+      duration: 1.25,
       phase: 'shell',
     },
     {
-      position: [x - dx * 2.1, y + 2.55, z - dz * 2.1],
+      position: [x + sx * 7.2 - dx * 1.4, y + 7.4, z + sz * 7.2 - dz * 1.4],
       lookAt: [x, y - 0.2, z],
-      duration: 1.45,
+      duration: 1.55,
       phase: 'interior',
     },
   ];

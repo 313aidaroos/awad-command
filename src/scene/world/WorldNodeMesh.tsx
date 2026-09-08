@@ -133,8 +133,10 @@ export function WorldNodeMesh({ node, accent }: { node: WorldNode; accent: strin
   const shape = SHAPE[node.label] ?? (node.kind === 'sink' ? 'crystal' : node.kind === 'source' ? 'cluster' : 'generic');
   return (
     <group position={node.position}>
-      <Station shape={shape} color={accent} />
-      <Html distanceFactor={22} position={[0, 0.55, 0]} style={{ pointerEvents: 'none' }}>
+      <group scale={1.7}>
+        <Station shape={shape} color={accent} />
+      </group>
+      <Html distanceFactor={32} position={[0, 0.82, 0]} style={{ pointerEvents: 'none' }}>
         <div className="text-[9px] tracking-[0.12em] text-[rgba(230,232,236,0.72)] whitespace-nowrap">{node.label}</div>
       </Html>
     </group>

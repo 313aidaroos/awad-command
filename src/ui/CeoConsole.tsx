@@ -129,6 +129,17 @@ export function CeoConsole() {
   }, [ask, start, stop, voice.listening, voice.supported, voice.unsupportedHint]);
 
   if (view === 'boot') return null;
+  if (view !== 'universe' && !open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="glass pointer-events-auto fixed bottom-5 left-1/2 z-30 -translate-x-1/2 px-3.5 py-1.5 text-[11px] text-[var(--muted)]"
+      >
+        Ask CEO
+      </button>
+    );
+  }
 
   const displayValue = voice.listening ? voice.interim : input;
   const banner = voice.hint ?? hud;

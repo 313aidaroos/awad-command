@@ -15,7 +15,7 @@ export function CameraRig() {
   const lookT = useRef(new THREE.Vector3());
   const posT = useRef(new THREE.Vector3(0, 8, 38));
   const follow = useRef(new THREE.Vector3());
-  const rot = useRef({ x: 0, y: 0, tx: 0, ty: 0, zoom: 38, tZoom: 38 });
+  const rot = useRef({ x: 0, y: 0, tx: 0, ty: 0, zoom: 42, tZoom: 42 });
   const drag = useRef({ on: false, x: 0, y: 0, moved: 0, pan: false });
   const flying = useRef(false);
   const requestId = useCommandStore((s) => s.camera.requestId);
@@ -42,7 +42,7 @@ export function CameraRig() {
         const [lx, , lz] = target.lookAt;
         const dx = x - lx;
         const dz = z - lz;
-        rot.current.tZoom = Math.max(5.2, Math.hypot(dx, dz));
+        rot.current.tZoom = Math.max(10, Math.min(22, Math.hypot(dx, dz)));
         rot.current.zoom = rot.current.tZoom;
         rot.current.ty = Math.atan2(dx, dz);
         rot.current.y = rot.current.ty;
@@ -50,8 +50,8 @@ export function CameraRig() {
         rot.current.x = rot.current.tx;
       }
       if (state.view === 'universe') {
-        rot.current.tZoom = 38;
-        rot.current.zoom = 38;
+        rot.current.tZoom = 42;
+        rot.current.zoom = 42;
       }
     }, target.duration * 1000);
     return () => window.clearTimeout(id);
@@ -94,8 +94,8 @@ export function CameraRig() {
     const wheel = (e: WheelEvent) => {
       if (flying.current || useCommandStore.getState().followingAgent) return;
       const projectView = useCommandStore.getState().view !== 'universe';
-      const min = projectView ? 5.2 : 22;
-      const max = projectView ? 16 : 56;
+      const min = projectView ? 8 : 24;
+      const max = projectView ? 24 : 58;
       rot.current.tZoom = Math.max(min, Math.min(max, rot.current.tZoom + e.deltaY * 0.02));
     };
     el.addEventListener('pointerdown', down);
@@ -127,11 +127,11 @@ export function CameraRig() {
       posT.current.set(follow.current.x + 2.4, follow.current.y + 1.35, follow.current.z + 3.6);
       lookT.current.copy(follow.current);
     } else if (view === 'universe' && !flying.current) {
-      posT.current.set(Math.sin(r.y) * r.zoom, 8 + r.x * 7, Math.cos(r.y) * r.zoom);
+      posT.current.set(Math.sin(r.y) * r.zoom, 9 + r.x * 8, Math.cos(r.y) * r.zoom);
       lookT.current.set(0, 0, 0);
     } else if (project && !flying.current && view !== 'universe') {
       const [cx, cy, cz] = project.universePosition;
-      posT.current.set(cx + Math.sin(r.y) * r.zoom, cy + 2.2 + r.x * 4.2, cz + Math.cos(r.y) * r.zoom);
+      posT.current.set(cx + Math.sin(r.y) * r.zoom, cy + 4.6 + r.x * 5.2, cz + Math.cos(r.y) * r.zoom);
       lookT.current.set(cx, cy, cz);
     }
 

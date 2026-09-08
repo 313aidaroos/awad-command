@@ -11,7 +11,7 @@ import { Universe } from '@/scene/universe/Universe';
 import { ProjectWorld } from '@/scene/world/ProjectWorld';
 import { useCommandStore } from '@/store/useCommandStore';
 
-const CAMERA_INIT = { position: [0, 8, 38] as [number, number, number], fov: 42, near: 0.1, far: 420 };
+const CAMERA_INIT = { position: [0, 9, 42] as [number, number, number], fov: 40, near: 0.1, far: 420 };
 const GL_INIT = {
   antialias: true,
   alpha: false,
@@ -70,7 +70,7 @@ export function CommandCanvas() {
       onCreated={handleCreated}
       style={CANVAS_STYLE}
     >
-      <fog attach="fog" args={['#07080A', 26, 95]} />
+      <fog attach="fog" args={['#07080A', 34, 110]} />
       <Lighting />
       <Starfield />
       <Universe />
