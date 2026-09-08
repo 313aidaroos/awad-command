@@ -4,6 +4,7 @@ import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
+import { requestCeoOpen } from '@/lib/ceoBridge';
 import { particleCount } from '@/lib/quality';
 import { OrbCore } from '@/scene/universe/OrbCore';
 import { useCommandStore } from '@/store/useCommandStore';
@@ -14,7 +15,6 @@ export function CeoCore() {
   const focused = useCommandStore((s) => s.focusedProject);
   const quality = useCommandStore((s) => s.quality.level);
   const flyTo = useCommandStore((s) => s.flyTo);
-  const openPanel = useCommandStore((s) => s.openPanel);
 
   const halo = useMemo(() => {
     const n = particleCount(quality, 260, 160, 90);
@@ -56,7 +56,7 @@ export function CeoCore() {
         radius={0.88}
         onClick={() => {
           flyTo({ position: [0, 3.2, 11], lookAt: [0, 0, 0], duration: 1.2, phase: 'universe' });
-          openPanel('none');
+          requestCeoOpen();
         }}
       />
       <group ref={spin}>

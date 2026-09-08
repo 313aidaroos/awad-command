@@ -1,86 +1,52 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { projects } from '@/projects/registry';
 import { useCommandStore } from '@/store/useCommandStore';
+
+const BOOT_MS = 780;
 
 export function BootSequence() {
   const booted = useCommandStore((s) => s.booted);
-  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const t = window.setTimeout(() => setReady(true), 4200);
+    if (booted) return;
     const skip = () => useCommandStore.getState().finishBoot();
     window.addEventListener('keydown', skip);
+    window.addEventListener('pointerdown', skip);
+    const t = window.setTimeout(skip, BOOT_MS);
     return () => {
       window.clearTimeout(t);
       window.removeEventListener('keydown', skip);
+      window.removeEventListener('pointerdown', skip);
     };
-  }, []);
-
-  useEffect(() => {
-    if (ready && !booted) useCommandStore.getState().finishBoot();
-  }, [ready, booted]);
+  }, [booted]);
 
   return (
     <AnimatePresence>
       {!booted && (
         <motion.div
-          className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-[var(--void)]"
+          className="pointer-events-none fixed inset-0 z-50 flex flex-col items-center justify-center"
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.7 }}
-          onClick={() => useCommandStore.getState().finishBoot()}
+          transition={{ duration: 0.45 }}
         >
           <motion.h1
-            className="font-light tracking-[0.4em] text-[clamp(22px,5vw,44px)]"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 1.2, delay: 0.2 }}
+            className="font-light tracking-[0.46em] text-[clamp(18px,4vw,34px)] text-[rgba(230,232,236,0.88)]"
+            initial={{ opacity: 0, letterSpacing: '0.7em' }}
+            animate={{ opacity: 1, letterSpacing: '0.46em' }}
+            transition={{ duration: 0.55 }}
           >
             AWAD COMMAND
           </motion.h1>
           <motion.p
-            className="text-xs text-[var(--muted)]"
+            className="mt-3 text-[10px] tracking-[0.28em] text-[var(--muted)]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 1.2 }}
+            transition={{ delay: 0.18, duration: 0.35 }}
           >
-            Initializing AI ecosystem
+            Skip
           </motion.p>
-          <div className="font-num w-60 text-xs text-[var(--muted)] space-y-1">
-            {projects.map((project, i) => {
-              const status = project.initialStatus;
-              const color =
-                status === 'attention'
-                  ? 'text-[var(--s-attention)]'
-                  : status === 'idle'
-                    ? 'text-[var(--muted)]'
-                    : 'text-[var(--s-active)]';
-              return (
-                <motion.div
-                  key={project.slug}
-                  className="flex justify-between"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 1.8 + i * 0.12 }}
-                >
-                  <span>{project.name}</span>
-                  <span className={color}>{status.toUpperCase()}</span>
-                </motion.div>
-              );
-            })}
-            <motion.div
-              className="flex justify-between"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1.8 + projects.length * 0.12 }}
-            >
-              <span>CEO</span>
-              <span className="text-[var(--s-active)]">ONLINE</span>
-            </motion.div>
-          </div>
         </motion.div>
       )}
     </AnimatePresence>

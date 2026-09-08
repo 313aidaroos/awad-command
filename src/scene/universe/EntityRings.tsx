@@ -19,7 +19,8 @@ export function EntityRings({
     group.current.rotation.y += dt * 0.05;
     group.current.rotation.x += dt * 0.015;
   });
-  const rings = Math.max(1, Math.min(3, count));
+  const rings = Math.max(0, Math.min(3, count));
+  if (rings === 0) return null;
   return (
     <group ref={group}>
       {Array.from({ length: rings }, (_, i) => (

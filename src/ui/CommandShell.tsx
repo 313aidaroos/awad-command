@@ -56,6 +56,7 @@ export function CommandShell() {
   }, []);
 
   const mountCanvas = canvasEnabled && webgl === true && CanvasSlot;
+  const booted = useCommandStore((s) => s.booted);
 
   return (
     <div className="relative h-svh w-full overflow-hidden bg-[var(--void)]">
@@ -70,20 +71,24 @@ export function CommandShell() {
       <ClientErrorBoundary fallback={<BootFallback />}>
         <BootSequence />
       </ClientErrorBoundary>
-      <TopBar />
-      <ModeBar />
-      <HoverHud />
-      <EventStream />
-      <NewsCorner />
-      <ProjectHud />
-      <AgentFollowHud />
-      <ModeStub />
+      {booted ? (
+        <>
+          <TopBar />
+          <ModeBar />
+          <HoverHud />
+          <EventStream />
+          <NewsCorner />
+          <ProjectHud />
+          <AgentFollowHud />
+          <ModeStub />
+          <ComputerPanel />
+          <ApprovalCard />
+          <MorningBriefing />
+          <CeoConsole />
+          <CommandPalette />
+        </>
+      ) : null}
       <AdaptiveQuality />
-      <ComputerPanel />
-      <ApprovalCard />
-      <MorningBriefing />
-      <CeoConsole />
-      <CommandPalette />
       <Hotkeys />
     </div>
   );

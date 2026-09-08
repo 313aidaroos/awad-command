@@ -1,8 +1,6 @@
 'use client';
 
 import { projects } from '@/projects/registry';
-import { Glass } from '@/ui/Glass';
-import { Metric } from '@/ui/Metric';
 import { useCommandStore } from '@/store/useCommandStore';
 
 export function AgentFollowHud() {
@@ -14,27 +12,18 @@ export function AgentFollowHud() {
   if (!id || !agent || !runtime || !project) return null;
 
   return (
-    <Glass className="fixed bottom-24 left-1/2 z-20 w-[min(420px,calc(100%-32px))] -translate-x-1/2 px-4 py-3">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-[10px] tracking-[0.16em] text-[var(--muted)]">Following · {project.name}</div>
-          <div className="mt-1 text-sm">{agent.name}</div>
-          <div className="mt-1 text-[11px] text-[var(--muted)]">
-            {runtime.currentTask ?? agent.objective}
-            <span className="tag">DEMO</span>
-          </div>
-          <div className="mt-1.5 font-num text-[10px] text-[var(--muted)]">
-            Completed today <Metric value={String(runtime.completedToday)} />
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={() => stopFollow()}
-          className="rounded-full border border-[var(--line)] px-3 py-1 text-[11px] text-[var(--muted)]"
-        >
-          Exit follow
-        </button>
-      </div>
-    </Glass>
+    <div className="pointer-events-auto fixed top-4 left-1/2 z-20 -translate-x-1/2 flex items-center gap-2 rounded-full border border-[var(--line)] bg-[rgba(23,26,31,0.45)] px-3 py-1 text-[11px]">
+      <span className="tracking-[0.12em] text-[var(--text)]">{agent.name}</span>
+      <span className="tag" style={{ margin: 0 }}>
+        DEMO
+      </span>
+      <button
+        type="button"
+        onClick={() => stopFollow()}
+        className="text-[var(--muted)] hover:text-[var(--text)]"
+      >
+        Exit
+      </button>
+    </div>
   );
 }

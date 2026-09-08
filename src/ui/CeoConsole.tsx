@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { applyCeoClientActions } from '@/ceo/applyClientActions';
 import { parseIntents } from '@/ceo/intents';
 import type { CeoClientAction } from '@/ceo/tools.types';
+import { CEO_OPEN_EVENT } from '@/lib/ceoBridge';
 import { useVoice } from '@/lib/voice';
 import { Glass } from '@/ui/Glass';
 import { useCommandStore } from '@/store/useCommandStore';
@@ -30,9 +31,23 @@ export function CeoConsole() {
   const turnsRef = useRef(turns);
   const busyRef = useRef(busy);
   const voiceMutedRef = useRef(voiceMuted);
+  const inputRef = useRef<HTMLInputElement>(null);
   turnsRef.current = turns;
   busyRef.current = busy;
   voiceMutedRef.current = voiceMuted;
+
+  useEffect(() => {
+    const openCeo = () => {
+      setOpen(true);
+      window.setTimeout(() => inputRef.current?.focus(), 0);
+    };
+    window.addEventListener(CEO_OPEN_EVENT, openCeo);
+    return () => window.removeEventListener(CEO_OPEN_EVENT, openCeo);
+  }, []);
+
+  useEffect(() => {
+    if (open) inputRef.current?.focus();
+  }, [open]);
 
   const clearVoiceHint = clearHint;
   useEffect(() => {
@@ -136,65 +151,66 @@ export function CeoConsole() {
   }, [ask, start, stop, voice.listening, voice.supported, voice.unsupportedHint]);
 
   if (view === 'boot') return null;
-  if (view !== 'universe' && !open) {
-    return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="glass pointer-events-auto fixed bottom-5 left-1/2 z-30 -translate-x-1/2 px-3.5 py-1.5 text-[11px] text-[var(--muted)]"
-      >
-        Ask CEO
-      </button>
-    );
-  }
 
   const displayValue = voice.listening ? voice.interim : input;
   const banner = voice.hint ?? hud;
 
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="pointer-events-auto fixed bottom-4 right-4 z-30 flex items-center gap-2 rounded-full border border-[var(--line)] bg-[rgba(23,26,31,0.45)] px-3 py-1.5 text-[11px] tracking-[0.16em] text-[var(--muted)]"
+      >
+        <span className="dot" style={{ marginRight: 0 }} />
+        CEO
+      </button>
+    );
+  }
+
   return (
-    <div className="pointer-events-auto fixed bottom-[22px] left-1/2 z-30 w-[min(520px,calc(100%-32px))] -translate-x-1/2">
-      {open ? (
-        <Glass className="mb-2 max-h-[55vh] overflow-auto p-3.5">
-          <div className="mb-2 flex items-center justify-between text-[10px] tracking-[0.14em] text-[var(--muted)]">
-            <span>AWAD CEO {dataMode === 'demo' ? <span className="tag">demo data</span> : null}</span>
-            <button type="button" onClick={() => setOpen(false)}>
-              Close
-            </button>
-          </div>
-          <div className="space-y-2 text-[13px]">
-            {turns.map((turn, i) => (
-              <div key={i} className={turn.role === 'user' ? 'text-[var(--muted)]' : 'text-[var(--text)]'}>
-                {turn.text}
-                {turn.note ? <div className="mt-1 text-[10px] text-[var(--accent)]">{turn.note}</div> : null}
-              </div>
-            ))}
-            {busy ? <div className="text-[var(--muted)]">Thinking…</div> : null}
-          </div>
-        </Glass>
-      ) : null}
+    <div className="pointer-events-auto fixed bottom-4 right-4 z-30 w-[min(360px,calc(100%-32px))]">
+      <Glass className="mb-2 max-h-[46vh] overflow-auto p-3">
+        <div className="mb-2 flex items-center justify-between text-[10px] tracking-[0.14em] text-[var(--muted)]">
+          <span>AWAD CEO {dataMode === 'demo' ? <span className="tag">DEMO</span> : null}</span>
+          <button type="button" onClick={() => setOpen(false)}>
+            Close
+          </button>
+        </div>
+        <div className="space-y-2 text-[13px]">
+          {turns.map((turn, i) => (
+            <div key={i} className={turn.role === 'user' ? 'text-[var(--muted)]' : 'text-[var(--text)]'}>
+              {turn.text}
+              {turn.note ? <div className="mt-1 text-[10px] text-[var(--accent)]">{turn.note}</div> : null}
+            </div>
+          ))}
+          {busy ? <div className="text-[var(--muted)]">Thinking…</div> : null}
+        </div>
+      </Glass>
       {banner ? (
-        <div className="mb-2 text-center text-[11px] text-[var(--muted)]" role="status">
+        <div className="mb-2 text-right text-[11px] text-[var(--muted)]" role="status">
           {banner}
         </div>
       ) : null}
       <Glass
-        className={`flex items-center gap-3 px-[18px] py-3 text-[13px] text-[var(--muted)] ${
+        className={`flex items-center gap-2 px-3 py-2 text-[12px] text-[var(--muted)] ${
           voice.listening ? 'mic-listening-bar' : ''
         }`}
       >
         <span
           className={`dot ${voice.listening ? 'mic-listening-dot' : ''}`}
-          style={{ background: 'var(--accent)', boxShadow: '0 0 10px var(--accent)' }}
+          style={{ background: 'var(--accent)', boxShadow: '0 0 10px var(--accent)', marginRight: 0 }}
         />
         <input
+          ref={inputRef}
+          data-awad-ceo-input
           value={displayValue}
           readOnly={voice.listening}
           onChange={(e) => setInput(e.target.value)}
-          onFocus={() => setOpen(true)}
           onKeyDown={(e) => {
             if (e.key === 'Enter') void ask(input);
           }}
-          placeholder={voice.listening ? 'Listening…' : 'Ask AWAD CEO — “what needs my attention?”'}
+          placeholder={voice.listening ? 'Listening…' : 'Ask AWAD CEO…'}
           className={`w-full bg-transparent text-[var(--text)] outline-none placeholder:text-[var(--muted)] ${
             voice.listening ? 'italic text-[var(--accent)]' : ''
           }`}
@@ -205,7 +221,7 @@ export function CeoConsole() {
           aria-label={voiceMuted ? 'Unmute spoken replies' : 'Mute spoken replies'}
           title={voiceMuted ? 'Spoken replies off' : 'Spoken replies on'}
           onClick={() => setVoiceMuted(!voiceMuted)}
-          className="grid h-[26px] w-[26px] place-items-center rounded-full border border-[var(--line)] text-[11px] text-[var(--muted)]"
+          className="grid h-[24px] w-[24px] place-items-center rounded-full border border-[var(--line)] text-[11px] text-[var(--muted)]"
         >
           {voiceMuted ? '🔇' : '🔊'}
         </button>
@@ -215,7 +231,7 @@ export function CeoConsole() {
           aria-pressed={voice.listening}
           title={voice.supported ? (voice.listening ? 'Stop' : 'Speak') : voice.unsupportedHint}
           onClick={toggleMic}
-          className={`grid h-[26px] w-[26px] place-items-center rounded-full border text-xs ${
+          className={`grid h-[24px] w-[24px] place-items-center rounded-full border text-xs ${
             voice.listening
               ? 'mic-listening border-[var(--accent)] text-[var(--accent)]'
               : 'border-[var(--line)]'

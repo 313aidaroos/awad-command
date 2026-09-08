@@ -74,6 +74,6 @@ export function schedule(emit: Emit, project: ProjectDefinition) {
           flowInstanceId: instance(),
         }),
     ],
-    3800,
+    2400,
   );
 }

@@ -4,7 +4,6 @@ import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
-import { money } from '@/lib/format';
 import { geoSegments } from '@/lib/quality';
 import { EntityField } from '@/scene/universe/EntityField';
 import { EntityRings } from '@/scene/universe/EntityRings';
@@ -47,15 +46,6 @@ export function ProjectOrb({ project }: { project: ProjectDefinition }) {
     g.visible = next > 0.05;
   });
 
-  const mrr = runtime?.metrics.mrr ?? 0;
-  const agents = project.agents.length;
-  const stat =
-    typeof mrr === 'number' && mrr > 0
-      ? `${money(mrr)} · ${agents} agents`
-      : project.slug === 'awadbot'
-        ? `paper · ${agents} agents`
-        : `${agents} agents`;
-
   return (
     <group ref={group} position={project.universePosition}>
       <OrbCore
@@ -63,23 +53,22 @@ export function ProjectOrb({ project }: { project: ProjectDefinition }) {
         status={status}
         activity={activity}
         hovered={hovered}
-        radius={0.92}
+        radius={identity.core}
         onClick={() => enterProject(project.slug)}
         onPointerOver={() => hoverProject(project.slug)}
         onPointerOut={() => hoverProject(undefined)}
       />
-      <group scale={1.55}>
+      <group scale={1.85}>
         <EntitySilhouette kind={identity.kind} accent={project.accent} segs={segs} />
       </group>
       <EntityField accent={project.accent} />
       <EntityRings count={identity.rings} accent={project.accent} />
       {!focused && (
-        <Html center position={[0, -1.85, 0]} style={{ pointerEvents: 'none' }}>
+        <Html center position={[0, -2.05, 0]} style={{ pointerEvents: 'none' }}>
           <div className="text-center whitespace-nowrap">
             <div className="text-[11px] tracking-[0.22em] font-light text-[rgba(230,232,236,0.88)]">
               {project.name}
             </div>
-            <div className="font-num text-[9.5px] text-[var(--muted)] mt-0.5">{stat}</div>
           </div>
         </Html>
       )}

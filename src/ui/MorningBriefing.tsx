@@ -1,37 +1,17 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
 import { money } from '@/lib/format';
 import { Glass } from '@/ui/Glass';
 import { Metric } from '@/ui/Metric';
 import { useCommandStore } from '@/store/useCommandStore';
-import type { ProjectRuntime } from '@/types/project';
-
-const IDLE_PROJECTS: Record<string, ProjectRuntime> = {};
 
 export function MorningBriefing() {
   const open = useCommandStore((s) => s.contextPanel === 'briefing');
-  const seen = useCommandStore((s) => s.briefingSeen);
-  const booted = useCommandStore((s) => s.booted);
   const setSeen = useCommandStore((s) => s.setBriefingSeen);
-  const openPanel = useCommandStore((s) => s.openPanel);
   const closePanel = useCommandStore((s) => s.closePanel);
   const enter = useCommandStore((s) => s.enterProject);
   const setMode = useCommandStore((s) => s.setMode);
-  const projects = useCommandStore((s) => (s.contextPanel === 'briefing' ? s.projects : IDLE_PROJECTS));
-  const offered = useRef(false);
-
-  useEffect(() => {
-    if (!booted || seen || offered.current) return;
-    const key = `awad-briefing-${new Date().toDateString()}`;
-    if (window.localStorage.getItem(key)) {
-      setSeen(true);
-      return;
-    }
-    offered.current = true;
-    const t = window.setTimeout(() => openPanel('briefing'), 1500);
-    return () => window.clearTimeout(t);
-  }, [booted, seen, openPanel, setSeen]);
+  const projects = useCommandStore((s) => (s.contextPanel === 'briefing' ? s.projects : {}));
 
   if (!open) return null;
 

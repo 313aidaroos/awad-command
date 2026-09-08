@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import type { AgentDefinition, AgentState } from '@/types/agent';
 import type { WorldNode } from '@/types/world';
 
-const MOVE_MS = 2400;
+export const MOVE_MS = 1550;
 const _from = new THREE.Vector3();
 const _to = new THREE.Vector3();
 const _out = new THREE.Vector3();
@@ -35,8 +35,8 @@ export function agentLocalPosition(
   const start = origin ? new THREE.Vector3(...origin.position) : home;
   const u = ease((now - (runtime.moveStartedAt ?? now)) / MOVE_MS);
   out.copy(start).lerp(dest, u);
-  const working = runtime.status === 'working' ? 0.12 : 0.06;
-  out.y += Math.sin(now * 0.002 + out.x * 0.4) * working;
+  const working = runtime.status === 'working' ? 0.16 : 0.06;
+  out.y += Math.sin(now * 0.0032 + out.x * 0.4) * working;
   return out;
 }
 
@@ -53,4 +53,20 @@ export function agentWorldPosition(
   out.y += projectPos[1];
   out.z += projectPos[2];
   return out;
+}
+
+export function agentTravelEndpoints(
+  agent: AgentDefinition,
+  runtime: AgentState | undefined,
+  nodes: WorldNode[],
+): { from: THREE.Vector3; to: THREE.Vector3; progress: number } | null {
+  if (!runtime?.targetNodeId) return null;
+  const dest = nodes.find((item) => item.id === runtime.targetNodeId);
+  if (!dest) return null;
+  const origin = nodes.find((item) => item.id === runtime.fromNodeId);
+  const from = new THREE.Vector3(...(origin?.position ?? agent.homePosition));
+  const to = new THREE.Vector3(...dest.position);
+  const progress = ease((Date.now() - (runtime.moveStartedAt ?? Date.now())) / MOVE_MS);
+  if (progress >= 1) return null;
+  return { from, to, progress };
 }

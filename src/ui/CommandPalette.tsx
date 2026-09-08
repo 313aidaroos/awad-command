@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { Command } from 'cmdk';
+import { requestCeoOpen } from '@/lib/ceoBridge';
 import { projects } from '@/projects/registry';
 import { useCommandStore } from '@/store/useCommandStore';
 
@@ -13,7 +14,8 @@ export function CommandPalette() {
   const setMode = useCommandStore((s) => s.setMode);
   const setQuality = useCommandStore((s) => s.setQuality);
   const openPanel = useCommandStore((s) => s.openPanel);
-  const finishBoot = useCommandStore((s) => s.finishBoot);
+  const toggleNews = useCommandStore((s) => s.toggleNews);
+  const toggleEventStream = useCommandStore((s) => s.toggleEventStream);
   const voiceMuted = useCommandStore((s) => s.voiceMuted);
   const setVoiceMuted = useCommandStore((s) => s.setVoiceMuted);
 
@@ -85,6 +87,21 @@ export function CommandPalette() {
             </Command.Item>
           </Command.Group>
           <Command.Group heading="Actions">
+            <Command.Item
+              className="cursor-pointer rounded-md px-2 py-1.5"
+              onSelect={() => {
+                requestCeoOpen();
+                toggle(false);
+              }}
+            >
+              Ask CEO
+            </Command.Item>
+            <Command.Item className="cursor-pointer rounded-md px-2 py-1.5" onSelect={() => { toggleEventStream(); toggle(false); }}>
+              Events
+            </Command.Item>
+            <Command.Item className="cursor-pointer rounded-md px-2 py-1.5" onSelect={() => { toggleNews(); toggle(false); }}>
+              News
+            </Command.Item>
             <Command.Item className="cursor-pointer rounded-md px-2 py-1.5" onSelect={() => { openPanel('computer'); toggle(false); }}>
               Computer
             </Command.Item>
@@ -102,9 +119,6 @@ export function CommandPalette() {
             </Command.Item>
             <Command.Item className="cursor-pointer rounded-md px-2 py-1.5" onSelect={() => { toggle(false); }}>
               Time machine · coming
-            </Command.Item>
-            <Command.Item className="cursor-pointer rounded-md px-2 py-1.5" onSelect={() => { finishBoot(); toggle(false); }}>
-              Rerun boot
             </Command.Item>
             <Command.Item
               className="cursor-pointer rounded-md px-2 py-1.5"

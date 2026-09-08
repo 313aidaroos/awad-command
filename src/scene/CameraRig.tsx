@@ -124,8 +124,8 @@ export function CameraRig() {
 
     if (followed && project) {
       agentWorldPosition(project.universePosition, followed, state.agents[followed.id], project.nodes, Date.now(), follow.current);
-      posT.current.set(follow.current.x + 2.4, follow.current.y + 1.35, follow.current.z + 3.6);
-      lookT.current.copy(follow.current);
+      posT.current.set(follow.current.x + 6.4, follow.current.y + 4.2, follow.current.z + 9.6);
+      lookT.current.set(follow.current.x, follow.current.y + 0.35, follow.current.z);
     } else if (view === 'universe' && !flying.current) {
       posT.current.set(Math.sin(r.y) * r.zoom, 9 + r.x * 8, Math.cos(r.y) * r.zoom);
       lookT.current.set(0, 0, 0);

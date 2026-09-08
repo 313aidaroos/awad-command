@@ -28,7 +28,7 @@ export const useCommandStore = create<CommandState & CommandActions>((set, get) 
   enterPhase: 'universe',
   dataMode: 'demo',
   booted: false,
-  camera: { target: null, sequence: [], index: 0, requestId: 0 },
+  camera: { target: UNIVERSE_CAM, sequence: [UNIVERSE_CAM], index: 0, requestId: 1 },
   projects: {},
   agents: {},
   flows: {},
@@ -76,7 +76,6 @@ export const useCommandStore = create<CommandState & CommandActions>((set, get) 
       booted: true,
       view: 'universe',
       enterPhase: 'universe',
-      camera: cameraFrom([UNIVERSE_CAM], get().camera.requestId + 1),
     });
   },
 
@@ -90,7 +89,7 @@ export const useCommandStore = create<CommandState & CommandActions>((set, get) 
       focusedAgent: undefined,
       followingAgent: undefined,
       enterPhase: 'approach',
-      contextPanel: 'lead',
+      contextPanel: 'none',
       camera: cameraFrom(sequence, get().camera.requestId + 1),
     });
   },
@@ -120,7 +119,7 @@ export const useCommandStore = create<CommandState & CommandActions>((set, get) 
       view: 'project',
       focusedAgent: undefined,
       followingAgent: undefined,
-      contextPanel: 'lead',
+      contextPanel: 'none',
       enterPhase: 'interior',
       camera: cameraFrom([projectInteriorCam(project.universePosition)], get().camera.requestId + 1),
     });
