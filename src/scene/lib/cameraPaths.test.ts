@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  CEO_CLOSE_CAM,
   CONTRAXIS_HALL_CAM,
   projectEnterSequence,
   projectInteriorCam,
@@ -34,6 +35,17 @@ describe('showExterior', () => {
     expect(showExterior('universe')).toBe(true);
     expect(showExterior('interior')).toBe(false);
     expect(showExterior('shell')).toBe(false);
+  });
+});
+
+describe('CEO_CLOSE_CAM', () => {
+  it('stays on the plaza looking at the core', () => {
+    expect(CEO_CLOSE_CAM.phase).toBe('universe');
+    const [x, y, z] = CEO_CLOSE_CAM.position;
+    expect(Math.hypot(x, z)).toBeGreaterThan(6);
+    expect(Math.hypot(x, z)).toBeLessThan(12);
+    expect(y).toBeGreaterThan(2);
+    expect(y).toBeLessThan(5);
   });
 });
 

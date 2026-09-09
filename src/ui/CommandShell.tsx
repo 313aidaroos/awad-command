@@ -2,7 +2,10 @@
 
 import { useEffect, useState, type ComponentType } from 'react';
 import { startDataLayer, stopDataLayer } from '@/data';
+import { requestCeoOpen } from '@/lib/ceoBridge';
+import { lookFromSearch } from '@/lib/lookFromSearch';
 import { detectQuality, qualityFromSearch } from '@/lib/quality';
+import { CEO_CLOSE_CAM } from '@/scene/lib/cameraPaths';
 import { isWebGLAvailable } from '@/lib/webgl';
 import { AdaptiveQuality } from '@/ui/AdaptiveQuality';
 import { AgentFollowHud } from '@/ui/AgentFollowHud';
@@ -58,6 +61,17 @@ export function CommandShell() {
 
   const mountCanvas = canvasEnabled && webgl === true && CanvasSlot;
   const booted = useCommandStore((s) => s.booted);
+
+  useEffect(() => {
+    if (!booted) return;
+    const look = lookFromSearch();
+    if (look === 'ceo') {
+      useCommandStore.getState().flyTo({ ...CEO_CLOSE_CAM, duration: 0.02, cut: true });
+      requestCeoOpen();
+    } else if (look === 'contraxis') {
+      useCommandStore.getState().enterProject('contraxis');
+    }
+  }, [booted]);
 
   return (
     <div className="relative h-svh w-full overflow-hidden bg-[var(--void)]">

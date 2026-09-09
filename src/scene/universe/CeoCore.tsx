@@ -4,6 +4,7 @@ import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { requestCeoOpen } from '@/lib/ceoBridge';
+import { CEO_CLOSE_CAM } from '@/scene/lib/cameraPaths';
 import { KitModel } from '@/scene/kit/KitModel';
 import type { KitName } from '@/scene/kit/catalog';
 import { GraphitePlate } from '@/scene/materials/GraphitePlate';
@@ -14,7 +15,7 @@ import { useCommandStore } from '@/store/useCommandStore';
 const HEX = [0, 1, 2, 3, 4, 5].map((i) => (i / 6) * Math.PI * 2);
 const TRI = [0, 1, 2].map((i) => (i / 3) * Math.PI * 2);
 const COOL = '#C5CED6';
-const FACE = Math.PI / 2;
+const FACE = -Math.PI / 2;
 
 function Kit({
   name,
@@ -121,7 +122,7 @@ function IntelligenceCore() {
           r={1.88}
           a={a + Math.PI / 6}
           y={0.42}
-          scale={0.78}
+          scale={0.48}
         />
       ))}
 
@@ -182,7 +183,7 @@ export function CeoCore() {
     <group
       onClick={(e) => {
         e.stopPropagation();
-        flyTo({ position: [5.2, 3.15, 7.4], lookAt: [0, 2.45, 0], duration: 1.05, phase: 'universe' });
+        flyTo({ ...CEO_CLOSE_CAM });
         requestCeoOpen();
       }}
       onPointerOver={() => {

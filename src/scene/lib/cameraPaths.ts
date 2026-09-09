@@ -11,6 +11,14 @@ export const UNIVERSE_CAM: CameraTarget = {
   phase: 'universe',
 };
 
+/** Plaza-distance click lands here — armor plates readable, ships still in frame. */
+export const CEO_CLOSE_CAM: CameraTarget = {
+  position: [4.6, 2.85, 6.55],
+  lookAt: [0, 2.35, 0],
+  duration: 1.05,
+  phase: 'universe',
+};
+
 /**
  * Standing inside the MegaKit hall (−10..10 x, −6..6 z).
  * Must stay inside that volume or the camera sees a wall as a grey field.
