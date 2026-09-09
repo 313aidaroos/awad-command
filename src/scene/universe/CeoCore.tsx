@@ -30,7 +30,7 @@ function Kit({
   r: number;
   a: number;
   y?: number;
-  scale?: number;
+  scale?: number | [number, number, number];
   yaw?: number;
   sit?: boolean;
 }) {
@@ -46,11 +46,19 @@ function Kit({
   );
 }
 
-function Armor({ y, r, scale, name }: { y: number; r: number; scale: number; name: KitName }) {
+function Armor({ y, r, name }: { y: number; r: number; name: KitName }) {
   return (
     <>
       {HEX.map((a) => (
-        <Kit key={`${name}-${y}-${a.toFixed(3)}`} name={name} r={r} a={a} y={y} scale={scale} yaw={FACE} />
+        <Kit
+          key={`${name}-${y}-${a.toFixed(3)}`}
+          name={name}
+          r={r}
+          a={a}
+          y={y}
+          scale={[0.5, 1, 0.5]}
+          yaw={FACE}
+        />
       ))}
     </>
   );
@@ -101,19 +109,19 @@ function IntelligenceCore() {
         <GraphitePlate repeat={[1.35, 0.35]} grade="#D0D5DC" />
       </mesh>
       <mesh position={[0, 2.45, 0]} castShadow receiveShadow>
-        <cylinderGeometry args={[1.48, 1.58, 4.05, 40]} />
-        <GraphitePlate repeat={[1.05, 1.25]} grade="#B8BFC8" />
+        <cylinderGeometry args={[1.12, 1.2, 4.05, 40]} />
+        <GraphitePlate repeat={[0.85, 1.05]} grade="#8A9098" />
       </mesh>
       <mesh position={[0, 4.55, 0]} castShadow>
         <cylinderGeometry args={[1.22, 1.48, 0.22, 32]} />
         <GraphitePlate repeat={[1.1, 0.25]} grade="#D4D8DE" />
       </mesh>
 
-      <Armor y={0.42} r={1.72} scale={0.5} name="shortPlates" />
-      <Armor y={1.42} r={1.68} scale={0.48} name="shortMetal" />
-      <Armor y={2.42} r={1.72} scale={0.5} name="shortPlates" />
-      <Armor y={3.42} r={1.62} scale={0.46} name="shortAccent" />
-      <Armor y={4.22} r={1.48} scale={0.42} name="shortMetal2" />
+      <Armor y={0.42} r={1.74} name="shortPlates" />
+      <Armor y={1.42} r={1.7} name="shortMetal" />
+      <Armor y={2.42} r={1.74} name="shortPlates" />
+      <Armor y={3.42} r={1.66} name="shortAccent" />
+      <Armor y={4.42} r={1.52} name="shortMetal2" />
 
       {HEX.map((a, i) => (
         <Kit
