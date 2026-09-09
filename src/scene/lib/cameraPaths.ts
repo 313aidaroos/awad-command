@@ -1,7 +1,7 @@
 import type { CameraTarget } from '@/store/types';
 
 export const UNIVERSE_ZOOM = 17;
-export const UNIVERSE_LOOK_Y = 3.3;
+export const UNIVERSE_LOOK_Y = 2.85;
 export const INTERIOR_ORIGIN: [number, number, number] = [0, 0, 0];
 
 export const UNIVERSE_CAM: CameraTarget = {
