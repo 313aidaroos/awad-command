@@ -167,6 +167,7 @@ export function RealmIsland({ def }: { def: RealmDef }) {
   return (
     <group
       position={def.position}
+      scale={1.45}
       onClick={(e) => {
         e.stopPropagation();
         if (pointerGate.suppressClick) return;

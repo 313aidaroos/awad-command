@@ -30,11 +30,11 @@ function Head({ origin, tangent, glow }: { origin: THREE.Vector3; tangent: THREE
   return (
     <group position={origin} quaternion={quat}>
       <mesh>
-        <sphereGeometry args={[0.72, 16, 12]} />
+        <sphereGeometry args={[0.95, 16, 12]} />
         <meshPhysicalMaterial color="#1F8A3A" roughness={0.42} metalness={0.12} clearcoat={0.28} />
       </mesh>
       <mesh position={[0, 0.05, 0.85]}>
-        <coneGeometry args={[0.42, 1.15, 10]} />
+        <coneGeometry args={[0.55, 1.45, 10]} />
         <meshPhysicalMaterial color="#248B3C" roughness={0.4} />
       </mesh>
       <mesh position={[0, -0.12, 0.7]} rotation={[0.35, 0, 0]}>
@@ -83,19 +83,19 @@ export function Shenron() {
   return (
     <group>
       <mesh castShadow>
-        <tubeGeometry args={[curve, tubular, 0.58, 10, false]} />
+        <tubeGeometry args={[curve, tubular, 0.92, 12, false]} />
         <meshPhysicalMaterial
-          color="#1C7A36"
-          roughness={0.38}
-          metalness={0.08}
-          clearcoat={0.22}
+          color="#1A8A34"
+          roughness={0.34}
+          metalness={0.06}
+          clearcoat={0.3}
           emissive="#0B3D18"
-          emissiveIntensity={mode ? 0.35 : 0.08}
+          emissiveIntensity={mode ? 0.4 : 0.1}
         />
       </mesh>
       <mesh>
-        <tubeGeometry args={[curve, tubular, 0.32, 8, false]} />
-        <meshStandardMaterial color="#D2B056" roughness={0.48} metalness={0.2} />
+        <tubeGeometry args={[curve, tubular, 0.42, 8, false]} />
+        <meshStandardMaterial color="#C9A24A" roughness={0.46} metalness={0.18} />
       </mesh>
       {plates.map((plate, i) => (
         <mesh key={i} position={plate.p} quaternion={new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), plate.n)}>

@@ -5,6 +5,7 @@ import { startDataLayer, stopDataLayer } from '@/data';
 import { requestCeoOpen } from '@/lib/ceoBridge';
 import { lookFromSearch } from '@/lib/lookFromSearch';
 import { detectQuality, qualityFromSearch } from '@/lib/quality';
+import { islandCam, realmOf } from '@/scene/dragon/islands';
 import { CEO_CLOSE_CAM } from '@/scene/lib/cameraPaths';
 import { isWebGLAvailable } from '@/lib/webgl';
 import { AdaptiveQuality } from '@/ui/AdaptiveQuality';
@@ -71,6 +72,9 @@ export function CommandShell() {
       if (look === 'ceo') {
         useCommandStore.getState().flyTo({ ...CEO_CLOSE_CAM, duration: 0.02, cut: true });
         requestCeoOpen();
+      } else if (look === 'island') {
+        const realm = realmOf('apixis')!;
+        useCommandStore.getState().flyTo({ ...islandCam(realm.position), duration: 0.02, cut: true });
       } else {
         useCommandStore.getState().enterProject('contraxis');
       }

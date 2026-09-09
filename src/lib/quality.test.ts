@@ -14,6 +14,7 @@ describe('lookFromSearch', () => {
   it('frames CEO close or Contraxis hall from the query string', () => {
     expect(lookFromSearch('?quality=medium&look=ceo')).toBe('ceo');
     expect(lookFromSearch('?look=contraxis')).toBe('contraxis');
+    expect(lookFromSearch('?look=island')).toBe('island');
     expect(lookFromSearch('?look=sketchfab')).toBeUndefined();
   });
 });

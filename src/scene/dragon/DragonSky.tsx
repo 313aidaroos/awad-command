@@ -87,10 +87,16 @@ function Clouds({ count }: { count: number }) {
       }}
     >
       {items.map((c, i) => (
-        <mesh key={i} position={[c.x, c.y, c.z]} scale={[c.s, c.s * 0.38, c.s * 0.7]}>
-          <sphereGeometry args={[1.2, 10, 8]} />
-          <meshStandardMaterial color="#F4E6D4" transparent opacity={0.55} roughness={1} depthWrite={false} />
-        </mesh>
+        <group key={i} position={[c.x, c.y, c.z]}>
+          <mesh position={[0, 0, 0]}>
+            <sphereGeometry args={[c.s * 0.7, 10, 8]} />
+            <meshStandardMaterial color="#F7EDE0" transparent opacity={0.42} roughness={1} depthWrite={false} />
+          </mesh>
+          <mesh position={[c.s * 0.45, -0.1, 0.1]}>
+            <sphereGeometry args={[c.s * 0.5, 10, 8]} />
+            <meshStandardMaterial color="#F7EDE0" transparent opacity={0.36} roughness={1} depthWrite={false} />
+          </mesh>
+        </group>
       ))}
     </group>
   );

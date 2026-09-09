@@ -45,6 +45,10 @@ export function PalaceIsland() {
         <meshStandardMaterial color="#8A8E86" roughness={0.7} />
       </mesh>
 
+      <mesh position={[0, 2.35, 0]}>
+        <cylinderGeometry args={[3.4, 3.1, 0.22, 10]} />
+        <meshStandardMaterial color="#E8B24A" roughness={0.38} metalness={0.25} />
+      </mesh>
       <mesh position={[0, 2.7, 0]} castShadow>
         <cylinderGeometry args={[2.7, 3.05, 2.2, 8]} />
         <meshStandardMaterial color="#F3F1EA" roughness={0.55} />
