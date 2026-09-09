@@ -21,14 +21,22 @@ const HULL: Record<VesselKind, { ship: KitName; scale: number; yaw: number }> = 
   cargoDock: { ship: 'shipZenith', scale: 0.36, yaw: -0.45 },
 };
 
-function VesselBody({ kind }: { kind: VesselKind }) {
+function VesselBody({ kind, faceYaw }: { kind: VesselKind; faceYaw: number }) {
   const hull = HULL[kind];
-  return <KitModel name={hull.ship} position={[0, 0.02, 0]} scale={hull.scale} rotation={[0, hull.yaw, 0]} />;
+  return (
+    <KitModel
+      name={hull.ship}
+      position={[0, 0.02, 0]}
+      scale={hull.scale}
+      rotation={[0, faceYaw + hull.yaw * 0.18, 0]}
+    />
+  );
 }
 
 export function CompanyVessel({ project }: { project: ProjectDefinition }) {
   const identity = identityOf(project.slug);
   const pos = identity.plazaPosition ?? project.universePosition;
+  const faceYaw = Math.atan2(pos[0], pos[2]) + Math.PI;
   const hovered = useCommandStore((s) => s.hoveredProject === project.slug);
   const inspectingCeo = useCommandStore((s) => {
     const target = s.camera.target;
@@ -56,7 +64,7 @@ export function CompanyVessel({ project }: { project: ProjectDefinition }) {
         document.body.style.cursor = 'grab';
       }}
     >
-      <VesselBody kind={identity.kind} />
+      <VesselBody kind={identity.kind} faceYaw={faceYaw} />
       {showName ? (
         <FloatingLabel
           id={`vessel-${project.slug}`}
