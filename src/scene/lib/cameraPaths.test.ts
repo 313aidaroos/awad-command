@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   CEO_CLOSE_CAM,
   CONTRAXIS_HALL_CAM,
+  UNIVERSE_CAM,
+  isCeoInspect,
   projectEnterSequence,
   projectInteriorCam,
   showExterior,
@@ -46,6 +48,8 @@ describe('CEO_CLOSE_CAM', () => {
     expect(Math.hypot(x, z)).toBeLessThan(12);
     expect(y).toBeGreaterThan(2);
     expect(y).toBeLessThan(5);
+    expect(isCeoInspect(CEO_CLOSE_CAM.position, CEO_CLOSE_CAM.phase)).toBe(true);
+    expect(isCeoInspect(UNIVERSE_CAM.position, UNIVERSE_CAM.phase)).toBe(false);
   });
 });
 

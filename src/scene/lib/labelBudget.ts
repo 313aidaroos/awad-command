@@ -23,16 +23,34 @@ export function submitLabel(slot: Omit<LabelSlot, 'fresh'>) {
   });
 }
 
+export function resetLabels() {
+  slots.clear();
+  scheduled = false;
+}
+
+export function occludesCeoFace(item: Pick<LabelSlot, 'id' | 'x' | 'y' | 'priority'>): boolean {
+  if (item.priority >= 4 || item.id === 'ceo-core') return false;
+  return Math.hypot(item.x, item.y) < 0.42;
+}
+
+export function hideVesselForCeoInspect(item: Pick<LabelSlot, 'id' | 'priority'>, ceoDist?: number): boolean {
+  if (item.priority >= 5) return false;
+  if (!item.id.startsWith('vessel-')) return false;
+  return typeof ceoDist === 'number' && ceoDist < 16;
+}
+
 export function resolveLabels() {
   const live = [...slots.values()].filter((item) => item.fresh);
   live.sort((a, b) => b.priority - a.priority || a.dist - b.dist);
+  const ceoDist = live.find((item) => item.id === 'ceo-core')?.dist;
   const kept: LabelSlot[] = [];
   for (const item of live) {
     let opacity = 0;
     const onScreen = item.z > 0 && item.z < 1 && Math.abs(item.x) < 0.92 && item.y < 0.7 && item.y > -0.88;
     const nearEdge = Math.abs(item.x) > 0.74 || item.y > 0.58 || item.y < -0.72;
     const readable = item.priority >= 4 ? item.fade > 0.08 : item.fade > 0.32;
-    if (onScreen && readable) {
+    const blocked = hideVesselForCeoInspect(item, ceoDist) || occludesCeoFace(item);
+    if (onScreen && readable && !blocked) {
       const clash = kept.some((other) => Math.hypot(other.x - item.x, (other.y - item.y) * 1.7) < 0.18);
       if (!clash && (item.priority >= 4 || !nearEdge)) {
         opacity = item.priority >= 4 ? 1 : Math.max(0.92, item.fade);

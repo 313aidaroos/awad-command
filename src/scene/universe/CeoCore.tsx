@@ -104,34 +104,19 @@ function IntelligenceCore() {
 
   return (
     <group scale={1.1}>
-      <mesh position={[0, 0.2, 0]} castShadow receiveShadow>
-        <cylinderGeometry args={[2.05, 2.22, 0.4, 48]} />
-        <GraphitePlate repeat={[1.35, 0.35]} grade="#D0D5DC" />
-      </mesh>
-      <mesh position={[0, 2.45, 0]} castShadow receiveShadow>
-        <cylinderGeometry args={[1.12, 1.2, 4.05, 40]} />
-        <GraphitePlate repeat={[0.85, 1.05]} grade="#8A9098" />
-      </mesh>
-      <mesh position={[0, 4.55, 0]} castShadow>
-        <cylinderGeometry args={[1.22, 1.48, 0.22, 32]} />
-        <GraphitePlate repeat={[1.1, 0.25]} grade="#D4D8DE" />
+      <mesh position={[0, 0.18, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[1.95, 2.12, 0.36, 40]} />
+        <GraphitePlate repeat={[1.2, 0.28]} grade="#C8CED4" />
       </mesh>
 
-      <Armor y={0.42} r={1.74} name="shortPlates" />
-      <Armor y={1.42} r={1.7} name="shortMetal" />
-      <Armor y={2.42} r={1.74} name="shortPlates" />
-      <Armor y={3.42} r={1.66} name="shortAccent" />
-      <Armor y={4.42} r={1.52} name="shortMetal2" />
+      <Armor y={0.38} r={1.74} name="shortPlates" />
+      <Armor y={1.38} r={1.72} name="shortMetal" />
+      <Armor y={2.38} r={1.74} name="shortPlates" />
+      <Armor y={3.38} r={1.7} name="shortAccent" />
+      <Armor y={4.38} r={1.58} name="shortMetal2" />
 
-      {HEX.map((a, i) => (
-        <Kit
-          key={`rib-${a}`}
-          name={i % 2 === 0 ? 'columnPipes' : 'columnRound'}
-          r={1.88}
-          a={a + Math.PI / 6}
-          y={0.42}
-          scale={0.48}
-        />
+      {TRI.map((a) => (
+        <Kit key={`rib-${a}`} name="columnRound" r={1.52} a={a + Math.PI / 6} y={0.4} scale={0.3} />
       ))}
 
       <Slits radius={1.7} y={1.55} count={6} height={0.7} />

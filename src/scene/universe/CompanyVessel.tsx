@@ -2,6 +2,7 @@
 
 import { KitModel } from '@/scene/kit/KitModel';
 import type { KitName } from '@/scene/kit/catalog';
+import { isCeoInspect } from '@/scene/lib/cameraPaths';
 import { pointerGate } from '@/scene/lib/pointer';
 import { FloatingLabel } from '@/scene/ui/FloatingLabel';
 import { WorldName } from '@/scene/ui/WorldName';
@@ -29,8 +30,13 @@ export function CompanyVessel({ project }: { project: ProjectDefinition }) {
   const identity = identityOf(project.slug);
   const pos = identity.plazaPosition ?? project.universePosition;
   const hovered = useCommandStore((s) => s.hoveredProject === project.slug);
+  const inspectingCeo = useCommandStore((s) => {
+    const target = s.camera.target;
+    return target ? isCeoInspect(target.position, target.phase) : false;
+  });
   const enterProject = useCommandStore((s) => s.enterProject);
   const hoverProject = useCommandStore((s) => s.hoverProject);
+  const showName = hovered || !inspectingCeo;
 
   return (
     <group
@@ -51,15 +57,17 @@ export function CompanyVessel({ project }: { project: ProjectDefinition }) {
       }}
     >
       <VesselBody kind={identity.kind} />
-      <FloatingLabel
-        id={`vessel-${project.slug}`}
-        priority={hovered ? 5 : 2}
-        maxDist={hovered ? 36 : 24}
-        fadeFrom={hovered ? 28 : 16}
-        position={[0, 2.85, 0]}
-      >
-        <WorldName primary={hovered}>{project.name}</WorldName>
-      </FloatingLabel>
+      {showName ? (
+        <FloatingLabel
+          id={`vessel-${project.slug}`}
+          priority={hovered ? 5 : 2}
+          maxDist={hovered ? 36 : 24}
+          fadeFrom={hovered ? 28 : 16}
+          position={[0, 2.85, 0]}
+        >
+          <WorldName primary={hovered}>{project.name}</WorldName>
+        </FloatingLabel>
+      ) : null}
     </group>
   );
 }

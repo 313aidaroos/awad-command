@@ -5,7 +5,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { agentWorldPosition } from '@/scene/lib/agentMotion';
 import { FOLLOW_BACK, FOLLOW_LIFT, FOLLOW_SIDE, followCorrections } from '@/scene/lib/followFraming';
-import { UNIVERSE_LOOK_Y, UNIVERSE_ZOOM } from '@/scene/lib/cameraPaths';
+import { isCeoInspect, UNIVERSE_LOOK_Y, UNIVERSE_ZOOM } from '@/scene/lib/cameraPaths';
 import { pointerGate } from '@/scene/lib/pointer';
 import { getProject } from '@/projects/registry';
 import { useCommandStore } from '@/store/useCommandStore';
@@ -48,12 +48,7 @@ export function CameraRig() {
     } else {
       flying.current = true;
     }
-    if (target.phase === 'universe') {
-      const [ix, , iz] = target.position;
-      inspect.current = Math.hypot(ix, iz) < UNIVERSE_ZOOM - 1;
-    } else {
-      inspect.current = false;
-    }
+    inspect.current = isCeoInspect(target.position, target.phase);
     if (target.phase) useCommandStore.getState().setEnterPhase(target.phase);
     const id = window.setTimeout(() => {
       const state = useCommandStore.getState();

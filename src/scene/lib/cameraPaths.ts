@@ -13,11 +13,19 @@ export const UNIVERSE_CAM: CameraTarget = {
 
 /** Plaza-distance click lands here — armor plates readable, ships still in frame. */
 export const CEO_CLOSE_CAM: CameraTarget = {
-  position: [4.6, 2.85, 6.55],
-  lookAt: [0, 2.35, 0],
+  position: [2.35, 2.55, 6.85],
+  lookAt: [0, 2.25, 0],
   duration: 1.05,
   phase: 'universe',
 };
+
+/** Inside this XZ radius the camera is inspecting the CEO, not orbiting the plaza. */
+export const CEO_INSPECT_XZ = 11;
+
+export function isCeoInspect(position: [number, number, number], phase?: string): boolean {
+  if (phase && phase !== 'universe') return false;
+  return Math.hypot(position[0], position[2]) < CEO_INSPECT_XZ;
+}
 
 /**
  * Standing inside the MegaKit hall (−10..10 x, −6..6 z).
