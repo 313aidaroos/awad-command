@@ -32,7 +32,12 @@ Bundled so the universe and Contraxis interior instance finished GLTF/GLB pieces
 ## Poly Haven — Metal Plate (Rob Tuytel)
 - Source: https://polyhaven.com/a/metal_plate
 - License: CC0 1.0 Universal
-- Use: 2K albedo / roughness / metalness / OpenGL normal in `ceo/` for the intelligence-core shell (clearcoat graphite). Riveted plates, not the fine Metal Plate 02 tile.
+- Use: retired from the live CEO (tread plate read as two stacked boxes / bathroom tile).
+
+## ambientCG — Metal 024 (brushed steel)
+- Source: https://ambientcg.com/a/Metal024
+- License: CC0 1.0 Universal
+- Use: 2K color / roughness / metalness / OpenGL normal in `ceo/brush_*.jpg` on the single tapered intelligence-core hull.
 
 Attribution is not required under CC0; included so the origin of each file stays obvious.
 
