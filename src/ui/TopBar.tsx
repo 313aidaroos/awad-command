@@ -5,6 +5,8 @@ import { useCommandStore } from '@/store/useCommandStore';
 export function TopBar() {
   const dataMode = useCommandStore((s) => s.dataMode);
   const togglePalette = useCommandStore((s) => s.togglePalette);
+  const view = useCommandStore((s) => s.view);
+  if (view === 'universe') return null;
 
   return (
     <header className="pointer-events-none fixed top-0 inset-x-0 z-20">

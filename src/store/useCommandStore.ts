@@ -41,6 +41,7 @@ export const useCommandStore = create<CommandState & CommandActions>((set, get) 
   approvals: [],
   leadMessages: [],
   voiceMuted: false,
+  shenronMode: false,
   quality: { level: 'low', auto: true },
 
   initFromRegistry: () =>
@@ -226,6 +227,7 @@ export const useCommandStore = create<CommandState & CommandActions>((set, get) 
     }),
   setBriefingSeen: (seen) => set({ briefingSeen: seen }),
   setVoiceMuted: (muted) => set({ voiceMuted: muted }),
+  setShenronMode: (on) => set({ shenronMode: on }),
   tick: (dt) =>
     set((state) => {
       if (!state.booted) return state;

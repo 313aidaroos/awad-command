@@ -10,13 +10,12 @@ import { Lighting } from '@/scene/Environment/Lighting';
 import { StudioEnvironment } from '@/scene/Environment/StudioEnvironment';
 import { Starfield } from '@/scene/Environment/Starfield';
 import { preloadCommandKit } from '@/scene/kit/preload';
-import { UNIVERSE_EXPOSURE } from '@/scene/lib/exposure';
-import { UNIVERSE_ZOOM } from '@/scene/lib/cameraPaths';
+import { showExterior, UNIVERSE_CAM } from '@/scene/lib/cameraPaths';
 import { Universe } from '@/scene/universe/Universe';
 import { ProjectWorld } from '@/scene/world/ProjectWorld';
 import { useCommandStore } from '@/store/useCommandStore';
 
-const CAMERA_INIT = { position: [0, 7.4, UNIVERSE_ZOOM] as [number, number, number], fov: 40, near: 0.1, far: 220 };
+const CAMERA_INIT = { position: [...UNIVERSE_CAM.position] as [number, number, number], fov: 38, near: 0.2, far: 420 };
 const GL_INIT = {
   antialias: true,
   alpha: false,
@@ -31,9 +30,9 @@ const DPR_MED: [number, number] = [1, 1.5];
 const DPR_HIGH: [number, number] = [1, 2];
 
 function handleCreated({ gl }: { gl: WebGLRenderer }) {
-  gl.setClearColor('#07080A', 1);
+  gl.setClearColor('#6E8BB8', 1);
   gl.toneMapping = THREE.ACESFilmicToneMapping;
-  gl.toneMappingExposure = UNIVERSE_EXPOSURE;
+  gl.toneMappingExposure = 1.02;
   gl.outputColorSpace = THREE.SRGBColorSpace;
   gl.domElement.addEventListener(
     'webglcontextlost',
@@ -47,6 +46,8 @@ function handleCreated({ gl }: { gl: WebGLRenderer }) {
 
 export function CommandCanvas() {
   const level = useCommandStore((s) => s.quality.level);
+  const enterPhase = useCommandStore((s) => s.enterPhase);
+  const exterior = showExterior(enterPhase);
   const safari = isSafariLike();
   const dpr = safari || level === 'low' ? DPR_LOW : level === 'medium' ? DPR_MED : DPR_HIGH;
   const [Gate, setGate] = useState<ComponentType | null>(null);
@@ -79,10 +80,10 @@ export function CommandCanvas() {
       onCreated={handleCreated}
       style={CANVAS_STYLE}
     >
-      <fog attach="fog" args={['#07080A', 18, 44]} />
+      <fog attach="fog" args={exterior ? ['#C9A07A', 58, 150] : ['#07080A', 18, 44]} />
       <Lighting />
-      <StudioEnvironment />
-      <Starfield />
+      {exterior ? null : <StudioEnvironment />}
+      {exterior ? null : <Starfield />}
       <Suspense fallback={null}>
         <Universe />
         <ProjectWorld />

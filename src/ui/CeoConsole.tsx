@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { applyCeoClientActions } from '@/ceo/applyClientActions';
 import { parseIntents } from '@/ceo/intents';
 import type { CeoClientAction } from '@/ceo/tools.types';
-import { CEO_OPEN_EVENT } from '@/lib/ceoBridge';
+import { CEO_ASK_EVENT, CEO_OPEN_EVENT } from '@/lib/ceoBridge';
 import { useVoice } from '@/lib/voice';
 import { Glass } from '@/ui/Glass';
 import { useCommandStore } from '@/store/useCommandStore';
@@ -138,6 +138,16 @@ export function CeoConsole() {
     [prime, runIntents, speak, store],
   );
 
+  useEffect(() => {
+    const onAsk = (event: Event) => {
+      const text = (event as CustomEvent<string>).detail;
+      if (typeof text === 'string' && text.trim()) void ask(text);
+      else setOpen(true);
+    };
+    window.addEventListener(CEO_ASK_EVENT, onAsk);
+    return () => window.removeEventListener(CEO_ASK_EVENT, onAsk);
+  }, [ask]);
+
   const toggleMic = useCallback(() => {
     if (voice.listening) {
       stop();
@@ -156,6 +166,7 @@ export function CeoConsole() {
   const banner = voice.hint ?? hud;
 
   if (!open) {
+    if (view === 'universe') return null;
     return (
       <button
         type="button"

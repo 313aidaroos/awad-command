@@ -1,30 +1,36 @@
 import type { CameraTarget } from '@/store/types';
 
-export const UNIVERSE_ZOOM = 17;
-export const UNIVERSE_LOOK_Y = 3.05;
+export const UNIVERSE_ZOOM = 48;
+export const UNIVERSE_LOOK_Y = 8.2;
 export const INTERIOR_ORIGIN: [number, number, number] = [0, 0, 0];
 
 export const UNIVERSE_CAM: CameraTarget = {
-  position: [0, 7.4, UNIVERSE_ZOOM],
+  position: [0, 16.5, UNIVERSE_ZOOM],
   lookAt: [0, UNIVERSE_LOOK_Y, 0],
   duration: 1.6,
   phase: 'universe',
 };
 
-/** Plaza-distance click lands here — armor plates readable, ships still in frame. */
+/** Palace / dragon inspect — still universe, not a route. */
 export const CEO_CLOSE_CAM: CameraTarget = {
-  position: [0.85, 2.5, 6.2],
-  lookAt: [0, 2.5, 0],
-  duration: 1.05,
+  position: [10, 8.6, 20],
+  lookAt: [0, 7.2, 0],
+  duration: 1.1,
   phase: 'universe',
 };
 
-/** Inside this XZ radius the camera is inspecting the CEO, not orbiting the plaza. */
-export const CEO_INSPECT_XZ = 11;
+/** Inside this XZ radius the camera is inspecting the palace, not orbiting. */
+export const CEO_INSPECT_XZ = 32;
 
 export function isCeoInspect(position: [number, number, number], phase?: string): boolean {
   if (phase && phase !== 'universe') return false;
   return Math.hypot(position[0], position[2]) < CEO_INSPECT_XZ;
+}
+
+/** Hold any directed universe pose (palace or island) until the user drags. */
+export function holdsUniversePose(position: [number, number, number], phase?: string): boolean {
+  if (phase && phase !== 'universe') return false;
+  return Math.abs(Math.hypot(position[0], position[2]) - UNIVERSE_ZOOM) > 6;
 }
 
 /**

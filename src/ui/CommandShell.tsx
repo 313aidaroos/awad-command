@@ -23,6 +23,7 @@ import { ModeBar } from '@/ui/ModeBar';
 import { MorningBriefing } from '@/ui/MorningBriefing';
 import { NewsCorner } from '@/ui/NewsCorner';
 import { ProjectHud } from '@/ui/ProjectHud';
+import { DragonHud } from '@/ui/dragon/DragonHud';
 import { TopBar } from '@/ui/TopBar';
 import { useCommandStore } from '@/store/useCommandStore';
 
@@ -92,6 +93,7 @@ export function CommandShell() {
       </ClientErrorBoundary>
       {booted ? (
         <>
+          <DragonHud />
           <TopBar />
           <ModeBar />
           <HoverHud />

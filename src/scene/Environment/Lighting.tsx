@@ -1,7 +1,12 @@
 'use client';
 
-/** Dark void, one key, a weak fill, a whisper of accent. No wash. */
+import { showExterior } from '@/scene/lib/cameraPaths';
+import { useCommandStore } from '@/store/useCommandStore';
+
+/** Interior hall only. Exterior sun lives in DragonUniverse. */
 export function Lighting() {
+  const enterPhase = useCommandStore((s) => s.enterPhase);
+  if (showExterior(enterPhase)) return null;
   return (
     <>
       <hemisphereLight args={['#7A8088', '#07080A', 0.2]} />

@@ -58,6 +58,7 @@ export interface CommandState {
   approvals: Approval[];
   leadMessages: LeadMessage[];
   voiceMuted: boolean;
+  shenronMode: boolean;
   quality: { level: QualityLevel; auto: boolean };
 }
 
@@ -88,5 +89,6 @@ export interface CommandActions {
   mergeLeadMessages: (messages: LeadMessage[]) => void;
   setBriefingSeen: (seen: boolean) => void;
   setVoiceMuted: (muted: boolean) => void;
+  setShenronMode: (on: boolean) => void;
   tick: (dt: number) => void;
 }

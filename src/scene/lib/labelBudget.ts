@@ -36,7 +36,7 @@ export function occludesCeoFace(item: Pick<LabelSlot, 'id' | 'x' | 'y' | 'priori
 export function hideVesselForCeoInspect(item: Pick<LabelSlot, 'id' | 'priority'>, ceoDist?: number): boolean {
   if (item.priority >= 5) return false;
   if (!item.id.startsWith('vessel-')) return false;
-  return typeof ceoDist === 'number' && ceoDist < 16;
+  return typeof ceoDist === 'number' && ceoDist < 36;
 }
 
 export function resolveLabels() {

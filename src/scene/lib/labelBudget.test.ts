@@ -9,7 +9,8 @@ describe('ceo label collision', () => {
 
   it('hides vessel labels while the camera inspects the CEO', () => {
     expect(hideVesselForCeoInspect({ id: 'vessel-apixis', priority: 2 }, 8)).toBe(true);
-    expect(hideVesselForCeoInspect({ id: 'vessel-apixis', priority: 2 }, 22)).toBe(false);
+    expect(hideVesselForCeoInspect({ id: 'vessel-apixis', priority: 2 }, 22)).toBe(true);
+    expect(hideVesselForCeoInspect({ id: 'vessel-apixis', priority: 2 }, 48)).toBe(false);
     expect(hideVesselForCeoInspect({ id: 'ceo-core', priority: 4 }, 8)).toBe(false);
   });
 });

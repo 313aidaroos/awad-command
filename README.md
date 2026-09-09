@@ -2,7 +2,7 @@
 
 Private 3D AI command center for Awad (Apixis Dev). The universe **is** the UI — project worlds, not a card grid.
 
-Visual V3: royalty-free **GLTF kitbash** (Quaternius Ultimate Spaceships + Modular Sci-Fi MegaKit, Kenney Space Kit — all CC0). Plaza vessels are seven distinct painted hulls on a metal deck; the CEO is one tapered brushed-steel volume (ambientCG Metal 024 maps, recessed well + one ring); Contraxis enter cuts into a sealed MegaKit facility (Customer→Revenue rooms). Almost no orbit lines. Safari still renders the canvas (postprocessing stays off on WebKit). Asset licenses: [public/models/LICENSE.md](public/models/LICENSE.md). Preview at `?quality=medium`.
+Visual target: **AWAD Dragon Command Center** — Shenron-style dragon coiled around AWAD Palace, nine floating product islands, cinematic gold HUD. Contraxis enter still cuts into the MegaKit hall. Safari still renders the canvas (postprocessing stays off on WebKit). Preview at `?quality=medium`.
 
 Mood reference (not app code): [public/awad-command-preview.html](public/awad-command-preview.html)  
 Master handoff: [docs/MASTER_HANDOFF.md](docs/MASTER_HANDOFF.md)

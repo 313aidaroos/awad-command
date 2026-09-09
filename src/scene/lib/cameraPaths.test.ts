@@ -3,6 +3,7 @@ import {
   CEO_CLOSE_CAM,
   CONTRAXIS_HALL_CAM,
   UNIVERSE_CAM,
+  holdsUniversePose,
   isCeoInspect,
   projectEnterSequence,
   projectInteriorCam,
@@ -44,10 +45,12 @@ describe('CEO_CLOSE_CAM', () => {
   it('stays on the plaza looking at the core', () => {
     expect(CEO_CLOSE_CAM.phase).toBe('universe');
     const [x, y, z] = CEO_CLOSE_CAM.position;
-    expect(Math.hypot(x, z)).toBeGreaterThan(6);
-    expect(Math.hypot(x, z)).toBeLessThan(12);
-    expect(y).toBeGreaterThan(2);
-    expect(y).toBeLessThan(5);
+    expect(Math.hypot(x, z)).toBeGreaterThan(16);
+    expect(Math.hypot(x, z)).toBeLessThan(32);
+    expect(holdsUniversePose(CEO_CLOSE_CAM.position, CEO_CLOSE_CAM.phase)).toBe(true);
+    expect(holdsUniversePose(UNIVERSE_CAM.position, UNIVERSE_CAM.phase)).toBe(false);
+    expect(y).toBeGreaterThan(6);
+    expect(y).toBeLessThan(12);
     expect(isCeoInspect(CEO_CLOSE_CAM.position, CEO_CLOSE_CAM.phase)).toBe(true);
     expect(isCeoInspect(UNIVERSE_CAM.position, UNIVERSE_CAM.phase)).toBe(false);
   });

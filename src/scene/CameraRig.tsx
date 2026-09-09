@@ -5,7 +5,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { agentWorldPosition } from '@/scene/lib/agentMotion';
 import { FOLLOW_BACK, FOLLOW_LIFT, FOLLOW_SIDE, followCorrections } from '@/scene/lib/followFraming';
-import { isCeoInspect, UNIVERSE_LOOK_Y, UNIVERSE_ZOOM } from '@/scene/lib/cameraPaths';
+import { holdsUniversePose, UNIVERSE_CAM, UNIVERSE_LOOK_Y, UNIVERSE_ZOOM } from '@/scene/lib/cameraPaths';
 import { pointerGate } from '@/scene/lib/pointer';
 import { getProject } from '@/projects/registry';
 import { useCommandStore } from '@/store/useCommandStore';
@@ -20,7 +20,7 @@ export function CameraRig() {
   const gl = useThree((s) => s.gl);
   const look = useRef(new THREE.Vector3(0, UNIVERSE_LOOK_Y, 0));
   const lookT = useRef(new THREE.Vector3(0, UNIVERSE_LOOK_Y, 0));
-  const posT = useRef(new THREE.Vector3(0, 7.4, UNIVERSE_ZOOM));
+  const posT = useRef(new THREE.Vector3(...UNIVERSE_CAM.position));
   const follow = useRef(new THREE.Vector3());
   const rot = useRef({ x: 0, y: 0, tx: 0, ty: 0, zoom: UNIVERSE_ZOOM, tZoom: UNIVERSE_ZOOM });
   const drag = useRef({ on: false, x: 0, y: 0, moved: 0, pan: false });
@@ -48,7 +48,7 @@ export function CameraRig() {
     } else {
       flying.current = true;
     }
-    inspect.current = isCeoInspect(target.position, target.phase);
+    inspect.current = holdsUniversePose(target.position, target.phase);
     if (target.phase) useCommandStore.getState().setEnterPhase(target.phase);
     const id = window.setTimeout(() => {
       const state = useCommandStore.getState();
@@ -118,8 +118,8 @@ export function CameraRig() {
     const wheel = (e: WheelEvent) => {
       if (flying.current || useCommandStore.getState().followingAgent) return;
       const projectView = useCommandStore.getState().view !== 'universe';
-      const min = projectView ? 6 : 7;
-      const max = projectView ? 14 : 18;
+      const min = projectView ? 6 : 22;
+      const max = projectView ? 14 : 72;
       rot.current.tZoom = Math.max(min, Math.min(max, rot.current.tZoom + e.deltaY * 0.02));
     };
     el.addEventListener('pointerdown', down);
@@ -180,7 +180,7 @@ export function CameraRig() {
       wasFollow.current = false;
       followBias.current = 0;
       followDrop.current = 0;
-      posT.current.set(Math.sin(r.y) * r.zoom, 7.4 + r.x * 2.4, Math.cos(r.y) * r.zoom);
+      posT.current.set(Math.sin(r.y) * r.zoom, UNIVERSE_CAM.position[1] + r.x * 8, Math.cos(r.y) * r.zoom);
       lookT.current.set(0, UNIVERSE_LOOK_Y, 0);
     } else if (project && !flying.current && view !== 'universe') {
       wasFollow.current = false;
