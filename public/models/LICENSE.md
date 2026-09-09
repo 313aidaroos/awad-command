@@ -27,7 +27,12 @@ Bundled so the universe and Contraxis interior instance finished GLTF/GLB pieces
 ## Poly Haven — Metal Plate 02 (Rob Tuytel)
 - Source: https://polyhaven.com/a/metal_plate_02
 - License: CC0 1.0 Universal
-- Use: albedo / packed ORM / normal baked into `plaza/deck.glb` with authored ring UVs; same 1K maps live in `ceo/` for the intelligence-core shell (clearcoat graphite).
+- Use: albedo / packed ORM / normal baked into `plaza/deck.glb` with authored ring UVs.
+
+## Poly Haven — Metal Plate (Rob Tuytel)
+- Source: https://polyhaven.com/a/metal_plate
+- License: CC0 1.0 Universal
+- Use: 2K albedo / roughness / metalness / OpenGL normal in `ceo/` for the intelligence-core shell (clearcoat graphite). Riveted plates, not the fine Metal Plate 02 tile.
 
 Attribution is not required under CC0; included so the origin of each file stays obvious.
 

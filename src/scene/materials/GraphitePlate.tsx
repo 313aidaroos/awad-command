@@ -9,9 +9,9 @@ const NOR = '/models/ceo/plate_nor.jpg';
 const ROUGH = '/models/ceo/plate_rough.jpg';
 const METAL = '/models/ceo/plate_metal.jpg';
 
-/** Poly Haven metal plate — cylindrical UVs + clearcoat, not a flat grey primitive. */
+/** Poly Haven riveted metal plate — large features, clearcoat, not a flat grey primitive. */
 export function GraphitePlate({
-  repeat = [2.4, 2.8] as [number, number],
+  repeat = [1.1, 1.25] as [number, number],
   grade = '#C5CAD3',
 }: {
   repeat?: [number, number];
@@ -41,10 +41,10 @@ export function GraphitePlate({
       metalnessMap={metalnessMap}
       color={grade}
       metalness={1}
-      roughness={0.88}
-      envMapIntensity={0.72}
-      clearcoat={0.42}
-      clearcoatRoughness={0.28}
+      roughness={0.36}
+      envMapIntensity={0.95}
+      clearcoat={0.55}
+      clearcoatRoughness={0.2}
       clearcoatNormalMap={normalMap}
     />
   );

@@ -13,8 +13,8 @@ import { useCommandStore } from '@/store/useCommandStore';
 
 const HEX = [0, 1, 2, 3, 4, 5].map((i) => (i / 6) * Math.PI * 2);
 const TRI = [0, 1, 2].map((i) => (i / 3) * Math.PI * 2);
-const QUAD = [0, 1, 2, 3].map((i) => (i / 4) * Math.PI * 2);
 const COOL = '#C5CED6';
+const FACE = Math.PI / 2;
 
 function Kit({
   name,
@@ -45,15 +45,25 @@ function Kit({
   );
 }
 
-function EmissiveSlits({ radius, y, count, height }: { radius: number; y: number; count: number; height: number }) {
+function Armor({ y, r, scale, name }: { y: number; r: number; scale: number; name: KitName }) {
+  return (
+    <>
+      {HEX.map((a) => (
+        <Kit key={`${name}-${y}-${a.toFixed(3)}`} name={name} r={r} a={a} y={y} scale={scale} yaw={FACE} />
+      ))}
+    </>
+  );
+}
+
+function Slits({ radius, y, count, height }: { radius: number; y: number; count: number; height: number }) {
   return (
     <>
       {Array.from({ length: count }, (_, i) => {
-        const a = (i / count) * Math.PI * 2 + (y * 0.12);
+        const a = (i / count) * Math.PI * 2 + Math.PI / 6;
         return (
-          <mesh key={`${y}-${a}`} position={[Math.sin(a) * radius, y, Math.cos(a) * radius]} rotation={[0, a, 0]}>
-            <boxGeometry args={[0.05, height, 0.1]} />
-            <meshStandardMaterial color="#3D8BFF" emissive="#3D8BFF" emissiveIntensity={1.35} toneMapped={false} />
+          <mesh key={`${y}-${i}`} position={[Math.sin(a) * radius, y, Math.cos(a) * radius]} rotation={[0, a, 0]}>
+            <boxGeometry args={[0.045, height, 0.08]} />
+            <meshStandardMaterial color="#3D8BFF" emissive="#3D8BFF" emissiveIntensity={1.4} toneMapped={false} />
           </mesh>
         );
       })}
@@ -61,91 +71,107 @@ function EmissiveSlits({ radius, y, count, height }: { radius: number; y: number
   );
 }
 
-function IntelligenceCore() {
-  const ring = useRef<THREE.Group>(null);
-
-  useFrame((_, dt) => {
-    if (ring.current) ring.current.rotation.y += dt * 0.03;
-  });
-
+function Dish({ a, y, r }: { a: number; y: number; r: number }) {
   return (
-    <group>
-      <mesh position={[0, 0.22, 0]} castShadow receiveShadow>
-        <cylinderGeometry args={[2.15, 2.32, 0.44, 56]} />
-        <GraphitePlate repeat={[3.4, 0.55]} grade="#E6E8EC" />
+    <group position={[Math.sin(a) * r, y, Math.cos(a) * r]} rotation={[0.62, a, 0]}>
+      <mesh rotation={[Math.PI / 2, 0, 0]} castShadow>
+        <sphereGeometry args={[0.4, 20, 12, 0, Math.PI]} />
+        <GraphitePlate repeat={[0.85, 0.85]} grade="#C8CED6" />
       </mesh>
-      <mesh position={[0, 0.48, 0]} receiveShadow>
-        <cylinderGeometry args={[2.02, 2.1, 0.1, 56]} />
-        <GraphitePlate repeat={[4.2, 0.22]} grade="#F2F4F7" />
+      <mesh position={[0, 0.06, 0.02]}>
+        <cylinderGeometry args={[0.045, 0.06, 0.2, 10]} />
+        <meshStandardMaterial color="#3D8BFF" emissive="#3D8BFF" emissiveIntensity={0.9} toneMapped={false} />
       </mesh>
-
-      <mesh position={[0, 2.55, 0]} castShadow receiveShadow>
-        <cylinderGeometry args={[1.82, 1.96, 4.15, 56]} />
-        <GraphitePlate repeat={[2.8, 3.6]} grade="#D8DCE4" />
-      </mesh>
-      <mesh position={[0, 4.72, 0]} castShadow>
-        <cylinderGeometry args={[1.55, 1.82, 0.28, 48]} />
-        <GraphitePlate repeat={[2.4, 0.3]} grade="#E6E8EC" />
-      </mesh>
-      <EmissiveSlits radius={1.85} y={1.45} count={12} height={0.55} />
-      <EmissiveSlits radius={1.83} y={2.55} count={12} height={0.85} />
-      <EmissiveSlits radius={1.78} y={3.75} count={12} height={0.48} />
-
-      {HEX.map((a) => (
-        <Kit key={`pp-${a}`} name="columnPipes" r={1.98} a={a} y={0.5} scale={0.72} />
-      ))}
-      {QUAD.map((a) => (
-        <Kit key={`rd-${a}`} name="columnRound" r={1.55} a={a + 0.4} y={0.5} scale={0.55} />
-      ))}
-      {TRI.map((a) => (
-        <Kit key={`as-${a}`} name="columnAstra" r={1.88} a={a + 0.28} y={0.5} scale={1.05} />
-      ))}
-
-      <group ref={ring}>
-        <KitModel name="railRoundBig" position={[0, 1.55, 0]} scale={1.08} grade={COOL} />
-        <KitModel name="railRoundBig" position={[0, 3.55, 0]} scale={1.02} grade={COOL} />
-      </group>
-      <KitModel name="railRoundSmall" position={[0, 4.72, 0]} scale={1.42} grade={COOL} />
-      <KitModel name="columnHollow" position={[0, 4.72, 0]} scale={0.72} grade={COOL} />
-
-      {HEX.map((a) => (
-        <Kit key={`pc-${a}`} name="computer" r={2.08} a={a} y={0.52} yaw={Math.PI} scale={0.92} />
-      ))}
-      {TRI.map((a) => (
-        <Kit key={`ap-${a}`} name="accessPoint" r={1.86} a={a + 0.5} y={2.85} sit={false} />
-      ))}
-      {QUAD.map((a) => (
-        <Kit key={`vt-${a}`} name="ventWide" r={1.84} a={a + 0.18} y={4.12} sit={false} yaw={Math.PI / 2} />
-      ))}
-      {TRI.map((a) => (
-        <Kit key={`cb-${a}`} name="cable3" r={1.92} a={a + 0.12} y={1.35} yaw={1.15} />
-      ))}
-      {QUAD.map((a) => (
-        <Kit key={`lt-${a}`} name="lightSmall" r={1.35} a={a + 0.35} y={5.15} sit={false} />
-      ))}
-      <KitModel name="fan" position={[0.95, 4.22, 0.15]} sit={false} grade={COOL} />
-      <KitModel name="fan" position={[-0.88, 4.22, -0.28]} sit={false} grade={COOL} />
-      <KitModel name="decalLogo" position={[0, 2.85, 1.86]} sit={false} scale={0.9} grade={COOL} />
-      <KitModel name="decalLogo" position={[0, 2.85, -1.86]} rotation={[0, Math.PI, 0]} sit={false} scale={0.9} grade={COOL} />
-      <KitModel name="lightWide" position={[0, 5.55, 0]} sit={false} grade={COOL} />
-
-      <mesh position={[0, 5.72, 0]} castShadow>
-        <cylinderGeometry args={[0.38, 0.58, 0.42, 24]} />
-        <GraphitePlate repeat={[1.5, 0.4]} grade="#E6E8EC" />
-      </mesh>
-      <mesh position={[0, 6.05, 0]}>
-        <cylinderGeometry args={[0.07, 0.07, 0.42, 12]} />
-        <meshStandardMaterial color="#3D8BFF" emissive="#3D8BFF" emissiveIntensity={1.45} toneMapped={false} />
-      </mesh>
-
-      <pointLight color="#F0F3F7" intensity={1.15} distance={16} position={[3.4, 6.8, 4.1]} />
-      <pointLight color="#3D8BFF" intensity={0.42} distance={10} position={[0, 2.8, 0]} />
-      <pointLight color="#D7DCE4" intensity={0.55} distance={9} position={[-2.6, 5.2, -2.0]} />
     </group>
   );
 }
 
-/** One plated drum + MegaKit greebles. Authored maps, not a grey gyro. */
+function IntelligenceCore() {
+  const ring = useRef<THREE.Group>(null);
+
+  useFrame((_, dt) => {
+    if (ring.current) ring.current.rotation.y += dt * 0.028;
+  });
+
+  return (
+    <group scale={1.1}>
+      <mesh position={[0, 0.2, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[2.05, 2.22, 0.4, 48]} />
+        <GraphitePlate repeat={[1.35, 0.35]} grade="#D0D5DC" />
+      </mesh>
+      <mesh position={[0, 2.45, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[1.48, 1.58, 4.05, 40]} />
+        <GraphitePlate repeat={[1.05, 1.25]} grade="#B8BFC8" />
+      </mesh>
+      <mesh position={[0, 4.55, 0]} castShadow>
+        <cylinderGeometry args={[1.22, 1.48, 0.22, 32]} />
+        <GraphitePlate repeat={[1.1, 0.25]} grade="#D4D8DE" />
+      </mesh>
+
+      <Armor y={0.42} r={1.72} scale={0.5} name="shortPlates" />
+      <Armor y={1.42} r={1.68} scale={0.48} name="shortMetal" />
+      <Armor y={2.42} r={1.72} scale={0.5} name="shortPlates" />
+      <Armor y={3.42} r={1.62} scale={0.46} name="shortAccent" />
+      <Armor y={4.22} r={1.48} scale={0.42} name="shortMetal2" />
+
+      {HEX.map((a, i) => (
+        <Kit
+          key={`rib-${a}`}
+          name={i % 2 === 0 ? 'columnPipes' : 'columnRound'}
+          r={1.88}
+          a={a + Math.PI / 6}
+          y={0.42}
+          scale={0.78}
+        />
+      ))}
+
+      <Slits radius={1.7} y={1.55} count={6} height={0.7} />
+      <Slits radius={1.68} y={2.85} count={6} height={0.85} />
+      <Slits radius={1.58} y={3.95} count={6} height={0.45} />
+
+      <group ref={ring}>
+        <KitModel name="railRoundBig" position={[0, 1.48, 0]} scale={0.92} grade={COOL} />
+        <KitModel name="railRoundBig" position={[0, 3.38, 0]} scale={0.86} grade={COOL} />
+      </group>
+      <KitModel name="railRoundSmall" position={[0, 4.48, 0]} scale={1.22} grade={COOL} />
+      <KitModel name="columnHollow" position={[0, 4.48, 0]} scale={0.58} grade={COOL} />
+
+      {HEX.map((a) => (
+        <Kit key={`pc-${a}`} name="computer" r={1.98} a={a} y={0.48} yaw={Math.PI} scale={0.62} />
+      ))}
+      {TRI.map((a) => (
+        <Kit key={`ap-${a}`} name="accessPoint" r={1.78} a={a + 0.52} y={2.55} sit={false} />
+      ))}
+      {TRI.map((a) => (
+        <Kit key={`cb-${a}`} name="cable3" r={1.95} a={a + 0.2} y={0.48} yaw={1.1} scale={0.85} />
+      ))}
+      {TRI.map((a) => (
+        <Dish key={`ds-${a}`} a={a + 0.35} y={5.05} r={0.82} />
+      ))}
+      {HEX.filter((_, i) => i % 2 === 0).map((a) => (
+        <Kit key={`vt-${a}`} name="ventWide" r={1.42} a={a + 0.2} y={4.55} sit={false} yaw={FACE} scale={0.55} />
+      ))}
+
+      <KitModel name="decalLogo" position={[0, 2.65, 1.78]} sit={false} scale={0.72} grade="#D8DCE0" />
+      <KitModel name="decalLogo" position={[0, 2.65, -1.78]} rotation={[0, Math.PI, 0]} sit={false} scale={0.72} grade="#D8DCE0" />
+      <KitModel name="fan" position={[0.72, 4.85, 0.22]} sit={false} grade={COOL} />
+      <KitModel name="fan" position={[-0.68, 4.85, -0.18]} sit={false} grade={COOL} />
+      <KitModel name="lightWide" position={[0, 5.55, 0]} sit={false} grade={COOL} />
+      <KitModel name="lightSmall" position={[0, 5.85, 0]} sit={false} scale={0.8} grade="#D0D6DC" />
+
+      <mesh position={[0, 5.95, 0]}>
+        <cylinderGeometry args={[0.055, 0.055, 0.38, 10]} />
+        <meshStandardMaterial color="#3D8BFF" emissive="#3D8BFF" emissiveIntensity={1.5} toneMapped={false} />
+      </mesh>
+
+      <pointLight color="#F2F4F8" intensity={1.35} distance={18} position={[3.2, 7.1, 4.4]} />
+      <pointLight color="#3D8BFF" intensity={0.48} distance={11} position={[0, 2.7, 0]} />
+      <pointLight color="#D4DAE2" intensity={0.62} distance={10} position={[-2.4, 5.4, -2.2]} />
+    </group>
+  );
+}
+
+/** Faceted MegaKit armor over a riveted plate core. Not a grey gyro. */
 export function CeoCore() {
   const focused = useCommandStore((s) => s.focusedProject);
   const flyTo = useCommandStore((s) => s.flyTo);
@@ -156,7 +182,7 @@ export function CeoCore() {
     <group
       onClick={(e) => {
         e.stopPropagation();
-        flyTo({ position: [5.8, 3.8, 8.4], lookAt: [0, 2.8, 0], duration: 1.05, phase: 'universe' });
+        flyTo({ position: [5.2, 3.15, 7.4], lookAt: [0, 2.45, 0], duration: 1.05, phase: 'universe' });
         requestCeoOpen();
       }}
       onPointerOver={() => {
@@ -167,7 +193,7 @@ export function CeoCore() {
       }}
     >
       <IntelligenceCore />
-      <FloatingLabel id="ceo-core" priority={4} maxDist={48} fadeFrom={32} position={[0, 6.35, 0]}>
+      <FloatingLabel id="ceo-core" priority={4} maxDist={48} fadeFrom={32} position={[0, 6.55, 0]}>
         <WorldName primary>AWAD</WorldName>
       </FloatingLabel>
     </group>
