@@ -25,6 +25,7 @@ export function CameraRig() {
   const rot = useRef({ x: 0, y: 0, tx: 0, ty: 0, zoom: UNIVERSE_ZOOM, tZoom: UNIVERSE_ZOOM });
   const drag = useRef({ on: false, x: 0, y: 0, moved: 0, pan: false });
   const flying = useRef(false);
+  const inspect = useRef(false);
   const followBias = useRef(0);
   const followDrop = useRef(0);
   const wasFollow = useRef(false);
@@ -46,6 +47,12 @@ export function CameraRig() {
       }
     } else {
       flying.current = true;
+    }
+    if (target.phase === 'universe') {
+      const [ix, , iz] = target.position;
+      inspect.current = Math.hypot(ix, iz) < UNIVERSE_ZOOM - 1;
+    } else {
+      inspect.current = false;
     }
     if (target.phase) useCommandStore.getState().setEnterPhase(target.phase);
     const id = window.setTimeout(() => {
@@ -70,7 +77,7 @@ export function CameraRig() {
         rot.current.tx = inside ? 0 : Math.max(-0.35, Math.min(0.35, (y - 2.2) / 5));
         rot.current.x = rot.current.tx;
       }
-      if (state.view === 'universe') {
+      if (state.view === 'universe' && !inspect.current) {
         rot.current.tZoom = UNIVERSE_ZOOM;
         rot.current.zoom = UNIVERSE_ZOOM;
       }
@@ -106,6 +113,7 @@ export function CameraRig() {
     const up = () => {
       if (drag.current.moved > 8) {
         pointerGate.suppressClick = true;
+        inspect.current = false;
         window.setTimeout(() => {
           pointerGate.suppressClick = false;
         }, 80);
@@ -115,7 +123,7 @@ export function CameraRig() {
     const wheel = (e: WheelEvent) => {
       if (flying.current || useCommandStore.getState().followingAgent) return;
       const projectView = useCommandStore.getState().view !== 'universe';
-      const min = projectView ? 6 : 9;
+      const min = projectView ? 6 : 7;
       const max = projectView ? 14 : 18;
       rot.current.tZoom = Math.max(min, Math.min(max, rot.current.tZoom + e.deltaY * 0.02));
     };
@@ -173,7 +181,7 @@ export function CameraRig() {
       lookT.current.y = follow.current.y + 0.06 + followBias.current;
       posT.current.y = follow.current.y + FOLLOW_LIFT - followDrop.current;
       if (fix.pullBack > 0) posT.current.addScaledVector(_away, fix.pullBack);
-    } else if (view === 'universe' && !flying.current) {
+    } else if (view === 'universe' && !flying.current && !inspect.current) {
       wasFollow.current = false;
       followBias.current = 0;
       followDrop.current = 0;

@@ -65,12 +65,16 @@ export function CommandShell() {
   useEffect(() => {
     if (!booted) return;
     const look = lookFromSearch();
-    if (look === 'ceo') {
-      useCommandStore.getState().flyTo({ ...CEO_CLOSE_CAM, duration: 0.02, cut: true });
-      requestCeoOpen();
-    } else if (look === 'contraxis') {
-      useCommandStore.getState().enterProject('contraxis');
-    }
+    if (!look) return;
+    const timer = window.setTimeout(() => {
+      if (look === 'ceo') {
+        useCommandStore.getState().flyTo({ ...CEO_CLOSE_CAM, duration: 0.02, cut: true });
+        requestCeoOpen();
+      } else {
+        useCommandStore.getState().enterProject('contraxis');
+      }
+    }, 1600);
+    return () => window.clearTimeout(timer);
   }, [booted]);
 
   return (
