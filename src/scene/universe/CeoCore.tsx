@@ -9,20 +9,20 @@ import { FloatingLabel } from '@/scene/ui/FloatingLabel';
 import { WorldName } from '@/scene/ui/WorldName';
 import { useCommandStore } from '@/store/useCommandStore';
 
-const HEX = [0, 1, 2, 3, 4, 5].map((i) => (i / 6) * Math.PI * 2);
+const QUAD = [0, 1, 2, 3].map((i) => (i / 4) * Math.PI * 2);
 const TRI = [0, 1, 2].map((i) => (i / 3) * Math.PI * 2);
-const PLATE = [0.72, 0.86] as [number, number];
-const FACE_R = 1.68;
-const FACE_W = 1.92;
-const FACE_D = 0.2;
+const PLATE = [0.38, 0.46] as [number, number];
+const FACE_R = 1.55;
+const FACE_W = 3.02;
+const FACE_D = 0.22;
 
 function FacePlate({ a, y, h, grade }: { a: number; y: number; h: number; grade?: string }) {
   return (
     <RoundedBox
       args={[FACE_W, h, FACE_D]}
-      radius={0.058}
-      smoothness={3}
-      bevelSegments={2}
+      radius={0.1}
+      smoothness={4}
+      bevelSegments={3}
       position={[Math.sin(a) * FACE_R, y, Math.cos(a) * FACE_R]}
       rotation={[0, a, 0]}
       castShadow
@@ -61,8 +61,8 @@ function IntelligenceCore() {
         <meshStandardMaterial color="#08090C" roughness={0.94} metalness={0.18} />
       </mesh>
 
-      {HEX.map((a) => (
-        <FacePlate key={`lo-${a}`} a={a} y={1.32} h={2.12} />
+      {QUAD.map((a) => (
+        <FacePlate key={`lo-${a}`} a={a} y={1.28} h={2.2} />
       ))}
 
       <mesh position={[0, 2.5, 0]} rotation={[Math.PI / 2, 0, 0]}>
@@ -81,8 +81,10 @@ function IntelligenceCore() {
         />
       </mesh>
 
-      {HEX.map((a) => (
-        <FacePlate key={`hi-${a}`} a={a} y={3.72} h={1.92} grade="#D0D5DC" />
+      {QUAD.map((a) => (
+        <group key={`hi-${a}`} scale={[0.9, 1, 0.9]}>
+          <FacePlate a={a} y={3.78} h={2.05} grade="#D2D6DC" />
+        </group>
       ))}
 
       <mesh position={[0, 4.78, 0]} castShadow>

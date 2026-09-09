@@ -13,7 +13,7 @@ export const UNIVERSE_CAM: CameraTarget = {
 
 /** Plaza-distance click lands here — armor plates readable, ships still in frame. */
 export const CEO_CLOSE_CAM: CameraTarget = {
-  position: [2.15, 2.55, 6.55],
+  position: [0.85, 2.5, 6.2],
   lookAt: [0, 2.5, 0],
   duration: 1.05,
   phase: 'universe',
