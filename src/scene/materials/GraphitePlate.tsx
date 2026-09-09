@@ -1,6 +1,6 @@
 'use client';
 
-import { useLayoutEffect } from 'react';
+import { useLayoutEffect, useMemo } from 'react';
 import { useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 
@@ -9,15 +9,23 @@ const NOR = '/models/ceo/plate_nor.jpg';
 const ROUGH = '/models/ceo/plate_rough.jpg';
 const METAL = '/models/ceo/plate_metal.jpg';
 
-/** Poly Haven riveted metal plate — large features, clearcoat, not a flat grey primitive. */
+/** Poly Haven riveted metal plate — cloned maps so each mesh can keep its own repeat. */
 export function GraphitePlate({
-  repeat = [1.1, 1.25] as [number, number],
+  repeat = [0.78, 0.92] as [number, number],
   grade = '#C5CAD3',
 }: {
   repeat?: [number, number];
   grade?: string;
 }) {
-  const [map, normalMap, roughnessMap, metalnessMap] = useTexture([DIFF, NOR, ROUGH, METAL]);
+  const [srcMap, srcNor, srcRough, srcMetal] = useTexture([DIFF, NOR, ROUGH, METAL]);
+  const [map, normalMap, roughnessMap, metalnessMap] = useMemo(() => {
+    const cloned = [srcMap, srcNor, srcRough, srcMetal].map((tex) => {
+      const next = tex.clone();
+      next.needsUpdate = true;
+      return next;
+    });
+    return cloned as [THREE.Texture, THREE.Texture, THREE.Texture, THREE.Texture];
+  }, [srcMap, srcMetal, srcNor, srcRough]);
 
   useLayoutEffect(() => {
     for (const tex of [map, normalMap, roughnessMap, metalnessMap]) {
@@ -31,6 +39,12 @@ export function GraphitePlate({
     normalMap.colorSpace = THREE.NoColorSpace;
     roughnessMap.colorSpace = THREE.NoColorSpace;
     metalnessMap.colorSpace = THREE.NoColorSpace;
+    return () => {
+      map.dispose();
+      normalMap.dispose();
+      roughnessMap.dispose();
+      metalnessMap.dispose();
+    };
   }, [map, metalnessMap, normalMap, repeat, roughnessMap]);
 
   return (
@@ -41,10 +55,10 @@ export function GraphitePlate({
       metalnessMap={metalnessMap}
       color={grade}
       metalness={1}
-      roughness={0.36}
+      roughness={0.34}
       envMapIntensity={0.95}
-      clearcoat={0.55}
-      clearcoatRoughness={0.2}
+      clearcoat={0.58}
+      clearcoatRoughness={0.18}
       clearcoatNormalMap={normalMap}
     />
   );
