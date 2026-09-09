@@ -5,7 +5,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { agentWorldPosition } from '@/scene/lib/agentMotion';
 import { FOLLOW_BACK, FOLLOW_LIFT, FOLLOW_SIDE, followCorrections } from '@/scene/lib/followFraming';
-import { UNIVERSE_ZOOM } from '@/scene/lib/cameraPaths';
+import { UNIVERSE_LOOK_Y, UNIVERSE_ZOOM } from '@/scene/lib/cameraPaths';
 import { pointerGate } from '@/scene/lib/pointer';
 import { getProject } from '@/projects/registry';
 import { useCommandStore } from '@/store/useCommandStore';
@@ -18,8 +18,8 @@ const _ndc = new THREE.Vector3();
 export function CameraRig() {
   const camera = useThree((s) => s.camera);
   const gl = useThree((s) => s.gl);
-  const look = useRef(new THREE.Vector3(0, 2.2, 0));
-  const lookT = useRef(new THREE.Vector3(0, 2.2, 0));
+  const look = useRef(new THREE.Vector3(0, UNIVERSE_LOOK_Y, 0));
+  const lookT = useRef(new THREE.Vector3(0, UNIVERSE_LOOK_Y, 0));
   const posT = useRef(new THREE.Vector3(0, 7.4, UNIVERSE_ZOOM));
   const follow = useRef(new THREE.Vector3());
   const rot = useRef({ x: 0, y: 0, tx: 0, ty: 0, zoom: UNIVERSE_ZOOM, tZoom: UNIVERSE_ZOOM });
@@ -178,7 +178,7 @@ export function CameraRig() {
       followBias.current = 0;
       followDrop.current = 0;
       posT.current.set(Math.sin(r.y) * r.zoom, 7.4 + r.x * 2.4, Math.cos(r.y) * r.zoom);
-      lookT.current.set(0, 2.2, 0);
+      lookT.current.set(0, UNIVERSE_LOOK_Y, 0);
     } else if (project && !flying.current && view !== 'universe') {
       wasFollow.current = false;
       followBias.current = 0;

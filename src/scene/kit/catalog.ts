@@ -105,6 +105,10 @@ export const KIT = {
   lightFloor: '/models/megakit/Prop_Light_Floor.gltf',
   pipeHolder: '/models/megakit/Prop_PipeHolder.gltf',
   plazaDeck: '/models/plaza/deck.glb',
+  railRoundBig: '/models/megakit/Prop_Rail_Round_Big.gltf',
+  railRoundSmall: '/models/megakit/Prop_Rail_Round_Small.gltf',
+  ventWide: '/models/megakit/Prop_Vent_Wide.gltf',
+  lightSmall: '/models/megakit/Prop_Light_Small.gltf',
 } as const;
 
 export type KitName = keyof typeof KIT;
