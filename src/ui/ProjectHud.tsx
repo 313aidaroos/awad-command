@@ -20,7 +20,7 @@ export function ProjectHud() {
   const openPanel = useCommandStore((s) => s.openPanel);
   const closePanel = useCommandStore((s) => s.closePanel);
   const project = slug ? getProject(slug) : undefined;
-  if (!slug || !project || !runtime || following) return null;
+  if (!slug || slug === 'daily-host' || !project || !runtime || following) return null;
   const lead = getLeadBySlug(slug);
   const followable = project.agents.find((agent) => agent.name.startsWith('Sales')) ?? project.agents[0];
   const expanded = panel === 'lead' || panel === 'analytics';
