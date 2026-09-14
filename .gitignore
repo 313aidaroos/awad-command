@@ -26,3 +26,6 @@ next-env.d.ts
 # os / ide
 .DS_Store
 .vercel
+
+# Daily AI Host local-development persistence
+/.data/

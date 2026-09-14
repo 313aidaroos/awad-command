@@ -12,11 +12,13 @@ import { publishing } from '@/projects/publishing';
 import { studios } from '@/projects/studios';
 import { nurseryToons } from '@/projects/nursery-toons';
 import { qahwahworld } from '@/projects/qahwahworld';
+import { dailyHost } from '@/projects/daily-host';
 import { genericDemo } from '@/projects/genericDemo';
 import type { Emit } from '@/projects/demoShared';
 import type { ProjectDefinition } from '@/types/project';
 
 export const projects: ProjectDefinition[] = [
+  dailyHost,
   contraxis,
   socixis,
   lyrixis,
@@ -33,6 +35,7 @@ export const projects: ProjectDefinition[] = [
 export type DemoScheduler = (emit: Emit, project: ProjectDefinition) => () => void;
 
 export const demoRunners: Record<string, DemoScheduler> = {
+  'daily-host': genericDemo('agent.task.completed', 'Daily episode ready for review', 20000),
   contraxis: contraxisDemo,
   socixis: socixisDemo,
   awadbot: awadbotDemo,

@@ -22,6 +22,7 @@ import { NewsCorner } from '@/ui/NewsCorner';
 import { ProjectHud } from '@/ui/ProjectHud';
 import { TopBar } from '@/ui/TopBar';
 import { useCommandStore } from '@/store/useCommandStore';
+import { DailyHostPanel } from '@/ui/daily-host/DailyHostPanel';
 
 export function CommandShell() {
   // Closed until after hydration so SSR never mounts R3F/three. Safari gets Canvas.
@@ -79,6 +80,7 @@ export function CommandShell() {
           <EventStream />
           <NewsCorner />
           <ProjectHud />
+          <DailyHostPanel />
           <AgentFollowHud />
           <ModeStub />
           <ComputerPanel />
