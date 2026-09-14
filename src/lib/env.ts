@@ -25,7 +25,7 @@ export function anthropicApiKey(): string {
 }
 
 export function anthropicModel(): string {
-  return readServerEnv('ANTHROPIC_MODEL') || 'claude-sonnet-4-20250514';
+  return readServerEnv('ANTHROPIC_MODEL') || 'claude-sonnet-5';
 }
 
 /** True only when Anthropic is intentionally selected and a non-empty key is present. */
