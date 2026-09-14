@@ -9,7 +9,7 @@ import {
   type CeoToolDeps,
 } from '@/ceo/tools';
 import type { CeoClientAction, ProposeApprovalArgs } from '@/ceo/tools.types';
-import { isAnthropicCeoEnabled } from '@/lib/env';
+import { anthropicApiKey, anthropicModel, isAnthropicCeoEnabled } from '@/lib/env';
 import type { SendLeadMessageResult } from '@/lib/leadOutbound';
 import type { CommandState } from '@/store/types';
 
@@ -25,9 +25,12 @@ export interface CeoTurnInput {
   context: CeoSnapshot;
 }
 
+export type CeoProvider = 'anthropic' | 'demo' | 'error';
+
 export interface CeoTurnResult {
   text: string;
-  provider: 'anthropic' | 'demo';
+  provider: CeoProvider;
+  error?: string;
   approval?: ProposeApprovalArgs;
   actions: CeoClientAction[];
 }
@@ -109,7 +112,18 @@ export async function runDemoCeoTurn(input: CeoTurnInput, deps: CeoTurnDeps = {}
 
 async function createAnthropicClient(): Promise<AnthropicLike> {
   const Anthropic = (await import('@anthropic-ai/sdk')).default;
-  return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }) as unknown as AnthropicLike;
+  return new Anthropic({ apiKey: anthropicApiKey() }) as unknown as AnthropicLike;
+}
+
+function anthropicFailure(err: unknown): CeoTurnResult {
+  const detail = err instanceof Error && err.message.trim() ? err.message.trim() : 'unknown error';
+  const error = `Anthropic CEO request failed: ${detail}`;
+  return {
+    text: error,
+    provider: 'error',
+    error,
+    actions: [],
+  };
 }
 
 export async function runAnthropicCeoTurn(
@@ -117,7 +131,7 @@ export async function runAnthropicCeoTurn(
   client: AnthropicLike,
   deps: CeoTurnDeps = {},
 ): Promise<CeoTurnResult> {
-  const model = process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-20250514';
+  const model = anthropicModel();
   const messages: Array<{ role: 'user' | 'assistant'; content: unknown }> = [
     { role: 'user', content: `Snapshot:\n${buildContext(input.context)}` },
     ...input.messages.map((item) => ({ role: item.role, content: item.content })),
@@ -180,8 +194,8 @@ export async function runCeoTurn(input: CeoTurnInput, deps: CeoTurnDeps = {}): P
     try {
       const client = deps.client ?? (await createAnthropicClient());
       return await runAnthropicCeoTurn(input, client, deps);
-    } catch {
-      return runDemoCeoTurn(input, deps);
+    } catch (err) {
+      return anthropicFailure(err);
     }
   }
   return runDemoCeoTurn(input, deps);

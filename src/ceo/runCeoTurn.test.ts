@@ -86,6 +86,38 @@ describe('runCeoTurn demo path', () => {
   });
 });
 
+describe('runCeoTurn Anthropic gate', () => {
+  it('keeps demo when Anthropic is not enabled', async () => {
+    const result = await runCeoTurn({
+      messages: [{ role: 'user', content: 'what needs my attention' }],
+      context: snapshot(),
+    });
+    expect(result.provider).toBe('demo');
+    expect(result.error).toBeUndefined();
+  });
+
+  it('returns provider error instead of demo when Anthropic is enabled and the call fails', async () => {
+    process.env.AI_PROVIDER = 'ANTHROPIC';
+    process.env.ANTHROPIC_API_KEY = ' sk-test ';
+    const client: AnthropicLike = {
+      messages: {
+        create: async () => {
+          throw new Error('401 invalid x-api-key');
+        },
+      },
+    };
+    const result = await runCeoTurn(
+      { messages: [{ role: 'user', content: 'status' }], context: snapshot() },
+      { client },
+    );
+    expect(result.provider).toBe('error');
+    expect(result.error).toMatch(/401 invalid x-api-key/);
+    expect(result.text).toMatch(/Anthropic CEO request failed/);
+    expect(result.text).not.toMatch(/DEMO/i);
+    expect(result.actions).toEqual([]);
+  });
+});
+
 describe('runCeoTurn Anthropic tool_use', () => {
   it('executes message_lead from a tool_use loop and returns honest status', async () => {
     process.env.LEAD_MESSAGE_WEBHOOK_URL = 'https://hub.test/lead';

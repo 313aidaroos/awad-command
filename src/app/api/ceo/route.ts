@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { runCeoTurn } from '@/ceo/runCeoTurn';
 
+export const runtime = 'nodejs';
+
 const ContextSchema = z.object({
   dataMode: z.enum(['demo', 'live']),
   projects: z.record(z.any()),
