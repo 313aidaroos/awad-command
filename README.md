@@ -84,7 +84,7 @@ Content-Type: application/json
 
 ## CEO (text + voice + tools)
 
-`POST /api/ceo` — **live CEO needs `AI_PROVIDER=anthropic` and `ANTHROPIC_API_KEY`** (optional `ANTHROPIC_MODEL`). Otherwise the demo responder answers from the store snapshot (including who owns each company).
+`POST /api/ceo` — **live CEO needs `AI_PROVIDER=anthropic` (case-insensitive) and a non-empty `ANTHROPIC_API_KEY`** (optional `ANTHROPIC_MODEL`). Demo is used only when Anthropic is not selected. If the Anthropic call fails, the JSON returns `provider: "error"` plus an `error` field — it does not silently fall back to the demo responder.
 
 The CEO is an orchestrator, not text-only advice. It can call:
 
