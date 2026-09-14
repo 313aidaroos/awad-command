@@ -11,8 +11,8 @@ export function Effects() {
 
   return (
     <EffectComposer multisampling={0} enableNormalPass={false}>
-      <Bloom intensity={level === 'high' ? 0.78 : 0.4} luminanceThreshold={level === 'high' ? 0.32 : 0.4} />
-      <Vignette eskil={false} offset={0.15} darkness={0.55} />
+      <Bloom intensity={level === 'high' ? 0.28 : 0.16} luminanceThreshold={0.58} />
+      <Vignette eskil={false} offset={0.22} darkness={0.72} />
     </EffectComposer>
   );
 }

@@ -1,61 +1,48 @@
 'use client';
 
 import { useMemo } from 'react';
+import { Line } from '@react-three/drei';
 import * as THREE from 'three';
 import { projects } from '@/projects/registry';
-import { useCommandStore } from '@/store/useCommandStore';
 
+/** Only declared project links — no hairline spokes from every world to the CEO. */
 export function Connections() {
-  const focused = useCommandStore((s) => s.focusedProject);
   const lines = useMemo(() => {
-    const result: { positions: Float32Array; color: string }[] = [];
+    const result: { points: THREE.Vector3[]; key: string }[] = [];
     const bySlug = Object.fromEntries(projects.map((p) => [p.slug, p]));
-    const toPositions = (points: THREE.Vector3[]) => {
-      const positions = new Float32Array(points.length * 3);
-      for (let i = 0; i < points.length; i += 1) {
-        positions[i * 3] = points[i].x;
-        positions[i * 3 + 1] = points[i].y;
-        positions[i * 3 + 2] = points[i].z;
-      }
-      return positions;
-    };
+    const seen = new Set<string>();
     for (const project of projects) {
       const a = new THREE.Vector3(...project.universePosition);
-      result.push({
-        positions: toPositions(
-          new THREE.QuadraticBezierCurve3(
-            a,
-            a.clone().multiplyScalar(0.4),
-            new THREE.Vector3(),
-          ).getPoints(24),
-        ),
-        color: '#8fa4c9',
-      });
       for (const link of project.connections) {
+        const pair = [project.slug, link.to].sort().join(':');
+        if (seen.has(pair)) continue;
+        seen.add(pair);
         const other = bySlug[link.to];
         if (!other) continue;
         const b = new THREE.Vector3(...other.universePosition);
-        const mid = a.clone().add(b).multiplyScalar(0.5).multiplyScalar(0.82);
+        const mid = a.clone().add(b).multiplyScalar(0.5);
+        mid.y += 1.6;
         result.push({
-          positions: toPositions(new THREE.QuadraticBezierCurve3(a, mid, b).getPoints(28)),
-          color: project.accent,
+          key: pair,
+          points: new THREE.QuadraticBezierCurve3(a, mid, b).getPoints(24),
         });
       }
     }
     return result;
   }, []);
 
-  if (focused) return null;
-
   return (
     <group>
-      {lines.map((line, i) => (
-        <line key={i}>
-          <bufferGeometry>
-            <bufferAttribute attach="attributes-position" args={[line.positions, 3]} />
-          </bufferGeometry>
-          <lineBasicMaterial color={line.color} transparent opacity={i % 2 === 0 ? 0.07 : 0.18} />
-        </line>
+      {lines.map((line) => (
+        <Line
+          key={line.key}
+          points={line.points}
+          color="#C5CCD6"
+          transparent
+          opacity={0.28}
+          lineWidth={1.8}
+          depthWrite={false}
+        />
       ))}
     </group>
   );

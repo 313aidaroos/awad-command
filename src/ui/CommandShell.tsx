@@ -34,7 +34,12 @@ export function CommandShell() {
     const available = isWebGLAvailable();
     setWebgl(available);
     setCanvasEnabled(true);
-    useCommandStore.getState().setQuality(detectQuality(), true);
+    const requested = new URLSearchParams(window.location.search).get('quality');
+    if (requested === 'high' || requested === 'medium' || requested === 'low') {
+      useCommandStore.getState().setQuality(requested, false);
+    } else {
+      useCommandStore.getState().setQuality(detectQuality(), true);
+    }
     if (available) {
       void import('@/ui/EnabledCanvas')
         .then((mod) => {

@@ -1,10 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
 import * as THREE from 'three';
-import { geoSegments } from '@/lib/quality';
-import { GlassMaterial } from '@/scene/materials/GlassMaterial';
-import { useCommandStore } from '@/store/useCommandStore';
 import type { Flow } from '@/types/world';
 import type { ProjectDefinition } from '@/types/project';
 
@@ -21,17 +17,6 @@ export function flowCurve(project: ProjectDefinition, flow: Flow): THREE.Catmull
   return new THREE.CatmullRomCurve3(pts);
 }
 
-export function FlowPath({ project, flow }: { project: ProjectDefinition; flow: Flow }) {
-  const quality = useCommandStore((s) => s.quality.level);
-  const curve = useMemo(() => flowCurve(project, flow), [flow, project]);
-  const tubular = geoSegments(quality, 80, 48, 24);
-  const radial = geoSegments(quality, 10, 8, 6);
-  if (!curve) return null;
-
-  return (
-    <mesh>
-      <tubeGeometry args={[curve, tubular, quality === 'low' ? 0.028 : 0.032, radial, false]} />
-      <GlassMaterial accent={project.accent} opacity={0.32} emissive={0.04} />
-    </mesh>
-  );
+export function FlowPath() {
+  return null;
 }

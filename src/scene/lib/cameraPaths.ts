@@ -1,8 +1,12 @@
 import type { CameraTarget } from '@/store/types';
 
+export const UNIVERSE_ZOOM = 22;
+export const INTERIOR_ZOOM = 9.2;
+export const CHAMBER_RADIUS = 13.8;
+
 export const UNIVERSE_CAM: CameraTarget = {
-  position: [0, 9, 42],
-  lookAt: [0, 0, 0],
+  position: [0, 3.7, UNIVERSE_ZOOM],
+  lookAt: [0, 0.55, 0],
   duration: 1.8,
   phase: 'universe',
 };
@@ -12,28 +16,27 @@ function dirOf(pos: [number, number, number]): [number, number, number] {
   return [pos[0] / len, pos[1] / len, pos[2] / len];
 }
 
+/** Approach the monument, pause at the threshold, then sit at the nave entrance looking down the hall. */
 export function projectEnterSequence(pos: [number, number, number]): CameraTarget[] {
   const [x, y, z] = pos;
   const [dx, , dz] = dirOf(pos);
-  const sx = -dz;
-  const sz = dx;
   return [
     {
-      position: [x + dx * 22, y + 8.2, z + dz * 22],
+      position: [x + dx * 14.5, y + 4.8, z + dz * 14.5],
       lookAt: [x, y, z],
-      duration: 1.75,
+      duration: 1.55,
       phase: 'approach',
     },
     {
-      position: [x + dx * 2.6, y + 1.05, z + dz * 2.6],
-      lookAt: [x, y, z],
-      duration: 1.25,
+      position: [x - 9.8, y + 1.7, z],
+      lookAt: [x + 3.2, y - 1.1, z],
+      duration: 1.2,
       phase: 'shell',
     },
     {
-      position: [x + sx * 8.8 - dx * 1.8, y + 8.4, z + sz * 8.8 - dz * 1.8],
-      lookAt: [x, y - 0.15, z],
-      duration: 1.55,
+      position: [x - 9.2, y + 1.45, z],
+      lookAt: [x + 4.4, y - 1.25, z],
+      duration: 1.25,
       phase: 'interior',
     },
   ];
@@ -42,4 +45,16 @@ export function projectEnterSequence(pos: [number, number, number]): CameraTarge
 export function projectInteriorCam(pos: [number, number, number]): CameraTarget {
   const sequence = projectEnterSequence(pos);
   return sequence[sequence.length - 1] ?? UNIVERSE_CAM;
+}
+
+export function outsideChamber(cam: [number, number, number], origin: [number, number, number]): boolean {
+  const dx = cam[0] - origin[0];
+  const dy = cam[1] - origin[1];
+  const dz = cam[2] - origin[2];
+  const radial = Math.hypot(dx, dz);
+  return radial > 3.2 && dy < 6;
+}
+
+export function showExterior(enterPhase: CameraTarget['phase'] | string): boolean {
+  return enterPhase === 'universe' || enterPhase === 'approach';
 }

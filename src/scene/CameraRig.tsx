@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { agentWorldPosition } from '@/scene/lib/agentMotion';
+import { INTERIOR_ZOOM, UNIVERSE_ZOOM } from '@/scene/lib/cameraPaths';
 import { FOLLOW_BACK, FOLLOW_LIFT, FOLLOW_SIDE, followCorrections } from '@/scene/lib/followFraming';
 import { pointerGate } from '@/scene/lib/pointer';
 import { getProject } from '@/projects/registry';
@@ -19,9 +20,9 @@ export function CameraRig() {
   const gl = useThree((s) => s.gl);
   const look = useRef(new THREE.Vector3());
   const lookT = useRef(new THREE.Vector3());
-  const posT = useRef(new THREE.Vector3(0, 8, 38));
+  const posT = useRef(new THREE.Vector3(0, 3.7, UNIVERSE_ZOOM));
   const follow = useRef(new THREE.Vector3());
-  const rot = useRef({ x: 0, y: 0, tx: 0, ty: 0, zoom: 42, tZoom: 42 });
+  const rot = useRef({ x: 0, y: 0, tx: 0, ty: 0, zoom: UNIVERSE_ZOOM, tZoom: UNIVERSE_ZOOM });
   const drag = useRef({ on: false, x: 0, y: 0, moved: 0, pan: false });
   const flying = useRef(false);
   const followBias = useRef(0);
@@ -47,20 +48,16 @@ export function CameraRig() {
       flying.current = false;
       const focus = state.focusedProject ? getProject(state.focusedProject) : undefined;
       if (focus && state.view !== 'universe') {
-        const [x, y, z] = target.position;
-        const [lx, , lz] = target.lookAt;
-        const dx = x - lx;
-        const dz = z - lz;
-        rot.current.tZoom = Math.max(14, Math.min(24, Math.hypot(dx, dz)));
-        rot.current.zoom = rot.current.tZoom;
-        rot.current.ty = Math.atan2(dx, dz);
-        rot.current.y = rot.current.ty;
-        rot.current.tx = Math.max(-0.45, Math.min(0.45, (y - focus.universePosition[1] - 2.2) / 5));
-        rot.current.x = rot.current.tx;
+        rot.current.tZoom = INTERIOR_ZOOM;
+        rot.current.zoom = INTERIOR_ZOOM;
+        rot.current.ty = 0;
+        rot.current.y = 0;
+        rot.current.tx = 0;
+        rot.current.x = 0;
       }
       if (state.view === 'universe') {
-        rot.current.tZoom = 42;
-        rot.current.zoom = 42;
+        rot.current.tZoom = UNIVERSE_ZOOM;
+        rot.current.zoom = UNIVERSE_ZOOM;
       }
     }, target.duration * 1000);
     return () => window.clearTimeout(id);
@@ -90,6 +87,10 @@ export function CameraRig() {
       }
       rot.current.ty += dx * 0.005;
       rot.current.tx = Math.max(-0.62, Math.min(0.62, rot.current.tx + dy * 0.003));
+      if (useCommandStore.getState().view !== 'universe') {
+        rot.current.ty = Math.max(-0.32, Math.min(0.32, rot.current.ty));
+        rot.current.tx = Math.max(-0.22, Math.min(0.22, rot.current.tx));
+      }
     };
     const up = () => {
       if (drag.current.moved > 8) {
@@ -103,8 +104,8 @@ export function CameraRig() {
     const wheel = (e: WheelEvent) => {
       if (flying.current || useCommandStore.getState().followingAgent) return;
       const projectView = useCommandStore.getState().view !== 'universe';
-      const min = projectView ? 12 : 24;
-      const max = projectView ? 28 : 58;
+      const min = projectView ? 7.2 : 18;
+      const max = projectView ? 11.6 : 38;
       rot.current.tZoom = Math.max(min, Math.min(max, rot.current.tZoom + e.deltaY * 0.02));
     };
     el.addEventListener('pointerdown', down);
@@ -164,15 +165,15 @@ export function CameraRig() {
       wasFollow.current = false;
       followBias.current = 0;
       followDrop.current = 0;
-      posT.current.set(Math.sin(r.y) * r.zoom, 9 + r.x * 8, Math.cos(r.y) * r.zoom);
-      lookT.current.set(0, 0, 0);
+      posT.current.set(Math.sin(r.y) * r.zoom, 3.7 + r.x * 4.2, Math.cos(r.y) * r.zoom);
+      lookT.current.set(0, 0.55, 0);
     } else if (project && !flying.current && view !== 'universe') {
       wasFollow.current = false;
       followBias.current = 0;
       followDrop.current = 0;
       const [cx, cy, cz] = project.universePosition;
-      posT.current.set(cx + Math.sin(r.y) * r.zoom, cy + 4.6 + r.x * 5.2, cz + Math.cos(r.y) * r.zoom);
-      lookT.current.set(cx, cy, cz);
+      posT.current.set(cx - r.zoom, cy + 1.45 + r.x * 1.05, cz + r.y * 1.55);
+      lookT.current.set(cx + 4.4, cy - 1.25, cz);
     } else {
       wasFollow.current = false;
       followBias.current = 0;
