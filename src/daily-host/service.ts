@@ -1,5 +1,3 @@
-import 'server-only';
-
 import { quotes, words } from '@/daily-host/seeds';
 import { getDailyHostRepository } from '@/daily-host/repository';
 import {

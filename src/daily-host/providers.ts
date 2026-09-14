@@ -144,7 +144,8 @@ export class DemoAvatarProvider implements AvatarVideoProvider {
   readonly name = 'Interactive scene preview';
   readonly state = 'demo' as const;
 
-  async generateVideo() {
+  async generateVideo(_input: Parameters<AvatarVideoProvider['generateVideo']>[0]) {
+    void _input;
     return {
       jobId: `demo-${crypto.randomUUID()}`,
       status: 'completed',

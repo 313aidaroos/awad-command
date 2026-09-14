@@ -1,5 +1,3 @@
-import 'server-only';
-
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { createServiceSupabase } from '@/lib/supabase/service';
