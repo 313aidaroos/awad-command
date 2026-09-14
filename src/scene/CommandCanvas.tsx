@@ -1,19 +1,35 @@
 'use client';
 
 import { useEffect, useState, type ComponentType, type CSSProperties } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { WebGLRenderer } from 'three';
 import { isSafariLike } from '@/lib/safari';
 import { CameraRig } from '@/scene/CameraRig';
 import { Lighting } from '@/scene/Environment/Lighting';
 import { StudioEnvironment } from '@/scene/Environment/StudioEnvironment';
-import { Starfield } from '@/scene/Environment/Starfield';
+import { showExterior } from '@/scene/lib/cameraPaths';
+import { StudioCyc } from '@/scene/universe/StudioCyc';
 import { Universe } from '@/scene/universe/Universe';
 import { ProjectWorld } from '@/scene/world/ProjectWorld';
 import { useCommandStore } from '@/store/useCommandStore';
 
-const CAMERA_INIT = { position: [0, 9, 42] as [number, number, number], fov: 40, near: 0.1, far: 420 };
+function SceneAtmosphere() {
+  const { scene, gl } = useThree();
+  const interior = !showExterior(useCommandStore((s) => s.enterPhase));
+  useEffect(() => {
+    if (interior) {
+      scene.fog = null;
+      gl.setClearColor('#1E242C', 1);
+      return;
+    }
+    gl.setClearColor('#161A20', 1);
+  }, [gl, interior, scene]);
+  if (interior) return null;
+  return <fog attach="fog" args={['#161A20', 58, 120]} />;
+}
+
+const CAMERA_INIT = { position: [0, 2.4, 11] as [number, number, number], fov: 32, near: 0.1, far: 220 };
 const GL_INIT = {
   antialias: true,
   alpha: false,
@@ -28,9 +44,9 @@ const DPR_MED: [number, number] = [1, 1.5];
 const DPR_HIGH: [number, number] = [1, 2];
 
 function handleCreated({ gl }: { gl: WebGLRenderer }) {
-  gl.setClearColor('#07080A', 1);
-  gl.toneMapping = THREE.ACESFilmicToneMapping;
-  gl.toneMappingExposure = 1.16;
+  gl.setClearColor('#161A20', 1);
+  gl.toneMapping = THREE.NeutralToneMapping;
+  gl.toneMappingExposure = 1.32;
   gl.outputColorSpace = THREE.SRGBColorSpace;
   gl.domElement.addEventListener(
     'webglcontextlost',
@@ -46,7 +62,6 @@ export function CommandCanvas() {
   const safari = isSafariLike();
   const dpr = safari || level === 'low' ? DPR_LOW : level === 'medium' ? DPR_MED : DPR_HIGH;
   const [Gate, setGate] = useState<ComponentType | null>(null);
-  // Safari still mounts the universe; only EffectComposer stays off.
 
   useEffect(() => {
     if (safari) {
@@ -75,10 +90,10 @@ export function CommandCanvas() {
       onCreated={handleCreated}
       style={CANVAS_STYLE}
     >
-      <fog attach="fog" args={['#07080A', 26, 92]} />
+      <SceneAtmosphere />
       <Lighting />
       <StudioEnvironment />
-      <Starfield />
+      <StudioCyc />
       <Universe />
       <ProjectWorld />
       <CameraRig />

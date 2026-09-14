@@ -1,37 +1,40 @@
-export type SilhouetteKind =
-  | 'lattice'
-  | 'crystal'
-  | 'rings'
-  | 'octa'
-  | 'monolith'
-  | 'constellation'
-  | 'icosa'
-  | 'folios'
-  | 'reel'
-  | 'soft'
-  | 'vessel';
+export type VesselKind = 'hall' | 'mast' | 'spire' | 'stack' | 'cabinet';
 
 export interface EntityIdentity {
-  kind: SilhouetteKind;
-  rings: number;
+  kind: VesselKind;
   scale: number;
-  core: number;
+  plaza: boolean;
+  plazaPosition?: [number, number, number];
 }
 
 const IDENTITIES: Record<string, EntityIdentity> = {
-  contraxis: { kind: 'lattice', rings: 3, scale: 1.32, core: 0.28 },
-  apixis: { kind: 'crystal', rings: 0, scale: 1.22, core: 0.22 },
-  lyrixis: { kind: 'rings', rings: 0, scale: 1.18, core: 0.18 },
-  halaxis: { kind: 'octa', rings: 0, scale: 1.28, core: 0.2 },
-  rawixis: { kind: 'monolith', rings: 0, scale: 1.26, core: 0.16 },
-  socixis: { kind: 'constellation', rings: 0, scale: 1.2, core: 0.14 },
-  awadbot: { kind: 'icosa', rings: 1, scale: 1.2, core: 0.24 },
-  publishing: { kind: 'folios', rings: 0, scale: 1.16, core: 0.12 },
-  studios: { kind: 'reel', rings: 0, scale: 1.18, core: 0.2 },
-  'nursery-toons': { kind: 'soft', rings: 0, scale: 1.08, core: 0.28 },
-  qahwahworld: { kind: 'vessel', rings: 0, scale: 1.1, core: 0.16 },
+  contraxis: { kind: 'hall', scale: 1.78, plaza: true, plazaPosition: [8.6, 0, 2.2] },
+  socixis: { kind: 'mast', scale: 1.62, plaza: true, plazaPosition: [-8.6, 0, 2.2] },
+  rawixis: { kind: 'stack', scale: 1.58, plaza: true, plazaPosition: [6.8, 0, -7.2] },
+  awadbot: { kind: 'cabinet', scale: 1.6, plaza: true, plazaPosition: [0, 0, -8.8] },
+  apixis: { kind: 'spire', scale: 1.64, plaza: true, plazaPosition: [-6.8, 0, -7.2] },
+  lyrixis: { kind: 'mast', scale: 1.05, plaza: false },
+  halaxis: { kind: 'spire', scale: 1.12, plaza: false },
+  publishing: { kind: 'stack', scale: 0.92, plaza: false },
+  studios: { kind: 'cabinet', scale: 0.94, plaza: false },
+  'nursery-toons': { kind: 'stack', scale: 0.88, plaza: false },
+  qahwahworld: { kind: 'cabinet', scale: 0.9, plaza: false },
 };
 
 export function identityOf(slug: string): EntityIdentity {
-  return IDENTITIES[slug] ?? { kind: 'soft', rings: 0, scale: 1, core: 0.22 };
+  return IDENTITIES[slug] ?? { kind: 'cabinet', scale: 0.9, plaza: false };
+}
+
+export function listedIdentities(): Record<string, EntityIdentity> {
+  return IDENTITIES;
+}
+
+export function plazaSlugs(): string[] {
+  return Object.entries(IDENTITIES)
+    .filter(([, id]) => id.plaza)
+    .map(([slug]) => slug);
+}
+
+export function onPlaza(slug: string): boolean {
+  return identityOf(slug).plaza;
 }

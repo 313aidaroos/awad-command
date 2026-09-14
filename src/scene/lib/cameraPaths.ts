@@ -1,45 +1,72 @@
 import type { CameraTarget } from '@/store/types';
 
+export const UNIVERSE_ZOOM = 11;
+export const INTERIOR_ZOOM = 11;
+
+/** Sealed interiors live at the world origin so the camera cannot miss them. */
+export const INTERIOR_ORIGIN: [number, number, number] = [0, 0, 0];
+
 export const UNIVERSE_CAM: CameraTarget = {
-  position: [0, 9, 42],
-  lookAt: [0, 0, 0],
+  position: [0, 2.4, UNIVERSE_ZOOM],
+  lookAt: [0, 1.25, 0],
   duration: 1.8,
   phase: 'universe',
 };
 
 function dirOf(pos: [number, number, number]): [number, number, number] {
-  const len = Math.max(0.001, Math.hypot(pos[0], pos[1], pos[2]));
-  return [pos[0] / len, pos[1] / len, pos[2] / len];
+  const len = Math.max(0.001, Math.hypot(pos[0], pos[2]));
+  return [pos[0] / len, 0, pos[2] / len];
 }
 
-export function projectEnterSequence(pos: [number, number, number]): CameraTarget[] {
+export function showExterior(enterPhase: CameraTarget['phase'] | string): boolean {
+  return enterPhase === 'universe' || enterPhase === 'approach';
+}
+
+/**
+ * Standing in the nave, looking +X down the Customer→Revenue spine.
+ * Must stay inside x∈(-17,17), z∈(-6.2,6.2) or the camera sees a wall as a grey field.
+ */
+export const CONTRAXIS_HALL_CAM: CameraTarget = {
+  position: [-10.6, 2.05, 1.85],
+  lookAt: [5.2, 1.15, 0],
+  duration: 0.01,
+  phase: 'interior',
+  cut: true,
+};
+
+export function projectEnterSequence(
+  pos: [number, number, number],
+  slug?: string,
+): CameraTarget[] {
+  if (slug === 'contraxis') {
+    return [CONTRAXIS_HALL_CAM];
+  }
   const [x, y, z] = pos;
   const [dx, , dz] = dirOf(pos);
-  const sx = -dz;
-  const sz = dx;
   return [
     {
-      position: [x + dx * 22, y + 8.2, z + dz * 22],
-      lookAt: [x, y, z],
-      duration: 1.75,
+      position: [x + dx * 8.2, y + 3.6, z + dz * 8.2],
+      lookAt: [x, y + 1.2, z],
+      duration: 1.35,
       phase: 'approach',
     },
     {
-      position: [x + dx * 2.6, y + 1.05, z + dz * 2.6],
-      lookAt: [x, y, z],
-      duration: 1.25,
+      position: [6.4, 2.7, 8.2],
+      lookAt: [0, 0.7, 0],
+      duration: 0.05,
       phase: 'shell',
+      cut: true,
     },
     {
-      position: [x + sx * 8.8 - dx * 1.8, y + 8.4, z + sz * 8.8 - dz * 1.8],
-      lookAt: [x, y - 0.15, z],
-      duration: 1.55,
+      position: [5.2, 2.5, 7.4],
+      lookAt: [0, 0.55, 0],
+      duration: 1.1,
       phase: 'interior',
     },
   ];
 }
 
-export function projectInteriorCam(pos: [number, number, number]): CameraTarget {
-  const sequence = projectEnterSequence(pos);
+export function projectInteriorCam(pos: [number, number, number], slug?: string): CameraTarget {
+  const sequence = projectEnterSequence(pos, slug);
   return sequence[sequence.length - 1] ?? UNIVERSE_CAM;
 }
