@@ -36,6 +36,7 @@ afterEach(() => {
   delete process.env.LEAD_MESSAGE_WEBHOOK_SECRET;
   delete process.env.AI_PROVIDER;
   delete process.env.ANTHROPIC_API_KEY;
+  delete process.env.ANTHROPIC_MODEL;
 });
 
 describe('runCeoTurn demo path', () => {
@@ -94,6 +95,27 @@ describe('runCeoTurn Anthropic gate', () => {
     });
     expect(result.provider).toBe('demo');
     expect(result.error).toBeUndefined();
+  });
+
+  it('requests the current Claude API Sonnet id when ANTHROPIC_MODEL is unset', async () => {
+    let requested: string | undefined;
+    const client: AnthropicLike = {
+      messages: {
+        create: async (args) => {
+          requested = args.model;
+          return {
+            stop_reason: 'end_turn',
+            content: [{ type: 'text', text: 'ok' }],
+          };
+        },
+      },
+    };
+    const result = await runCeoTurn(
+      { messages: [{ role: 'user', content: 'status' }], context: snapshot() },
+      { client },
+    );
+    expect(requested).toBe('claude-sonnet-5');
+    expect(result.provider).toBe('anthropic');
   });
 
   it('returns provider error instead of demo when Anthropic is enabled and the call fails', async () => {

@@ -1,9 +1,22 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { anthropicApiKey, isAnthropicCeoEnabled } from '@/lib/env';
+import { anthropicApiKey, anthropicModel, isAnthropicCeoEnabled } from '@/lib/env';
 
 afterEach(() => {
   delete process.env.AI_PROVIDER;
   delete process.env.ANTHROPIC_API_KEY;
+  delete process.env.ANTHROPIC_MODEL;
+});
+
+describe('anthropicModel', () => {
+  it('defaults to the current Claude API Sonnet id when unset', () => {
+    delete process.env.ANTHROPIC_MODEL;
+    expect(anthropicModel()).toBe('claude-sonnet-5');
+  });
+
+  it('uses ANTHROPIC_MODEL when set, trimming quotes and space', () => {
+    process.env.ANTHROPIC_MODEL = '  "claude-sonnet-4-6"  ';
+    expect(anthropicModel()).toBe('claude-sonnet-4-6');
+  });
 });
 
 describe('isAnthropicCeoEnabled', () => {
