@@ -3,8 +3,14 @@ import { computerNavigateTool } from './navigate.js';
 import type { ComputerRuntime } from './runtime.js';
 import { computerScreenshotTool } from './screenshot.js';
 
-export { createFakeRuntime, createPlaywrightRuntime, createUnavailableRuntime, profilePath } from './runtime.js';
-export type { ComputerRuntime } from './runtime.js';
+export {
+  createFakeRuntime,
+  createPlaywrightRuntime,
+  createSessionPool,
+  createUnavailableRuntime,
+  profilePath,
+} from './runtime.js';
+export type { ComputerRuntime, FakeComputerRuntime } from './runtime.js';
 export {
   HaltError,
   PHASE1_RECORD_ONLY,

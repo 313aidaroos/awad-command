@@ -8,7 +8,8 @@ Nothing here spends, publishes, or deletes. Phase 1 Approve is record-only for m
 
 - A worker with `WORKER_CAPABILITIES=computer`
 - Playwright Chromium + a persistent profile per project under `$WORKER_DATA_DIR/profiles/<project>`
-- First tools: `computer.screenshot` (read) and `computer.navigate` (write — needs a human task or an approved plan)
+- One Chromium context/page per project stays open in the worker process. `computer.navigate` and later `computer.screenshot` calls reuse that page (closing it was resetting the tab to `about:blank`).
+- First tools: `computer.screenshot` (read) and `computer.navigate` (write — needs a human task or an approved plan). Navigate already attaches a screenshot of the page it opened.
 - A Screen node in Contraxis (16:9 glass). Click opens Computer. No fake textures in demo.
 - Screenshots into the private `agent-screens` bucket (schema notes in `awad_command.agent_screens`)
 - Halt via `system_status` — never a silent continue

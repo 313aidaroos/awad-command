@@ -1,5 +1,9 @@
 import { createServiceSupabase } from '@/lib/supabase/service';
-import type { LatestScreenshot } from '@/lib/computerScreen';
+import {
+  latestScreenshotFromEvents,
+  preferNonBlankScreenshot,
+  type LatestScreenshot,
+} from '@/lib/computerScreen';
 
 export interface ComputerStatus {
   workerConnected: boolean;
@@ -28,6 +32,30 @@ function capList(value: unknown): string[] {
 export function stubScreenUrl(env: Record<string, string | undefined> = process.env): string | null {
   const raw = env.NEXT_PUBLIC_COMPUTER_STUB_SCREEN_URL?.trim();
   return raw && /^https?:\/\//i.test(raw) ? raw : null;
+}
+
+interface AgentScreenRow {
+  screenshot_url?: string | null;
+  created_at?: string | null;
+  project_slug?: string | null;
+  task_id?: string | null;
+  page_url?: string | null;
+}
+
+async function fetchLatestScreenRows(
+  supabase: NonNullable<ReturnType<typeof createServiceSupabase>>,
+  projectSlug?: string,
+): Promise<AgentScreenRow[]> {
+  const run = async (columns: string) => {
+    const screens = supabase.from('agent_screens').select(columns);
+    const query = projectSlug ? screens.eq('project_slug', projectSlug) : screens;
+    return query.order('created_at', { ascending: false }).limit(20);
+  };
+
+  const withPage = await run('screenshot_url, created_at, project_slug, task_id, page_url');
+  if (!withPage.error) return (withPage.data as AgentScreenRow[] | null) ?? [];
+  const fallback = await run('screenshot_url, created_at, project_slug, task_id');
+  return (fallback.data as AgentScreenRow[] | null) ?? [];
 }
 
 export async function readComputerStatus(
@@ -69,19 +97,20 @@ export async function readComputerStatus(
   const halted = computerRows.some((row) => row.status === 'halt');
 
   let latestScreenshot: LatestScreenshot | null = null;
-  const screens = supabase.from('agent_screens').select('screenshot_url, created_at, project_slug, task_id');
-  const screenQuery = projectSlug ? screens.eq('project_slug', projectSlug) : screens;
-  const { data: screenRows } = await screenQuery.order('created_at', { ascending: false }).limit(1);
-  const screen = screenRows?.[0];
-  if (screen && typeof screen.screenshot_url === 'string' && screen.screenshot_url) {
-    latestScreenshot = {
+  const screenRows = await fetchLatestScreenRows(supabase, projectSlug);
+  const screenCandidates: LatestScreenshot[] = [];
+  for (const screen of screenRows) {
+    if (typeof screen.screenshot_url !== 'string' || !screen.screenshot_url) continue;
+    screenCandidates.push({
       url: screen.screenshot_url,
       ts: screen.created_at ? Date.parse(String(screen.created_at)) : now,
       projectSlug: typeof screen.project_slug === 'string' ? screen.project_slug : undefined,
       taskId: screen.task_id ? String(screen.task_id) : undefined,
       source: 'storage',
-    };
+      pageUrl: typeof screen.page_url === 'string' ? screen.page_url : null,
+    });
   }
+  latestScreenshot = preferNonBlankScreenshot(screenCandidates);
 
   if (!latestScreenshot) {
     const events = supabase
@@ -92,19 +121,16 @@ export async function readComputerStatus(
       .limit(40);
     const eventQuery = projectSlug ? events.eq('project_slug', projectSlug) : events;
     const { data: eventRows } = await eventQuery;
-    for (const row of eventRows ?? []) {
-      const payload = asRecord(row.payload);
-      const url = typeof payload.screenshot_url === 'string' ? payload.screenshot_url : '';
-      if (!url) continue;
-      latestScreenshot = {
-        url,
+    latestScreenshot = latestScreenshotFromEvents(
+      (eventRows ?? []).map((row) => ({
         ts: row.ts ? Date.parse(String(row.ts)) : now,
-        summary: typeof row.summary === 'string' ? row.summary : undefined,
+        type: String(row.type ?? 'agent.step'),
         projectSlug: typeof row.project_slug === 'string' ? row.project_slug : undefined,
-        source: 'event',
-      };
-      break;
-    }
+        summary: typeof row.summary === 'string' ? row.summary : '',
+        payload: asRecord(row.payload),
+      })),
+      projectSlug,
+    );
   }
 
   return {

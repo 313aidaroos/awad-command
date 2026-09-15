@@ -26,32 +26,30 @@ export function computerScreenshotTool(runtime: ComputerRuntime): WorkerTool {
         return { error: runtime.reason ?? 'Computer runtime is not connected.' };
       }
       const projectSlug = ctx.projectSlug ?? 'unknown';
+      // Reuse the in-process page. Do not close — a new context would be about:blank.
       const session = await runtime.open(projectSlug);
-      try {
-        const page = await session.page();
-        const bytes = await page.screenshot({ fullPage: input.fullPage === true });
-        const stored = await persistScreenshotPng(ctx.db, {
-          projectSlug,
-          taskId: ctx.task.id,
-          workerId: ctx.task.worker_id,
-          bytes,
-          dataDir: runtime.dataDir,
-        });
-        ctx.lastScreenshotUrl = stored.screenshot_url ?? undefined;
-        return {
-          ok: true,
-          risk: 'read',
-          url: page.url(),
-          screenshot_url: stored.screenshot_url,
-          storage_path: stored.storage_path,
-          local_path: stored.local_path ?? null,
-          note: stored.screenshot_url
-            ? undefined
-            : 'No public screenshot_url yet. Bucket agent-screens or a stub URL is still needed. See docs/COMPUTER_SETUP.md.',
-        };
-      } finally {
-        await session.close();
-      }
+      const page = await session.page();
+      const bytes = await page.screenshot({ fullPage: input.fullPage === true });
+      const stored = await persistScreenshotPng(ctx.db, {
+        projectSlug,
+        taskId: ctx.task.id,
+        workerId: ctx.task.worker_id,
+        bytes,
+        dataDir: runtime.dataDir,
+        pageUrl: page.url(),
+      });
+      ctx.lastScreenshotUrl = stored.screenshot_url ?? undefined;
+      return {
+        ok: true,
+        risk: 'read',
+        url: page.url(),
+        screenshot_url: stored.screenshot_url,
+        storage_path: stored.storage_path,
+        local_path: stored.local_path ?? null,
+        note: stored.screenshot_url
+          ? undefined
+          : 'No public screenshot_url yet. Bucket agent-screens or a stub URL is still needed. See docs/COMPUTER_SETUP.md.',
+      };
     },
   };
 }
