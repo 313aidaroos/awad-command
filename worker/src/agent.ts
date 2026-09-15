@@ -1,6 +1,7 @@
 import type { WorkerDb } from './db.js';
 import { log, logError } from './log.js';
 import { costUsd } from './pricing.js';
+import { HaltError, PERSONAL_LOGIN_HINT, SensitiveActionPause } from './tools/computer/safety.js';
 import { createToolRegistry, ToolGuardError, type ToolContext } from './tools/index.js';
 import { asNumber, type TaskRow } from './types.js';
 
@@ -30,6 +31,7 @@ export interface AgentDeps {
   client: AnthropicLike;
   model: string;
   maxSteps: number;
+  workerId?: string;
   registry?: ReturnType<typeof createToolRegistry>;
 }
 
@@ -45,21 +47,33 @@ export function buildAgentSystemPrompt(input: {
   projectName?: string | null;
   projectStatus?: string | null;
   memory?: Record<string, unknown> | null;
+  computerEnabled?: boolean;
 }): string {
   const tools = (input.tools ?? []).join(', ') || 'supabase.query, http.fetch';
   const memory =
     input.memory && Object.keys(input.memory).length > 0 ? JSON.stringify(input.memory).slice(0, 4000) : 'none';
+  const computer = input.computerEnabled
+    ? 'Computer tools: computer.screenshot is read. computer.navigate is write and needs a human task or an approved plan. Purchase, publish, delete, or send-to-customer steps pause for Approve. Phase 1 Approve is record-only for money/destructive — nothing executes from the card.'
+    : 'Computer tools are not on this worker. Tasks that need a browser require WORKER_CAPABILITIES=computer on a VM/Railway box.';
   return [
     `You are ${input.agentName ?? 'an AWAD agent'}${input.role ? `, role ${input.role}` : ''}.`,
     input.objective ? `Objective: ${input.objective}` : '',
     `Project: ${input.projectName ?? 'unknown'} (${input.projectStatus ?? 'unknown'}).`,
     `Allowed tools: ${tools}. First tools available now: supabase.query (whitelist views) and http.fetch (public GET).`,
-    'Hard rules: never spend, publish, delete, or trade. Money or destructive tools will be refused unless an approval is already approved.',
+    computer,
+    PERSONAL_LOGIN_HINT,
+    'Hard rules: never spend, publish, delete, or trade. Money or destructive tools are refused. Write tools need a human task or an approved plan.',
     'Work from evidence. When you finish, write a short plain-English report: what you did, what changed, what to do next.',
     `Memory: ${memory}`,
   ]
     .filter(Boolean)
     .join('\n');
+}
+
+async function throwIfHalted(db: WorkerDb, workerId: string | undefined): Promise<void> {
+  if (!workerId) return;
+  const row = await db.getWorkerStatus(workerId);
+  if (row?.status === 'halt') throw new HaltError();
 }
 
 export async function runTask(task: TaskRow, deps: AgentDeps): Promise<void> {
@@ -69,17 +83,9 @@ export async function runTask(task: TaskRow, deps: AgentDeps): Promise<void> {
   const approval = task.approval_id ? await deps.db.getApproval(task.approval_id) : null;
   const projectSlug = agent?.project_slug ?? null;
   const startedAt = new Date().toISOString();
+  const computerEnabled = registry.list().some((tool) => tool.name.startsWith('computer.'));
 
-  await deps.db.updateTask(task.id, { status: 'running', started_at: startedAt });
-  await deps.db.insertEvent({
-    type: 'agent.task.started',
-    project_slug: projectSlug,
-    agent_id: task.agent_id,
-    summary: `Started: ${task.title}`,
-    payload: { task_id: task.id },
-  });
-
-  const ctx: ToolContext = { task, approval, db: deps.db };
+  const ctx: ToolContext = { task, approval, db: deps.db, projectSlug };
   const messages: Array<{ role: 'user' | 'assistant'; content: unknown }> = [
     { role: 'user', content: instructionOf(task) },
   ];
@@ -91,6 +97,7 @@ export async function runTask(task: TaskRow, deps: AgentDeps): Promise<void> {
     projectName: project?.name,
     projectStatus: project?.status,
     memory: agent?.memory,
+    computerEnabled,
   });
 
   let spent = asNumber(task.spent_usd);
@@ -99,7 +106,17 @@ export async function runTask(task: TaskRow, deps: AgentDeps): Promise<void> {
   const steps: Array<{ name: string; summary: string }> = [];
 
   try {
+    await throwIfHalted(deps.db, deps.workerId);
+    await deps.db.updateTask(task.id, { status: 'running', started_at: startedAt });
+    await deps.db.insertEvent({
+      type: 'agent.task.started',
+      project_slug: projectSlug,
+      agent_id: task.agent_id,
+      summary: `Started: ${task.title}`,
+      payload: { task_id: task.id },
+    });
     for (let step = 0; step < deps.maxSteps; step += 1) {
+      await throwIfHalted(deps.db, deps.workerId);
       if (spent >= budget) {
         throw new Error(`Budget exceeded ($${spent.toFixed(4)} / $${budget})`);
       }
@@ -131,7 +148,7 @@ export async function runTask(task: TaskRow, deps: AgentDeps): Promise<void> {
           project_slug: projectSlug,
           agent_id: task.agent_id,
           summary: text.slice(0, 180) || `Step ${step + 1} complete`,
-          payload: { task_id: task.id, step, spent_usd: spent },
+          payload: { task_id: task.id, step, spent_usd: spent, screenshot_url: ctx.lastScreenshotUrl },
         });
         break;
       }
@@ -139,15 +156,56 @@ export async function runTask(task: TaskRow, deps: AgentDeps): Promise<void> {
       messages.push({ role: 'assistant', content: completion.content });
       const toolResults: Array<{ type: 'tool_result'; tool_use_id: string; content: string }> = [];
       for (const call of toolUses) {
+        await throwIfHalted(deps.db, deps.workerId);
         const input = call.input && typeof call.input === 'object' ? call.input : {};
         let payload: unknown;
         try {
           payload = await registry.execute(call.name, input, ctx);
         } catch (err) {
+          if (err instanceof HaltError) throw err;
+          if (err instanceof SensitiveActionPause) {
+            const approvalRow = await deps.db.insertApproval({
+              title: `Computer pause: ${call.name}`,
+              description: err.message,
+              kind: 'other',
+              risk: 'high',
+              project_slug: projectSlug,
+              payload: {
+                task_id: task.id,
+                tool: call.name,
+                screenshot_url: err.screenshotUrl ?? ctx.lastScreenshotUrl ?? null,
+                phase1_record_only: true,
+              },
+            });
+            await deps.db.updateTask(task.id, {
+              status: 'waiting_approval',
+              approval_id: approvalRow.id,
+              spent_usd: spent,
+              error: err.message,
+            });
+            await deps.db.insertEvent({
+              type: 'approval.requested',
+              project_slug: projectSlug,
+              agent_id: task.agent_id,
+              summary: err.message.slice(0, 240),
+              payload: {
+                task_id: task.id,
+                approval_id: approvalRow.id,
+                screenshot_url: err.screenshotUrl ?? ctx.lastScreenshotUrl,
+              },
+            });
+            log('task.paused', { taskId: task.id, tool: call.name });
+            return;
+          }
           payload = {
             error: err instanceof ToolGuardError || err instanceof Error ? err.message : 'tool failed',
           };
         }
+        const shot =
+          payload && typeof payload === 'object' && 'screenshot_url' in payload
+            ? String((payload as { screenshot_url?: string | null }).screenshot_url ?? '')
+            : '';
+        if (shot) ctx.lastScreenshotUrl = shot;
         const summary = `${call.name}: ${JSON.stringify(payload).slice(0, 140)}`;
         steps.push({ name: call.name, summary });
         await deps.db.insertEvent({
@@ -155,7 +213,12 @@ export async function runTask(task: TaskRow, deps: AgentDeps): Promise<void> {
           project_slug: projectSlug,
           agent_id: task.agent_id,
           summary,
-          payload: { task_id: task.id, step, tool: call.name },
+          payload: {
+            task_id: task.id,
+            step,
+            tool: call.name,
+            screenshot_url: ctx.lastScreenshotUrl,
+          },
         });
         toolResults.push({
           type: 'tool_result',
@@ -180,10 +243,28 @@ export async function runTask(task: TaskRow, deps: AgentDeps): Promise<void> {
       project_slug: projectSlug,
       agent_id: task.agent_id,
       summary: finalReport.slice(0, 240),
-      payload: { task_id: task.id, spent_usd: spent },
+      payload: { task_id: task.id, spent_usd: spent, screenshot_url: ctx.lastScreenshotUrl },
     });
     log('task.done', { taskId: task.id, spent });
   } catch (err) {
+    if (err instanceof HaltError) {
+      await deps.db.updateTask(task.id, {
+        status: 'cancelled',
+        completed_at: new Date().toISOString(),
+        error: 'halted',
+        report: report || 'Halted by system_status.',
+        spent_usd: spent,
+      });
+      await deps.db.insertEvent({
+        type: 'system.error',
+        project_slug: projectSlug,
+        agent_id: task.agent_id,
+        summary: 'Task halted',
+        payload: { task_id: task.id, reason: 'halted' },
+      });
+      log('task.halted', { taskId: task.id });
+      return;
+    }
     const message = err instanceof Error ? err.message : String(err);
     logError('task.failed', err, { taskId: task.id });
     await deps.db.updateTask(task.id, {

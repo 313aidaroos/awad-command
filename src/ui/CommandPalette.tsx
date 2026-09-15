@@ -105,6 +105,20 @@ export function CommandPalette() {
             <Command.Item className="cursor-pointer rounded-md px-2 py-1.5" onSelect={() => { openPanel('computer'); toggle(false); }}>
               Computer
             </Command.Item>
+            <Command.Item
+              className="cursor-pointer rounded-md px-2 py-1.5"
+              onSelect={() => {
+                void fetch('/api/computer/halt', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ workerId: '*' }),
+                });
+                openPanel('computer');
+                toggle(false);
+              }}
+            >
+              Halt agents
+            </Command.Item>
             <Command.Item className="cursor-pointer rounded-md px-2 py-1.5" onSelect={() => { openPanel('briefing'); toggle(false); }}>
               Briefing
             </Command.Item>

@@ -55,6 +55,10 @@ describe('worker loop', () => {
       }),
       getProject: async () => null,
       queryView: async () => [],
+      getWorkerStatus: async () => null,
+      insertApproval: async () => ({ id: 'apr', status: 'pending' }),
+      recordScreen: async () => ({ screenshot_url: null, storage_path: 'x.png' }),
+      uploadScreenshot: async (path) => ({ path }),
     };
 
     const loop = createLoop({
@@ -92,6 +96,10 @@ describe('worker loop', () => {
       getAgent: async () => null,
       getProject: async () => null,
       queryView: async () => [],
+      getWorkerStatus: async () => null,
+      insertApproval: async () => ({ id: 'apr', status: 'pending' }),
+      recordScreen: async () => ({ screenshot_url: null, storage_path: 'x.png' }),
+      uploadScreenshot: async (path) => ({ path }),
     };
     const loop = createLoop({
       db,
@@ -110,5 +118,37 @@ describe('worker loop', () => {
     resolveRun();
     await tickPromise;
     expect(released).toContain('t2');
+  });
+
+  it('does not claim while system_status is halt', async () => {
+    const claimed: string[] = [];
+    const db: WorkerDb = {
+      claimTask: async (workerId) => {
+        claimed.push(workerId);
+        return task('t3');
+      },
+      updateTask: async () => undefined,
+      insertEvent: async () => undefined,
+      heartbeat: async () => undefined,
+      releaseTask: async () => undefined,
+      getApproval: async () => null,
+      getAgent: async () => null,
+      getProject: async () => null,
+      queryView: async () => [],
+      getWorkerStatus: async () => ({ status: 'halt', detail: { halted: true } }),
+      insertApproval: async () => ({ id: 'apr', status: 'pending' }),
+      recordScreen: async () => ({ screenshot_url: null, storage_path: 'x.png' }),
+      uploadScreenshot: async (path) => ({ path }),
+    };
+    const loop = createLoop({
+      db,
+      workerId: 'contraxis-computer-1',
+      pollMs: 5,
+      heartbeatMs: 10_000,
+      runTask: async () => undefined,
+      now: () => 0,
+    });
+    await loop.tick();
+    expect(claimed).toEqual([]);
   });
 });

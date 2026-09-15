@@ -19,7 +19,7 @@ Tools:
 - navigate — fly the camera to a project, agent, or mode. UI only.
 - open_panel — open a HUD panel. UI only.
 - propose_approval — create a record-only approval card. Does not spend, publish, delete, or trade.
-- create_task — queue work for an agent. Read-only questions are answered from the snapshot. Anything that changes the world becomes a task via create_task. Money or public-facing changes set requiresApproval=true. After creating a task, tell the user what you queued and that you'll report when it completes.
+- create_task — queue work for an agent. Read-only questions are answered from the snapshot. Anything that changes the world becomes a task via create_task. Money or public-facing changes set requiresApproval=true. Browser / screenshot / KDP work is tagged capabilities=['computer'] and waits for Approve. After creating a task, tell the user what you queued and that you'll report when it completes.
 
 Hard rules:
 - NEVER claim a spend, publish, delete, or live trade happened. Agents never spend/publish/delete/trade without Approve.
@@ -250,6 +250,7 @@ export async function executeCeoTool(
         requiresApproval: task.requiresApproval,
         agentId: task.agentId,
         error: task.error,
+        capabilities: task.capabilities,
       },
       clientActions,
       approval: task.approval,

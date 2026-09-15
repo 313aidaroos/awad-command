@@ -102,7 +102,7 @@ export function ProjectHud() {
             onClick={() => useCommandStore.getState().openPanel('computer')}
             className="mt-3 w-full rounded-lg border border-[var(--line)] px-2 py-2 text-left text-[11px] text-[var(--muted)]"
           >
-            Computer · coming online
+            Computer
           </button>
         </Glass>
       ) : null}

@@ -132,6 +132,26 @@ describe('persistCeoTask', () => {
     expect(result.status).toBe('queued');
     expect(tables.approvals).toHaveLength(0);
     expect(tables.agent_tasks[0]?.source).toBe('ceo');
+    expect(tables.agent_tasks[0]?.capabilities).toEqual([]);
+  });
+
+  it('tags computer work and waits for approval', async () => {
+    const { store, tables } = memoryStore();
+    const result = await persistCeoTask(
+      {
+        agentId: 'contraxis.analytics-agent',
+        title: 'Screenshot Contraxis',
+        instruction: 'Screenshot Contraxis on mobile and desktop',
+        requiresApproval: false,
+        risk: 'low',
+      },
+      { supabase: store },
+    );
+    expect(result.ok).toBe(true);
+    expect(result.capabilities).toEqual(['computer']);
+    expect(result.status).toBe('waiting_approval');
+    expect(tables.agent_tasks[0]?.capabilities).toEqual(['computer']);
+    expect(tables.approvals).toHaveLength(1);
   });
 
   it('does not invent a task for an unknown agent', async () => {

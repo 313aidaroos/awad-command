@@ -44,6 +44,11 @@ Smoke test (needs live keys + migration `0002_tasks.sql` applied):
 | `WORKER_LEASE_MS` | no | Default `600000` (10 minutes). |
 | `WORKER_HEARTBEAT_MS` | no | Default `30000`. |
 | `WORKER_MAX_STEPS` | no | Default `25`. |
+| `WORKER_CAPABILITIES` | no | Comma list. Empty = API worker (claims tasks with no capabilities). Set `computer` on a Chromium box. |
+| `WORKER_DATA_DIR` | no | Default `/data`. Profiles at `$WORKER_DATA_DIR/profiles/<project>`. |
+| `WORKER_COMPUTER_HEADED` | no | `1` for a headed Chromium (local only). |
+
+Computer / Xvfb setup: [docs/COMPUTER_SETUP.md](../docs/COMPUTER_SETUP.md). Image: `Dockerfile.computer`.
 
 ## Tools (this drop)
 
@@ -51,9 +56,11 @@ Smoke test (needs live keys + migration `0002_tasks.sql` applied):
 |---|---|---|
 | `supabase.query` | read | Whitelist views only: `v_leads`, `v_sales`, `v_events`, `v_metrics`. |
 | `http.fetch` | read | GET, 1 MB, 10 s, blocks private / link-local / metadata IPs. |
+| `computer.screenshot` | read | PNG of the agent browser. Requires `WORKER_CAPABILITIES=computer`. |
+| `computer.navigate` | write | Open a public URL. Needs a human task or approved plan. Checkout / pay / publish / delete / send-to-customer pause. |
 
-`money` / `destructive` tools (none shipped yet) refuse unless `approval_id` points at `approvals.status = approved`. `write` tools run only for a human-created task or an approved plan.
+`money` / `destructive` tools refuse to run in Phase 1 (Approve is record-only). `write` tools run only for a human-created task or an approved plan. Computer tools are registered only when `WORKER_CAPABILITIES` includes `computer`.
 
 ## Halt / SIGTERM
 
-`SIGTERM` / `SIGINT` release the in-flight task back to `queued` so another worker can claim it after the lease logic. A `system_status` row `worker:<WORKER_ID>` is upserted every 30s with `status=online`.
+`SIGTERM` / `SIGINT` release the in-flight task back to `queued` so another worker can claim it after the lease logic. A `system_status` row `worker:<WORKER_ID>` is upserted every 30s with `status=online`. If that row is `halt`, the worker stops claiming and cancels the in-flight task. Heartbeat will not overwrite `halt` back to `online`.

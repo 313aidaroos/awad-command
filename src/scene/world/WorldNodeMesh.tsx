@@ -125,7 +125,34 @@ export function WorldNodeMesh({ node, accent }: { node: WorldNode; accent: strin
     const agent = s.agents[id];
     return agent?.targetNodeId === node.id || agent?.fromNodeId === node.id;
   });
-  if (node.kind === 'screen') return null;
+  if (node.kind === 'screen') {
+    return (
+      <group
+        position={node.position}
+        onClick={(e) => {
+          e.stopPropagation();
+          useCommandStore.getState().openPanel('computer');
+        }}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          setHovered(true);
+        }}
+        onPointerOut={() => setHovered(false)}
+      >
+        <mesh>
+          <planeGeometry args={[2.4, 1.35]} />
+          <GlassMaterial accent={accent} opacity={0.42} />
+        </mesh>
+        <mesh position={[0, 0, -0.02]}>
+          <planeGeometry args={[2.52, 1.47]} />
+          <meshBasicMaterial color="#07080A" transparent opacity={0.55} />
+        </mesh>
+        <FloatingLabel id={`node-${node.id}`} priority={hovered ? 5 : 2} maxDist={28} fadeFrom={16} position={[0, 0.95, 0]}>
+          <WorldName primary={hovered}>{node.label}</WorldName>
+        </FloatingLabel>
+      </group>
+    );
+  }
   const shape = SHAPE[node.label] ?? (node.kind === 'sink' ? 'crystal' : node.kind === 'source' ? 'cluster' : 'generic');
   const showLabel = hovered || !following;
   const priority = hovered ? 5 : tracked ? 4 : 1;

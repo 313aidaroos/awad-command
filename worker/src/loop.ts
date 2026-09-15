@@ -7,6 +7,8 @@ export interface LoopDeps {
   workerId: string;
   pollMs: number;
   heartbeatMs: number;
+  capabilities?: string[];
+  heartbeatDetail?: Record<string, unknown>;
   runTask: (task: TaskRow) => Promise<void>;
   now?: () => number;
   sleep?: (ms: number) => Promise<void>;
@@ -25,15 +27,20 @@ export function createLoop(deps: LoopDeps) {
     const t = now();
     if (t - lastHeartbeat < deps.heartbeatMs) return;
     lastHeartbeat = t;
-    await deps.db.heartbeat(deps.workerId);
-    log('heartbeat', { workerId: deps.workerId });
+    await deps.db.heartbeat(deps.workerId, deps.heartbeatDetail);
+    log('heartbeat', { workerId: deps.workerId, capabilities: deps.capabilities ?? [] });
   }
 
   async function tick() {
     if (stopped) return;
     await beat();
     if (inFlight) return;
-    const task = await deps.db.claimTask(deps.workerId, lastProject);
+    const status = await deps.db.getWorkerStatus(deps.workerId);
+    if (status?.status === 'halt') {
+      log('loop.halted', { workerId: deps.workerId });
+      return;
+    }
+    const task = await deps.db.claimTask(deps.workerId, lastProject, deps.capabilities ?? []);
     if (!task) return;
     inFlight = task;
     log('task.claimed', { taskId: task.id, agentId: task.agent_id });

@@ -31,6 +31,7 @@ export interface TaskRow {
   budget_usd: number | string | null;
   spent_usd: number | string | null;
   approval_id: string | null;
+  capabilities?: string[] | null;
 }
 
 export interface ApprovalRow {
@@ -77,6 +78,7 @@ export interface TaskPatch {
   worker_id?: string | null;
   claimed_at?: string | null;
   spent_usd?: number;
+  approval_id?: string | null;
 }
 
 export const QUERY_VIEWS = ['v_leads', 'v_sales', 'v_events', 'v_metrics'] as const;

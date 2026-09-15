@@ -23,6 +23,7 @@ const nodes = makeNodes('contraxis', [
   { label: 'Contractor', kind: 'source', position: [7.7, 0.35, -1.55] },
   { label: 'Job', kind: 'system', position: [5.85, -1.35, 2.15] },
   { label: 'Revenue', kind: 'sink', position: [2.15, -2.15, 3.35] },
+  { label: 'Screen', kind: 'screen', position: [0, 3.5, -6] },
 ]);
 
 const byLabel = (label: string) => nodes.find((node) => node.label === label);
