@@ -66,7 +66,7 @@ export function createToolRegistry(extras: WorkerTool[] = []): {
         },
       },
       risk: 'read',
-      run: (input, ctx) => runSupabaseQuery(input, ctx.db),
+      run: (input, ctx) => runSupabaseQuery(supabaseQueryInput.parse(input), ctx.db),
     },
     {
       name: 'http.fetch',
@@ -78,7 +78,7 @@ export function createToolRegistry(extras: WorkerTool[] = []): {
         required: ['url'],
       },
       risk: 'read',
-      run: (input) => runHttpFetch(input),
+      run: (input) => runHttpFetch(httpFetchInput.parse(input)),
     },
     ...extras,
   ];

@@ -30,7 +30,7 @@ function task(patch: Partial<TaskRow> = {}): TaskRow {
 
 function memoryDb() {
   const events: unknown[] = [];
-  const patches: Array<{ id: string; patch: Record<string, unknown> }> = [];
+  const patches: Array<{ id: string; patch: import('./types.js').TaskPatch }> = [];
   const db: WorkerDb = {
     claimTask: async () => null,
     updateTask: async (id, patch) => {
@@ -105,6 +105,7 @@ describe('runTask', () => {
 
     expect(events.map((e) => (e as { type: string }).type)).toEqual([
       'agent.task.started',
+      'agent.step',
       'agent.step',
       'agent.task.completed',
     ]);

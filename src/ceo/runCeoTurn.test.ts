@@ -272,8 +272,8 @@ describe('runCeoTurn Anthropic tool_use', () => {
     );
     expect(created).toHaveLength(1);
     expect(result.actions[0]).toMatchObject({ name: 'create_task', taskId: 'task-demo', demo: true });
-    expect(result.text).toMatch(/Queued “Summarise leads”/);
-    expect(result.text).toMatch(/DEMO/);
+    expect(result.text).toMatch(/Summarise leads/);
+    expect(result.text).toMatch(/queued locally \(DEMO\)/);
   });
 
   it('collects navigate and open_panel for the client', async () => {

@@ -6,7 +6,7 @@ export function createServiceClient(env: WorkerEnv): SupabaseClient {
   return createClient(env.supabaseUrl, env.supabaseServiceRoleKey, {
     db: { schema: env.schema },
     auth: { persistSession: false, autoRefreshToken: false },
-  });
+  }) as SupabaseClient;
 }
 
 export interface WorkerDb {

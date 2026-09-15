@@ -35,7 +35,7 @@ export function ApprovalCard() {
   }
 
   return (
-    <Glass className="fixed right-4 bottom-28 z-30 w-[320px] p-4">
+    <Glass className="fixed right-4 bottom-28 z-40 w-[320px] p-4">
       <div className="text-[10px] tracking-[0.14em] text-[var(--muted)]">
         {recordOnly ? 'Needs approval · record only' : 'Needs approval'}
       </div>

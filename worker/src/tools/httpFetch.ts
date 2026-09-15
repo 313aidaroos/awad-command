@@ -62,12 +62,17 @@ export function isBlockedHostname(hostname: string): boolean {
   return false;
 }
 
+export type LookupAll = (
+  hostname: string,
+  options: { all: true; verbatim?: boolean },
+) => Promise<Array<{ address: string; family: number }>>;
+
 export async function resolvePublicAddresses(
   hostname: string,
-  lookupFn: typeof lookup = lookup,
+  lookupFn: LookupAll = lookup as LookupAll,
 ): Promise<string[]> {
   const result = await lookupFn(hostname, { all: true, verbatim: true });
-  const addresses = (Array.isArray(result) ? result : [result]).map((item) => item.address);
+  const addresses = result.map((item) => item.address);
   if (addresses.length === 0) throw new Error('DNS returned no addresses');
   const blocked = addresses.filter((address) => isPrivateIPv4(address) || isPrivateIPv6(address));
   if (blocked.length > 0) {
@@ -78,7 +83,7 @@ export async function resolvePublicAddresses(
 
 export async function runHttpFetch(
   input: { url: string },
-  deps: { fetchImpl?: typeof fetch; lookupFn?: typeof lookup } = {},
+  deps: { fetchImpl?: typeof fetch; lookupFn?: LookupAll } = {},
 ): Promise<{ status: number; contentType: string; bytes: number; body: string }> {
   let parsed: URL;
   try {
