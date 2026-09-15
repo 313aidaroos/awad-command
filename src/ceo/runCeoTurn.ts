@@ -10,6 +10,7 @@ import {
 } from '@/ceo/tools';
 import type { CeoClientAction, ProposeApprovalArgs } from '@/ceo/tools.types';
 import { anthropicApiKey, anthropicModel, isAnthropicCeoEnabled } from '@/lib/env';
+import type { CreatedTask } from '@/lib/agentTasks';
 import type { SendLeadMessageResult } from '@/lib/leadOutbound';
 import type { CommandState } from '@/store/types';
 
@@ -71,10 +72,12 @@ async function runToolCalls(
   actions: CeoClientAction[];
   approval?: ProposeApprovalArgs;
   leadResults: SendLeadMessageResult[];
+  tasks: CreatedTask[];
   forModel: Array<{ name: string; payload: Record<string, unknown> }>;
 }> {
   const actions: CeoClientAction[] = [];
   const leadResults: SendLeadMessageResult[] = [];
+  const tasks: CreatedTask[] = [];
   const forModel: Array<{ name: string; payload: Record<string, unknown> }> = [];
   let approval: ProposeApprovalArgs | undefined;
   for (const call of calls) {
@@ -82,9 +85,10 @@ async function runToolCalls(
     actions.push(...executed.clientActions);
     if (executed.approval) approval = executed.approval;
     if (executed.leadResult) leadResults.push(executed.leadResult);
+    if (executed.task) tasks.push(executed.task);
     forModel.push({ name: call.name, payload: executed.forModel });
   }
-  return { actions, approval, leadResults, forModel };
+  return { actions, approval, leadResults, tasks, forModel };
 }
 
 export async function runDemoCeoTurn(input: CeoTurnInput, deps: CeoTurnDeps = {}): Promise<CeoTurnResult> {
@@ -103,7 +107,7 @@ export async function runDemoCeoTurn(input: CeoTurnInput, deps: CeoTurnDeps = {}
   }
   const executed = await runToolCalls(toolCalls, deps);
   return {
-    text: composeCeoText(answer.text, executed.leadResults),
+    text: composeCeoText(answer.text, executed.leadResults, executed.tasks),
     provider: 'demo',
     approval: executed.approval ?? answer.approval,
     actions: executed.actions,
@@ -139,6 +143,7 @@ export async function runAnthropicCeoTurn(
 
   const actions: CeoClientAction[] = [];
   const leadResults: SendLeadMessageResult[] = [];
+  const tasks: CreatedTask[] = [];
   let approval: ProposeApprovalArgs | undefined;
   let text = '';
 
@@ -172,6 +177,7 @@ export async function runAnthropicCeoTurn(
       actions.push(...executed.clientActions);
       if (executed.approval) approval = executed.approval;
       if (executed.leadResult) leadResults.push(executed.leadResult);
+      if (executed.task) tasks.push(executed.task);
       toolResults.push({
         type: 'tool_result',
         tool_use_id: tool.id,
@@ -182,7 +188,7 @@ export async function runAnthropicCeoTurn(
   }
 
   return {
-    text: composeCeoText(text, leadResults),
+    text: composeCeoText(text, leadResults, tasks),
     provider: 'anthropic',
     approval,
     actions,

@@ -10,10 +10,28 @@ export interface ProposeApprovalArgs {
 
 export type CeoLeadSendStatus = 'delivered' | 'queued' | 'failed' | 'unknown';
 
+export interface CreateTaskArgs {
+  agentId: string;
+  instruction: string;
+  title: string;
+  requiresApproval: boolean;
+  risk: 'low' | 'medium' | 'high';
+  kind?: ProposeApprovalArgs['kind'];
+}
+
 export type CeoClientAction =
   | { name: 'navigate'; project?: string; agent?: string; mode?: ModeName }
   | { name: 'open_panel'; kind: ContextPanel }
   | { name: 'propose_approval'; args: ProposeApprovalArgs }
+  | {
+      name: 'create_task';
+      taskId: string;
+      agentId: string;
+      projectSlug: string;
+      demo: boolean;
+      requiresApproval: boolean;
+      approval?: ProposeApprovalArgs & { id: string; taskId: string };
+    }
   | {
       name: 'message_lead';
       projectSlug?: string;

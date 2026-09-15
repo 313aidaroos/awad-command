@@ -26,6 +26,7 @@ export function CeoConsole() {
   const [turns, setTurns] = useState<ChatTurn[]>([]);
   const [busy, setBusy] = useState(false);
   const [hud, setHud] = useState<string | null>(null);
+  const ceoReports = useCommandStore((s) => s.ceoReports);
   const voice = useVoice();
   const { speak, prime, start, stop, clearHint } = voice;
   const turnsRef = useRef(turns);
@@ -48,6 +49,17 @@ export function CeoConsole() {
   useEffect(() => {
     if (open) inputRef.current?.focus();
   }, [open]);
+
+  useEffect(() => {
+    if (ceoReports.length === 0) return;
+    setTurns((prev) => {
+      const seen = new Set(prev.filter((turn) => turn.role === 'ceo').map((turn) => turn.text));
+      const incoming = ceoReports.filter((report) => !seen.has(report.text));
+      if (incoming.length === 0) return prev;
+      return [...prev, ...incoming.map((report) => ({ role: 'ceo' as const, text: report.text }))];
+    });
+    setOpen(true);
+  }, [ceoReports]);
 
   const clearVoiceHint = clearHint;
   useEffect(() => {

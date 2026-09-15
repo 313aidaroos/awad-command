@@ -12,6 +12,8 @@ export interface Approval {
   createdAt: number;
   resolvedAt?: number;
   resolvedBy?: string;
+  taskId?: string;
+  persisted?: boolean;
 }
 
 export type LeadMessageDirection = 'outbound' | 'inbound';

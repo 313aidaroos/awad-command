@@ -59,6 +59,36 @@ describe('applyCeoClientActions', () => {
     expect(state.leadMessages).toHaveLength(0);
   });
 
+  it('opens a persisted approval card for create_task and tracks the task id', () => {
+    const notes = applyCeoClientActions(
+      [
+        {
+          name: 'create_task',
+          taskId: 'task-1',
+          agentId: 'contraxis.analytics-agent',
+          projectSlug: 'contraxis',
+          demo: false,
+          requiresApproval: true,
+          approval: {
+            id: 'apr-live',
+            taskId: 'task-1',
+            title: 'Summarise leads',
+            description: 'Read only',
+            kind: 'other',
+            risk: 'low',
+          },
+        },
+      ],
+      useCommandStore,
+    );
+    const state = useCommandStore.getState();
+    expect(state.approvals[0]?.id).toBe('apr-live');
+    expect(state.approvals[0]?.taskId).toBe('task-1');
+    expect(state.trackedTaskIds).toContain('task-1');
+    expect(state.contextPanel).toBe('approval');
+    expect(notes.join(' ')).toMatch(/waiting approval/);
+  });
+
   it('does not fly or queue a success on an unknown lead', () => {
     applyCeoClientActions(
       [{ name: 'message_lead', status: 'unknown', error: 'Unknown lead (ghost). No message was sent.' }],

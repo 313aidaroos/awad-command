@@ -40,6 +40,8 @@ export const useCommandStore = create<CommandState & CommandActions>((set, get) 
   briefingSeen: false,
   approvals: [],
   leadMessages: [],
+  ceoReports: [],
+  trackedTaskIds: [],
   voiceMuted: false,
   quality: { level: 'low', auto: true },
 
@@ -196,12 +198,12 @@ export const useCommandStore = create<CommandState & CommandActions>((set, get) 
   requestApproval: (approval) => {
     const record: Approval = {
       ...approval,
-      id: uid('apr'),
+      id: approval.id ?? uid('apr'),
       status: 'pending',
       createdAt: Date.now(),
     };
     set((state) => ({
-      approvals: [record, ...state.approvals],
+      approvals: [record, ...state.approvals.filter((item) => item.id !== record.id)],
       contextPanel: 'approval',
     }));
     return record.id;
@@ -214,6 +216,16 @@ export const useCommandStore = create<CommandState & CommandActions>((set, get) 
           : item,
       ),
     })),
+  trackCeoTask: (taskId) =>
+    set((state) =>
+      state.trackedTaskIds.includes(taskId) ? state : { trackedTaskIds: [...state.trackedTaskIds, taskId] },
+    ),
+  pushCeoReport: (taskId, text) =>
+    set((state) => {
+      if (state.ceoReports.some((item) => item.id === taskId)) return state;
+      const prefixed = text.startsWith('Report:') ? text : `Report: ${text}`;
+      return { ceoReports: [...state.ceoReports, { id: taskId, text: prefixed, ts: Date.now() }] };
+    }),
   queueLeadMessage: (message) =>
     set((state) => ({ leadMessages: [message, ...state.leadMessages].slice(0, 80) })),
   mergeLeadMessages: (messages) =>

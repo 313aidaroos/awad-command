@@ -8,8 +8,8 @@
     "build": "next build",
     "start": "next start --port 43180",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "typecheck": "tsc --noEmit && pnpm --dir worker typecheck",
+    "test": "vitest run && pnpm --dir worker test"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.62.0",
