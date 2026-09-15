@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { toAnthropicToolName } from '../anthropicToolNames.js';
 import type { WorkerDb } from '../db.js';
 import type { ApprovalRow, TaskRow, ToolRisk } from '../types.js';
 import { describeSensitiveHit, Phase1RecordOnlyError, SensitiveActionPause } from './computer/safety.js';
@@ -114,7 +115,7 @@ export function createToolRegistry(extras: WorkerTool[] = []): {
     },
     anthropicTools: () =>
       tools.map((tool) => ({
-        name: tool.name,
+        name: toAnthropicToolName(tool.name),
         description: tool.description,
         input_schema: tool.jsonSchema as { type: 'object'; properties?: Record<string, unknown> },
       })),

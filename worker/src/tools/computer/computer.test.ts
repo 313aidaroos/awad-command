@@ -64,6 +64,12 @@ describe('computer tools', () => {
     const registry = createToolRegistry(computerTools(createFakeRuntime(dir)));
     expect(registry.get('computer.screenshot')?.risk).toBe('read');
     expect(registry.get('computer.navigate')?.risk).toBe('write');
+    expect(registry.anthropicTools().map((tool) => tool.name)).toEqual([
+      'supabase_query',
+      'http_fetch',
+      'computer_screenshot',
+      'computer_navigate',
+    ]);
   });
 
   it('takes a screenshot without approval', async () => {

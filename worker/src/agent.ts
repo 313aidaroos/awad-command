@@ -1,3 +1,4 @@
+import { fromAnthropicToolName } from './anthropicToolNames.js';
 import type { WorkerDb } from './db.js';
 import { log, logError } from './log.js';
 import { costUsd } from './pricing.js';
@@ -155,24 +156,26 @@ export async function runTask(task: TaskRow, deps: AgentDeps): Promise<void> {
 
       messages.push({ role: 'assistant', content: completion.content });
       const toolResults: Array<{ type: 'tool_result'; tool_use_id: string; content: string }> = [];
+      const registryNames = registry.list().map((tool) => tool.name);
       for (const call of toolUses) {
         await throwIfHalted(deps.db, deps.workerId);
+        const toolName = fromAnthropicToolName(call.name, registryNames);
         const input = call.input && typeof call.input === 'object' ? call.input : {};
         let payload: unknown;
         try {
-          payload = await registry.execute(call.name, input, ctx);
+          payload = await registry.execute(toolName, input, ctx);
         } catch (err) {
           if (err instanceof HaltError) throw err;
           if (err instanceof SensitiveActionPause) {
             const approvalRow = await deps.db.insertApproval({
-              title: `Computer pause: ${call.name}`,
+              title: `Computer pause: ${toolName}`,
               description: err.message,
               kind: 'other',
               risk: 'high',
               project_slug: projectSlug,
               payload: {
                 task_id: task.id,
-                tool: call.name,
+                tool: toolName,
                 screenshot_url: err.screenshotUrl ?? ctx.lastScreenshotUrl ?? null,
                 phase1_record_only: true,
               },
@@ -194,7 +197,7 @@ export async function runTask(task: TaskRow, deps: AgentDeps): Promise<void> {
                 screenshot_url: err.screenshotUrl ?? ctx.lastScreenshotUrl,
               },
             });
-            log('task.paused', { taskId: task.id, tool: call.name });
+            log('task.paused', { taskId: task.id, tool: toolName });
             return;
           }
           payload = {
@@ -206,8 +209,8 @@ export async function runTask(task: TaskRow, deps: AgentDeps): Promise<void> {
             ? String((payload as { screenshot_url?: string | null }).screenshot_url ?? '')
             : '';
         if (shot) ctx.lastScreenshotUrl = shot;
-        const summary = `${call.name}: ${JSON.stringify(payload).slice(0, 140)}`;
-        steps.push({ name: call.name, summary });
+        const summary = `${toolName}: ${JSON.stringify(payload).slice(0, 140)}`;
+        steps.push({ name: toolName, summary });
         await deps.db.insertEvent({
           type: 'agent.step',
           project_slug: projectSlug,
@@ -216,7 +219,7 @@ export async function runTask(task: TaskRow, deps: AgentDeps): Promise<void> {
           payload: {
             task_id: task.id,
             step,
-            tool: call.name,
+            tool: toolName,
             screenshot_url: ctx.lastScreenshotUrl,
           },
         });

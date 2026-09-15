@@ -61,6 +61,8 @@ Computer / Xvfb setup: [docs/COMPUTER_SETUP.md](../docs/COMPUTER_SETUP.md). Imag
 
 `money` / `destructive` tools refuse to run in Phase 1 (Approve is record-only). `write` tools run only for a human-created task or an approved plan. Computer tools are registered only when `WORKER_CAPABILITIES` includes `computer`.
 
+Anthropic Messages rejects `.` in tool names. The worker maps `computer.screenshot` → `computer_screenshot` (and the same for other dotted registry names) only when talking to Anthropic. Events, logs, and the registry keep the dotted names.
+
 ## Halt / SIGTERM
 
 `SIGTERM` / `SIGINT` release the in-flight task back to `queued` so another worker can claim it after the lease logic. A `system_status` row `worker:<WORKER_ID>` is upserted every 30s with `status=online`. If that row is `halt`, the worker stops claiming and cancels the in-flight task. Heartbeat will not overwrite `halt` back to `online`.
