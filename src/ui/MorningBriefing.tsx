@@ -1,5 +1,6 @@
 'use client';
 
+import { HUD_COPY } from '@/lib/branding';
 import { money } from '@/lib/format';
 import { Glass } from '@/ui/Glass';
 import { Metric } from '@/ui/Metric';
@@ -49,7 +50,7 @@ export function MorningBriefing() {
         </div>
       </div>
       <p className="mt-4 text-xs text-[var(--muted)] leading-relaxed">
-        CEO recommendation: Contraxis is the highest-activity orb. Lead volume is up in the demo stream — inspect
+        {HUD_COPY.briefingLead}: Contraxis is the highest-activity orb. Lead volume is up in the demo stream — inspect
         conversion before any spend. Approve still records only.
       </p>
       <div className="mt-4 flex gap-2">

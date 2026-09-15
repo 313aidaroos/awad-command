@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { applyCeoClientActions } from '@/ceo/applyClientActions';
 import { parseIntents } from '@/ceo/intents';
 import type { CeoClientAction } from '@/ceo/tools.types';
+import { HUD_COPY } from '@/lib/branding';
 import { CEO_OPEN_EVENT } from '@/lib/ceoBridge';
 import { useVoice } from '@/lib/voice';
 import { Glass } from '@/ui/Glass';
@@ -132,7 +133,7 @@ export function CeoConsole() {
           actions?: CeoClientAction[];
         };
         const actionNotes = applyCeoClientActions(body.actions ?? [], store);
-        const reply = (body.text ?? '').trim() || body.error || 'CEO did not return a reply.';
+        const reply = (body.text ?? '').trim() || body.error || HUD_COPY.noReply;
         if (body.approval && !(body.actions ?? []).some((action) => action.name === 'propose_approval')) {
           snapshot.requestApproval(body.approval);
         }
@@ -140,7 +141,7 @@ export function CeoConsole() {
         setTurns((prev) => [...prev, { role: 'ceo', text: reply, note: combinedNote }]);
         if (!voiceMutedRef.current && reply) speak(reply);
       } catch {
-        const fallback = 'CEO is unreachable. Try again in a moment.';
+        const fallback = HUD_COPY.unreachable;
         setTurns((prev) => [...prev, { role: 'ceo', text: fallback }]);
         setHud(fallback);
       } finally {
@@ -173,9 +174,10 @@ export function CeoConsole() {
         type="button"
         onClick={() => setOpen(true)}
         className="pointer-events-auto fixed bottom-4 right-4 z-30 flex items-center gap-2 rounded-full border border-[var(--line)] bg-[rgba(23,26,31,0.45)] px-3 py-1.5 text-[11px] tracking-[0.16em] text-[var(--muted)]"
+        aria-label={HUD_COPY.askAriaLabel}
       >
         <span className="dot" style={{ marginRight: 0 }} />
-        CEO
+        {HUD_COPY.collapsedLabel}
       </button>
     );
   }
@@ -184,19 +186,27 @@ export function CeoConsole() {
     <div className="pointer-events-auto fixed bottom-4 right-4 z-30 w-[min(360px,calc(100%-32px))]">
       <Glass className="mb-2 max-h-[46vh] overflow-auto p-3">
         <div className="mb-2 flex items-center justify-between text-[10px] tracking-[0.14em] text-[var(--muted)]">
-          <span>AWAD CEO {dataMode === 'demo' ? <span className="tag">DEMO</span> : null}</span>
+          <span className="flex min-w-0 flex-col gap-0.5">
+            <span>
+              {HUD_COPY.consoleTitle} {dataMode === 'demo' ? <span className="tag">DEMO</span> : null}
+            </span>
+            <span className="text-[8px] tracking-[0.12em] text-[rgba(138,144,154,0.85)]">{HUD_COPY.poweredBy}</span>
+          </span>
           <button type="button" onClick={() => setOpen(false)}>
             Close
           </button>
         </div>
         <div className="space-y-2 text-[13px]">
+          {turns.length === 0 && !busy ? (
+            <div className="text-[var(--muted)]">{HUD_COPY.emptyState}</div>
+          ) : null}
           {turns.map((turn, i) => (
             <div key={i} className={turn.role === 'user' ? 'text-[var(--muted)]' : 'text-[var(--text)]'}>
               {turn.text}
               {turn.note ? <div className="mt-1 text-[10px] text-[var(--accent)]">{turn.note}</div> : null}
             </div>
           ))}
-          {busy ? <div className="text-[var(--muted)]">Thinking…</div> : null}
+          {busy ? <div className="text-[var(--muted)]">{HUD_COPY.thinking}</div> : null}
         </div>
       </Glass>
       {banner ? (
@@ -222,11 +232,11 @@ export function CeoConsole() {
           onKeyDown={(e) => {
             if (e.key === 'Enter') void ask(input);
           }}
-          placeholder={voice.listening ? 'Listening…' : 'Ask AWAD CEO…'}
+          placeholder={voice.listening ? 'Listening…' : HUD_COPY.askPlaceholder}
           className={`w-full bg-transparent text-[var(--text)] outline-none placeholder:text-[var(--muted)] ${
             voice.listening ? 'italic text-[var(--accent)]' : ''
           }`}
-          aria-label="Ask AWAD CEO"
+          aria-label={HUD_COPY.askAriaLabel}
         />
         <button
           type="button"

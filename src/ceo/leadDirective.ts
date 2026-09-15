@@ -1,3 +1,5 @@
+import { leadAskedByAssistant } from '@/lib/branding';
+
 /** Parse a spoken/typed “tell this Lead to …” request. “Tell me …” is not a lead send. */
 export function parseLeadDirective(text: string): { target: string; message: string } | null {
   const q = text.trim();
@@ -26,5 +28,5 @@ export function parseLeadDirective(text: string): { target: string; message: str
 }
 
 export function composeLeadOutboundMessage(userMessage: string): string {
-  return `Awad asked AWAD CEO to tell you: ${userMessage}`;
+  return leadAskedByAssistant(userMessage);
 }

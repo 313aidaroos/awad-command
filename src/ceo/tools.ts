@@ -1,4 +1,5 @@
 import type { Tool } from '@anthropic-ai/sdk/resources/messages/messages';
+import { assistantSystemIdentity } from '@/lib/branding';
 import { getProject } from '@/projects/registry';
 import { formatLeadSendStatus, sendLeadMessage, type LeadOutboundDeps, type SendLeadMessageResult } from '@/lib/leadOutbound';
 import type { CeoClientAction, CreateTaskArgs, ProposeApprovalArgs } from '@/ceo/tools.types';
@@ -12,7 +13,7 @@ const MODES: ModeName[] = ['default', 'economy', 'workforce', 'analytics'];
 const APPROVAL_KINDS = ['deploy', 'campaign', 'financial', 'other'] as const;
 const RISKS = ['low', 'medium', 'high'] as const;
 
-export const CEO_SYSTEM_PROMPT = `You are AWAD CEO, the executive AI over Awad's businesses. Answer from the snapshot only; if the snapshot is demo data, say so briefly once and never present figures as real. Be concise, numeric, decisive.
+export const CEO_SYSTEM_PROMPT = `${assistantSystemIdentity()} Answer from the snapshot only; if the snapshot is demo data, say so briefly once and never present figures as real. Be concise, numeric, decisive.
 
 Tools:
 - message_lead — send a real message to a product Lead through the same hub pipe as Message lead. Use when Awad asks you to tell, ask, ping, or message a Lead. Pass projectSlug (orb slug or lead name) or agentId, plus the message text.
