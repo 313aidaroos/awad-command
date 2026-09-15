@@ -30,6 +30,9 @@ export interface WorkerEnv {
   leaseMs: number;
   heartbeatMs: number;
   maxSteps: number;
+  workerCapabilities: string;
+  dataDir: string;
+  computerHeadless: boolean;
 }
 
 export function loadWorkerEnv(source: NodeJS.ProcessEnv = process.env): WorkerEnv {
@@ -47,6 +50,9 @@ export function loadWorkerEnv(source: NodeJS.ProcessEnv = process.env): WorkerEn
       leaseMs: Number(read('WORKER_LEASE_MS') || 600_000),
       heartbeatMs: Number(read('WORKER_HEARTBEAT_MS') || 30_000),
       maxSteps: Number(read('WORKER_MAX_STEPS') || 25),
+      workerCapabilities: read('WORKER_CAPABILITIES'),
+      dataDir: read('WORKER_DATA_DIR') || '/data',
+      computerHeadless: read('WORKER_COMPUTER_HEADED') !== '1',
     };
   } finally {
     process.env = prev;

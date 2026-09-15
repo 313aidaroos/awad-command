@@ -266,6 +266,7 @@ describe('runCeoTurn Anthropic tool_use', () => {
             requiresApproval: false,
             risk: 'low',
             kind: 'other',
+            capabilities: [],
           };
         },
       },

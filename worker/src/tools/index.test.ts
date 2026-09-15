@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import type { TaskRow } from '../types.js';
+import { Phase1RecordOnlyError } from './computer/safety.js';
 import { assertToolAllowed, createToolRegistry, ToolGuardError, type ToolContext, type WorkerTool } from './index.js';
 
 function task(patch: Partial<TaskRow> = {}): TaskRow {
@@ -53,20 +54,14 @@ describe('tool guard', () => {
     expect(() => assertToolAllowed(read, ctx())).not.toThrow();
   });
 
-  it('refuses money/destructive without an approved approval', () => {
-    expect(() => assertToolAllowed(refund, ctx())).toThrow(ToolGuardError);
-    expect(() =>
-      assertToolAllowed(refund, ctx({ task: task({ approval_id: 'apr' }), approval: { id: 'apr', status: 'pending' } })),
-    ).toThrow(/approved/);
-  });
-
-  it('allows money tools when the linked approval is approved', () => {
+  it('refuses money/destructive even when an approval is approved (Phase 1 record-only)', () => {
+    expect(() => assertToolAllowed(refund, ctx())).toThrow(Phase1RecordOnlyError);
     expect(() =>
       assertToolAllowed(
         refund,
         ctx({ task: task({ approval_id: 'apr' }), approval: { id: 'apr', status: 'approved' } }),
       ),
-    ).not.toThrow();
+    ).toThrow(/record-only/);
   });
 
   it('allows write tools for human tasks or approved plans only', () => {

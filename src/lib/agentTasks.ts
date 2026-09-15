@@ -1,4 +1,5 @@
 import { projects } from '@/projects/registry';
+import { inferComputerCapabilities } from '@/lib/computerScreen';
 import { createServiceSupabase } from '@/lib/supabase/service';
 import type { Approval, ApprovalKind, ApprovalRisk } from '@/types/approval';
 import type { AgentDefinition } from '@/types/agent';
@@ -13,6 +14,7 @@ export interface CreateTaskInput {
   requiresApproval: boolean;
   risk: TaskRisk;
   kind?: ApprovalKind;
+  capabilities?: string[];
 }
 
 export interface CreatedTask {
@@ -28,6 +30,7 @@ export interface CreatedTask {
   requiresApproval: boolean;
   risk: TaskRisk;
   kind: ApprovalKind;
+  capabilities: string[];
   error?: string;
   approval?: ProposeApprovalArgs & { id: string; taskId: string };
 }
@@ -76,9 +79,13 @@ export function formatTaskCreateStatus(result: CreatedTask): string {
       ? `Task “${result.title}” is waiting for approval (DEMO). The worker will not run until SERVICE_ROLE and the worker process are connected.`
       : `Task “${result.title}” queued locally (DEMO). No worker is connected.`;
   }
+  const computer =
+    result.capabilities.includes('computer')
+      ? ' It needs a computer worker (WORKER_CAPABILITIES=computer).'
+      : '';
   return result.requiresApproval
-    ? `Task “${result.title}” is waiting for your approval. I'll report when it completes.`
-    : `Queued “${result.title}” for ${result.agentId}. I'll report when it completes.`;
+    ? `Task “${result.title}” is waiting for your approval. I'll report when it completes.${computer}`
+    : `Queued “${result.title}” for ${result.agentId}. I'll report when it completes.${computer}`;
 }
 
 export interface AgentTaskStore {
@@ -199,6 +206,7 @@ export async function persistCeoTask(
       requiresApproval: input.requiresApproval,
       risk: input.risk,
       kind: input.kind ?? 'other',
+      capabilities: input.capabilities ?? inferComputerCapabilities(input.instruction),
       error: `Unknown agent ${input.agentId}. Nothing was queued.`,
     };
   }
@@ -207,7 +215,9 @@ export async function persistCeoTask(
     input.kind === 'deploy' || input.kind === 'campaign' || input.kind === 'financial' || input.kind === 'other'
       ? input.kind
       : inferApprovalKind(input.instruction);
-  const requiresApproval = input.requiresApproval || input.risk === 'high' || kind === 'financial';
+  const capabilities = input.capabilities ?? inferComputerCapabilities(input.instruction);
+  const requiresApproval =
+    input.requiresApproval || input.risk === 'high' || kind === 'financial' || capabilities.includes('computer');
   const title = input.title.trim() || input.instruction.slice(0, 80);
   const supabase = deps.supabase === undefined ? wrapServiceClient(createServiceSupabase()) : deps.supabase;
   const id = deps.id ?? localId;
@@ -228,6 +238,7 @@ export async function persistCeoTask(
       requiresApproval,
       risk: input.risk,
       kind,
+      capabilities,
       approval: requiresApproval
         ? {
             id: approvalId!,
@@ -255,6 +266,7 @@ export async function persistCeoTask(
       requiresApproval,
       risk: input.risk,
       kind,
+      capabilities,
       error: `Could not seed agent rows: ${seeded.error}`,
     };
   }
@@ -285,6 +297,7 @@ export async function persistCeoTask(
         requiresApproval,
         risk: input.risk,
         kind,
+        capabilities,
         error: inserted.error?.message ?? 'Approval insert returned no id',
       };
     }
@@ -301,6 +314,7 @@ export async function persistCeoTask(
     approval_id: approvalId ?? null,
     budget_usd: 0.5,
     spent_usd: 0,
+    capabilities,
   });
   if (taskInsert.error || !taskInsert.data?.id) {
     return {
@@ -315,6 +329,7 @@ export async function persistCeoTask(
       requiresApproval,
       risk: input.risk,
       kind,
+      capabilities,
       error: taskInsert.error?.message ?? 'Task insert returned no id',
     };
   }
@@ -333,6 +348,7 @@ export async function persistCeoTask(
     requiresApproval,
     risk: input.risk,
     kind,
+    capabilities,
     approval: requiresApproval && approvalId
       ? {
           id: approvalId,

@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { Command } from 'cmdk';
+import { haltComputerAction } from '@/app/computer/actions';
 import { requestCeoOpen } from '@/lib/ceoBridge';
 import { projects } from '@/projects/registry';
 import { useCommandStore } from '@/store/useCommandStore';
@@ -104,6 +105,16 @@ export function CommandPalette() {
             </Command.Item>
             <Command.Item className="cursor-pointer rounded-md px-2 py-1.5" onSelect={() => { openPanel('computer'); toggle(false); }}>
               Computer
+            </Command.Item>
+            <Command.Item
+              className="cursor-pointer rounded-md px-2 py-1.5"
+              onSelect={() => {
+                void haltComputerAction('*');
+                openPanel('computer');
+                toggle(false);
+              }}
+            >
+              Halt agents
             </Command.Item>
             <Command.Item className="cursor-pointer rounded-md px-2 py-1.5" onSelect={() => { openPanel('briefing'); toggle(false); }}>
               Briefing

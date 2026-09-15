@@ -53,6 +53,10 @@ function memoryDb() {
     }),
     getProject: async () => ({ slug: 'contraxis', name: 'CONTRAXIS', status: 'operational' }),
     queryView: async () => [{ project_slug: 'contraxis', value: 3 }],
+    getWorkerStatus: async () => null,
+    insertApproval: async () => ({ id: 'apr', status: 'pending' }),
+    recordScreen: async () => ({ screenshot_url: null, storage_path: 'x.png' }),
+    uploadScreenshot: async (path) => ({ path }),
   };
   return { db, events, patches };
 }
@@ -69,6 +73,21 @@ describe('runTask', () => {
     expect(prompt).toMatch(/Analytics Agent/);
     expect(prompt).toMatch(/never spend/i);
     expect(prompt).toMatch(/CONTRAXIS/);
+    expect(prompt).toMatch(/personal logins/i);
+  });
+
+  it('cancels the task when the worker is halted', async () => {
+    const { db, patches } = memoryDb();
+    db.getWorkerStatus = async () => ({ status: 'halt', detail: { halted: true } });
+    const client: AnthropicLike = {
+      messages: {
+        create: async () => {
+          throw new Error('should not be called');
+        },
+      },
+    };
+    await runTask(task(), { db, client, model: 'claude-sonnet-5', maxSteps: 2, workerId: 'w1' });
+    expect(patches.some((p) => p.patch.status === 'cancelled' && p.patch.error === 'halted')).toBe(true);
   });
 
   it('writes started/step/completed events and a report', async () => {

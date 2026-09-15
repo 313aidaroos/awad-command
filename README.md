@@ -127,6 +127,17 @@ Always-on process in `worker/`. Deploy on Railway with root directory `worker`. 
 
 Details: [worker/README.md](worker/README.md). Apply `0002_tasks.sql` on the shared Contraxis project before the worker can claim rows.
 
+## Computer (Part D, first slice)
+
+The Computer panel is honest: **coming online** until a worker heartbeats with `WORKER_CAPABILITIES=computer` and posts a screenshot. It never invents a frame. Optional `NEXT_PUBLIC_COMPUTER_STUB_SCREEN_URL` is labeled stub.
+
+- Migration: `supabase/migrations/0003_computer.sql` (`capabilities` on `agent_tasks`, `awad_command.agent_screens`, claim RPC, `agent-screens` bucket note).
+- Worker tools: `computer.screenshot` (read), `computer.navigate` (write).
+- Local / Railway: [docs/COMPUTER_SETUP.md](docs/COMPUTER_SETUP.md). Image: `worker/Dockerfile.computer` (Chromium + Xvfb).
+- Safety: agent accounts only; purchase / publish / delete / send-to-customer pause for Approve; Phase 1 Approve is record-only for money / destructive.
+
+Still needed for a live screen: a VM or Railway service with `WORKER_CAPABILITIES=computer` talking to this hub. The 3D universe is unchanged aside from a Contraxis Screen node that opens the same panel.
+
 ## Vercel
 
 1. Import this repo.

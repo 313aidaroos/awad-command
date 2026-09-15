@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { WorkerDb } from '../db.js';
 import type { ApprovalRow, TaskRow, ToolRisk } from '../types.js';
+import { describeSensitiveHit, Phase1RecordOnlyError, SensitiveActionPause } from './computer/safety.js';
 import { httpFetchInput, runHttpFetch } from './httpFetch.js';
 import { runSupabaseQuery, supabaseQueryInput } from './supabaseQuery.js';
 
@@ -8,6 +9,8 @@ export interface ToolContext {
   task: TaskRow;
   approval: ApprovalRow | null;
   db: WorkerDb;
+  projectSlug?: string | null;
+  lastScreenshotUrl?: string;
 }
 
 export interface WorkerTool<T = unknown> {
@@ -27,21 +30,36 @@ export class ToolGuardError extends Error {
 }
 
 export function assertToolAllowed(tool: WorkerTool, ctx: ToolContext): void {
-  if (tool.risk === 'read') return;
-  const approved = ctx.approval?.status === 'approved';
   if (tool.risk === 'money' || tool.risk === 'destructive') {
-    if (!ctx.task.approval_id || !approved) {
-      throw new ToolGuardError(
-        `${tool.name} is ${tool.risk} and refuses to run without an approved approval row`,
-      );
-    }
-    return;
+    throw new Phase1RecordOnlyError(tool.name, tool.risk);
   }
+  if (tool.risk === 'read') return;
   if (tool.risk === 'write') {
+    const approved = ctx.approval?.status === 'approved';
     const human = ctx.task.source === 'human';
     if (!human && !approved) {
       throw new ToolGuardError(`${tool.name} is write and needs a human task or an approved plan`);
     }
+  }
+}
+
+function rawFromInput(input: unknown): string {
+  if (!input || typeof input !== 'object') return String(input ?? '');
+  return Object.values(input as Record<string, unknown>)
+    .filter((value) => typeof value === 'string')
+    .join(' ');
+}
+
+/** Middleware: pause purchase / publish / delete / send-to-customer before the tool runs. Read tools skip. */
+export function assertNotSensitive(tool: WorkerTool, input: unknown, ctx: ToolContext): void {
+  if (tool.risk === 'read') return;
+  const hit = describeSensitiveHit({
+    name: tool.name,
+    description: tool.description,
+    raw: rawFromInput(input),
+  });
+  if (hit) {
+    throw new SensitiveActionPause(hit, tool.name, ctx.lastScreenshotUrl);
   }
 }
 
@@ -91,6 +109,7 @@ export function createToolRegistry(extras: WorkerTool[] = []): {
       const tool = byName.get(name);
       if (!tool) throw new Error(`Unknown tool ${name}`);
       assertToolAllowed(tool, ctx);
+      assertNotSensitive(tool, input, ctx);
       const parsed = tool.schema.parse(input);
       return tool.run(parsed, ctx);
     },
