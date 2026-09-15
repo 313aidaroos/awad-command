@@ -1,4 +1,4 @@
-FROM node:20-bookworm
+FROM node:22-bookworm
 WORKDIR /app
 
 RUN apt-get update \
@@ -20,7 +20,7 @@ ENV WORKER_CAPABILITIES=computer
 ENV WORKER_DATA_DIR=/data
 ENV DISPLAY=:99
 
-VOLUME ["/data"]
-
+# Railway rejects VOLUME in Dockerfiles; mount /data on the service instead.
+# Drop a stale Xvfb lock so container restarts do not fail on display :99.
 # Xvfb gives Chromium a display. noVNC / a live stream is not in this slice.
-CMD ["sh", "-c", "Xvfb :99 -screen 0 1280x720x24 -ac +extension GLX +render -noreset & exec node dist/index.js"]
+CMD ["sh", "-c", "rm -f /tmp/.X99-lock /tmp/.X11-unix/X99; Xvfb :99 -screen 0 1280x720x24 -ac +extension GLX +render -noreset & exec node dist/index.js"]
