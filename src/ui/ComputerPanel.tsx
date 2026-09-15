@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { haltComputerAction } from '@/app/computer/actions';
 import {
   latestScreenshotFromEvents,
   resolveComputerPanelView,
@@ -63,20 +62,29 @@ export function ComputerPanel() {
   });
 
   async function halt() {
-    const result = await haltComputerAction('*');
-    if (!result.ok) {
-      setHaltState(result.error ?? 'Could not halt');
-      return;
+    try {
+      const res = await fetch('/api/computer/halt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workerId: '*' }),
+      });
+      const result = (await res.json()) as { ok?: boolean; demo?: boolean; error?: string };
+      if (!result.ok) {
+        setHaltState(result.error ?? 'Could not halt');
+        return;
+      }
+      setHaltState(
+        result.demo
+          ? 'Halt recorded locally (DEMO). No worker is connected.'
+          : 'Halt written. The computer worker will stop within a few seconds.',
+      );
+    } catch (err) {
+      setHaltState(err instanceof Error ? err.message : 'Could not halt');
     }
-    setHaltState(
-      result.demo
-        ? 'Halt recorded locally (DEMO). No worker is connected.'
-        : 'Halt written. The computer worker will stop within a few seconds.',
-    );
   }
 
   return (
-    <Glass className="fixed left-1/2 top-24 z-30 w-[min(420px,calc(100%-32px))] -translate-x-1/2 p-4">
+    <Glass className="fixed left-1/2 top-24 z-40 w-[min(420px,calc(100%-32px))] -translate-x-1/2 p-4">
       <div className="mb-2 flex items-center justify-between">
         <h3 className="text-sm font-light tracking-[0.2em]">Computer</h3>
         <button type="button" onClick={closePanel} className="text-[11px] text-[var(--muted)]" aria-label="Close computer">
