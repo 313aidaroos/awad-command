@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
+import { ANTHROPIC_TOOL_NAME } from '../anthropicToolNames.js';
 import type { TaskRow } from '../types.js';
 import { Phase1RecordOnlyError } from './computer/safety.js';
 import { assertToolAllowed, createToolRegistry, ToolGuardError, type ToolContext, type WorkerTool } from './index.js';
@@ -79,5 +80,16 @@ describe('tool guard', () => {
   it('registers the first two read tools', () => {
     const names = createToolRegistry().list().map((tool) => tool.name);
     expect(names).toEqual(['supabase.query', 'http.fetch']);
+  });
+
+  it('sends legal Anthropic names while keeping dotted registry names', () => {
+    const registry = createToolRegistry();
+    expect(registry.list().map((tool) => tool.name)).toEqual(['supabase.query', 'http.fetch']);
+    const wired = registry.anthropicTools();
+    expect(wired.map((tool) => tool.name)).toEqual(['supabase_query', 'http_fetch']);
+    for (const tool of wired) {
+      expect(tool.name).toMatch(ANTHROPIC_TOOL_NAME);
+      expect(tool.name).not.toContain('.');
+    }
   });
 });

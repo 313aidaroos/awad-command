@@ -1,6 +1,12 @@
+import { mkdtemp } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { ANTHROPIC_TOOL_NAME } from './anthropicToolNames.js';
 import { buildAgentSystemPrompt, runTask, type AnthropicLike } from './agent.js';
 import type { WorkerDb } from './db.js';
+import { computerTools, createFakeRuntime } from './tools/computer/index.js';
+import { createToolRegistry } from './tools/index.js';
 import type { TaskRow } from './types.js';
 
 function task(patch: Partial<TaskRow> = {}): TaskRow {
@@ -93,9 +99,11 @@ describe('runTask', () => {
   it('writes started/step/completed events and a report', async () => {
     const { db, events, patches } = memoryDb();
     let round = 0;
+    const sentNames: string[] = [];
     const client: AnthropicLike = {
       messages: {
-        create: async () => {
+        create: async (args) => {
+          sentNames.push(...args.tools.map((tool) => tool.name));
           round += 1;
           if (round === 1) {
             return {
@@ -105,7 +113,7 @@ describe('runTask', () => {
                 {
                   type: 'tool_use',
                   id: 'tu1',
-                  name: 'supabase.query',
+                  name: 'supabase_query',
                   input: { view: 'v_leads', projectSlug: 'contraxis' },
                 },
               ],
@@ -122,14 +130,52 @@ describe('runTask', () => {
 
     await runTask(task(), { db, client, model: 'claude-sonnet-5', maxSteps: 5 });
 
+    expect(sentNames.every((name) => ANTHROPIC_TOOL_NAME.test(name) && !name.includes('.'))).toBe(true);
+    expect(sentNames).toContain('supabase_query');
     expect(events.map((e) => (e as { type: string }).type)).toEqual([
       'agent.task.started',
       'agent.step',
       'agent.step',
       'agent.task.completed',
     ]);
+    const step = events.find(
+      (e) => (e as { type: string; payload?: { tool?: string } }).type === 'agent.step' && (e as { payload?: { tool?: string } }).payload?.tool,
+    ) as { payload?: { tool?: string }; summary?: string };
+    expect(step.payload?.tool).toBe('supabase.query');
+    expect(step.summary).toMatch(/^supabase\.query:/);
     const done = patches.find((p) => p.patch.status === 'done');
     expect(done?.patch.report).toMatch(/3 leads/);
+    expect((done?.patch.result as { steps?: Array<{ name: string }> } | undefined)?.steps?.[0]?.name).toBe(
+      'supabase.query',
+    );
+  });
+
+  it('calls computer_screenshot via Anthropic then logs computer.screenshot', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'awad-comp-'));
+    const { db, events } = memoryDb();
+    const registry = createToolRegistry(computerTools(createFakeRuntime(dir)));
+    const sent: string[] = [];
+    const client: AnthropicLike = {
+      messages: {
+        create: async (args) => {
+          sent.push(...args.tools.map((tool) => tool.name));
+          return {
+            stop_reason: 'tool_use',
+            usage: { input_tokens: 4, output_tokens: 4 },
+            content: [{ type: 'tool_use', id: 'tu1', name: 'computer_screenshot', input: {} }],
+          };
+        },
+      },
+    };
+
+    await runTask(task(), { db, client, model: 'claude-sonnet-5', maxSteps: 1, registry });
+
+    expect(sent).toContain('computer_screenshot');
+    expect(sent).not.toContain('computer.screenshot');
+    const step = events.find(
+      (e) => (e as { payload?: { tool?: string } }).payload?.tool === 'computer.screenshot',
+    );
+    expect(step).toBeTruthy();
   });
 
   it('marks the task failed when budget is already spent', async () => {
