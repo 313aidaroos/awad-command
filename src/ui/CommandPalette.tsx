@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { Command } from 'cmdk';
+import { HUD_COPY, PRODUCT_NAME } from '@/lib/branding';
 import { requestCeoOpen } from '@/lib/ceoBridge';
 import { projects } from '@/projects/registry';
 import { useCommandStore } from '@/store/useCommandStore';
@@ -36,15 +37,15 @@ export function CommandPalette() {
     <div className="fixed inset-0 z-40 grid place-items-start justify-center pt-[18vh] bg-black/40">
       <Command
         className="glass w-[min(560px,calc(100%-32px))] p-3"
-        label="AWAD COMMAND"
+        label={PRODUCT_NAME}
         onKeyDown={(e) => {
           if (e.key === 'Escape') toggle(false);
         }}
       >
-        <div className="mb-2 text-[10px] tracking-[0.2em] text-[var(--muted)]">AWAD COMMAND</div>
+        <div className="mb-2 text-[10px] tracking-[0.2em] text-[var(--muted)]">{PRODUCT_NAME}</div>
         <Command.Input
           autoFocus
-          placeholder="Navigate, modes, or ask the CEO…"
+          placeholder={HUD_COPY.palettePlaceholder}
           className="mb-2 w-full bg-transparent text-sm outline-none"
         />
         <Command.List className="max-h-80 overflow-auto text-sm">
@@ -94,7 +95,7 @@ export function CommandPalette() {
                 toggle(false);
               }}
             >
-              Ask CEO
+              {HUD_COPY.paletteAsk}
             </Command.Item>
             <Command.Item className="cursor-pointer rounded-md px-2 py-1.5" onSelect={() => { toggleEventStream(); toggle(false); }}>
               Events
@@ -141,7 +142,7 @@ export function CommandPalette() {
                 toggle(false);
               }}
             >
-              {voiceMuted ? 'Unmute CEO voice' : 'Mute CEO voice'}
+              {voiceMuted ? HUD_COPY.unmuteVoice : HUD_COPY.muteVoice}
             </Command.Item>
           </Command.Group>
         </Command.List>

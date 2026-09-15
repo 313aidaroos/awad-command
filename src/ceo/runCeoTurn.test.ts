@@ -51,7 +51,7 @@ describe('runCeoTurn demo path', () => {
     expect(posts).toHaveLength(1);
     expect(posts[0].body).toEqual({
       agentId: CONTRAXIS.agentId,
-      message: 'Awad asked AWAD CEO to tell you: ping me',
+      message: 'Awad asked Cixy to tell you: ping me',
       projectSlug: 'contraxis',
     });
     expect(posts[0].auth).toBe('Bearer s3cret');

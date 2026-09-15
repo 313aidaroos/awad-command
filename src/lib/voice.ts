@@ -170,7 +170,7 @@ export function useVoice() {
         for (let i = event.resultIndex; i < event.results.length; i += 1) {
           const piece = event.results[i]?.[0]?.transcript ?? '';
           if (event.results[i].isFinal) {
-            const cleaned = piece.replace(/^CEO,?\s*/i, '').trim();
+            const cleaned = piece.replace(/^(?:Cixy|CEO),?\s*/i, '').trim();
             setInterim('');
             if (cleaned) finalRef.current(cleaned);
           } else {
