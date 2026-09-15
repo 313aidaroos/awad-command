@@ -85,16 +85,6 @@ export async function runTask(task: TaskRow, deps: AgentDeps): Promise<void> {
   const startedAt = new Date().toISOString();
   const computerEnabled = registry.list().some((tool) => tool.name.startsWith('computer.'));
 
-  await throwIfHalted(deps.db, deps.workerId);
-  await deps.db.updateTask(task.id, { status: 'running', started_at: startedAt });
-  await deps.db.insertEvent({
-    type: 'agent.task.started',
-    project_slug: projectSlug,
-    agent_id: task.agent_id,
-    summary: `Started: ${task.title}`,
-    payload: { task_id: task.id },
-  });
-
   const ctx: ToolContext = { task, approval, db: deps.db, projectSlug };
   const messages: Array<{ role: 'user' | 'assistant'; content: unknown }> = [
     { role: 'user', content: instructionOf(task) },
@@ -116,6 +106,15 @@ export async function runTask(task: TaskRow, deps: AgentDeps): Promise<void> {
   const steps: Array<{ name: string; summary: string }> = [];
 
   try {
+    await throwIfHalted(deps.db, deps.workerId);
+    await deps.db.updateTask(task.id, { status: 'running', started_at: startedAt });
+    await deps.db.insertEvent({
+      type: 'agent.task.started',
+      project_slug: projectSlug,
+      agent_id: task.agent_id,
+      summary: `Started: ${task.title}`,
+      payload: { task_id: task.id },
+    });
     for (let step = 0; step < deps.maxSteps; step += 1) {
       await throwIfHalted(deps.db, deps.workerId);
       if (spent >= budget) {

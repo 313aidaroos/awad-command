@@ -25,7 +25,7 @@ function capList(value: unknown): string[] {
   return [];
 }
 
-export function stubScreenUrl(env: NodeJS.ProcessEnv = process.env): string | null {
+export function stubScreenUrl(env: Record<string, string | undefined> = process.env): string | null {
   const raw = env.NEXT_PUBLIC_COMPUTER_STUB_SCREEN_URL?.trim();
   return raw && /^https?:\/\//i.test(raw) ? raw : null;
 }

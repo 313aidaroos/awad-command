@@ -20,7 +20,8 @@ export function computerScreenshotTool(runtime: ComputerRuntime): WorkerTool {
       },
     },
     risk: 'read',
-    async run(input, ctx: ToolContext) {
+    async run(raw, ctx: ToolContext) {
+      const input = computerScreenshotInput.parse(raw);
       if (!runtime.enabled) {
         return { error: runtime.reason ?? 'Computer runtime is not connected.' };
       }

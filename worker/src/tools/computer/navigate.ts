@@ -21,7 +21,8 @@ export function computerNavigateTool(runtime: ComputerRuntime): WorkerTool {
       required: ['url'],
     },
     risk: 'write',
-    async run(input, ctx: ToolContext) {
+    async run(raw, ctx: ToolContext) {
+      const input = computerNavigateInput.parse(raw);
       if (!runtime.enabled) {
         return { error: runtime.reason ?? 'Computer runtime is not connected.' };
       }

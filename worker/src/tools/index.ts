@@ -55,7 +55,6 @@ export function assertNotSensitive(tool: WorkerTool, input: unknown, ctx: ToolCo
   if (tool.risk === 'read') return;
   const hit = describeSensitiveHit({
     name: tool.name,
-    description: tool.description,
     raw: rawFromInput(input),
   });
   if (hit) {

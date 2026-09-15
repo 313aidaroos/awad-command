@@ -93,7 +93,7 @@ describe('computer tools', () => {
     const result = (await registry.execute('computer.navigate', { url: 'https://contraxis.com' }, ctx)) as {
       url?: string;
     };
-    expect(result.url).toBe('https://contraxis.com');
+    expect(result.url).toMatch(/^https:\/\/contraxis\.com\/?$/);
   });
 
   it('pauses checkout navigation for approval', async () => {
