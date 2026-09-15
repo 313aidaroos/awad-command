@@ -33,6 +33,38 @@ export function applyCeoClientActions(actions: CeoClientAction[], store: Store):
       notes.push('Approval card opened — record only');
       continue;
     }
+    if (action.name === 'create_task') {
+      s.trackCeoTask(action.taskId);
+      if (action.approval) {
+        s.requestApproval({
+          id: action.approval.id,
+          title: action.approval.title,
+          description: action.approval.description,
+          kind: action.approval.kind,
+          risk: action.approval.risk,
+          taskId: action.taskId,
+          persisted: !action.demo,
+        });
+        if (action.agentId) {
+          s.applyEvent({
+            id: `task_${action.taskId}`,
+            ts: Date.now(),
+            type: 'agent.status.changed',
+            projectSlug: action.projectSlug,
+            agentId: action.agentId,
+            summary: action.demo
+              ? `Task waiting approval · DEMO · ${action.approval.title}`
+              : `Task waiting approval · ${action.approval.title}`,
+            source: action.demo ? 'demo' : 'live',
+            payload: { status: 'needs_approval', taskId: action.taskId },
+          });
+        }
+        notes.push(action.demo ? 'Task waiting approval · DEMO' : 'Task waiting approval');
+      } else {
+        notes.push(action.demo ? 'Task queued locally · DEMO' : 'Task queued');
+      }
+      continue;
+    }
     if (action.name === 'message_lead') {
       if (action.record) {
         s.queueLeadMessage(action.record);

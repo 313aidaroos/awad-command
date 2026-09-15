@@ -218,6 +218,64 @@ describe('runCeoTurn Anthropic tool_use', () => {
     expect(result.text).not.toMatch(/delivered/i);
   });
 
+  it('persists create_task through the server helper and reports honestly', async () => {
+    const created: unknown[] = [];
+    let round = 0;
+    const client: AnthropicLike = {
+      messages: {
+        create: async () => {
+          round += 1;
+          if (round === 1) {
+            return {
+              stop_reason: 'tool_use',
+              content: [
+                {
+                  type: 'tool_use',
+                  id: 'tu_task',
+                  name: 'create_task',
+                  input: {
+                    agentId: 'contraxis.analytics',
+                    title: 'Summarise leads',
+                    instruction: "Summarise today's leads and conversion",
+                    requiresApproval: false,
+                    risk: 'low',
+                  },
+                },
+              ],
+            };
+          }
+          return { stop_reason: 'end_turn', content: [{ type: 'text', text: 'Queued the analytics pass.' }] };
+        },
+      },
+    };
+    const result = await runCeoTurn(
+      { messages: [{ role: 'user', content: 'have analytics summarise leads' }], context: snapshot() },
+      {
+        client,
+        persistTask: async (input) => {
+          created.push(input);
+          return {
+            ok: true,
+            demo: true,
+            taskId: 'task-demo',
+            agentId: 'contraxis.analytics-agent',
+            projectSlug: 'contraxis',
+            title: input.title,
+            instruction: input.instruction,
+            status: 'queued',
+            requiresApproval: false,
+            risk: 'low',
+            kind: 'other',
+          };
+        },
+      },
+    );
+    expect(created).toHaveLength(1);
+    expect(result.actions[0]).toMatchObject({ name: 'create_task', taskId: 'task-demo', demo: true });
+    expect(result.text).toMatch(/Summarise leads/);
+    expect(result.text).toMatch(/queued locally \(DEMO\)/);
+  });
+
   it('collects navigate and open_panel for the client', async () => {
     let round = 0;
     const client: AnthropicLike = {

@@ -1,6 +1,7 @@
 export type EventType =
   | 'agent.task.started'
   | 'agent.task.completed'
+  | 'agent.step'
   | 'agent.status.changed'
   | 'lead.created'
   | 'lead.qualified'

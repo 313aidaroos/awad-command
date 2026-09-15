@@ -1,8 +1,9 @@
 import type { Tool } from '@anthropic-ai/sdk/resources/messages/messages';
 import { getProject } from '@/projects/registry';
 import { formatLeadSendStatus, sendLeadMessage, type LeadOutboundDeps, type SendLeadMessageResult } from '@/lib/leadOutbound';
-import type { CeoClientAction, ProposeApprovalArgs } from '@/ceo/tools.types';
+import type { CeoClientAction, CreateTaskArgs, ProposeApprovalArgs } from '@/ceo/tools.types';
 import type { ContextPanel, ModeName } from '@/store/types';
+import { formatTaskCreateStatus, persistCeoTask, type CreatedTask } from '@/lib/agentTasks';
 
 export type { CeoClientAction, ProposeApprovalArgs } from '@/ceo/tools.types';
 
@@ -18,11 +19,13 @@ Tools:
 - navigate — fly the camera to a project, agent, or mode. UI only.
 - open_panel — open a HUD panel. UI only.
 - propose_approval — create a record-only approval card. Does not spend, publish, delete, or trade.
+- create_task — queue work for an agent. Read-only questions are answered from the snapshot. Anything that changes the world becomes a task via create_task. Money or public-facing changes set requiresApproval=true. After creating a task, tell the user what you queued and that you'll report when it completes.
 
 Hard rules:
-- NEVER claim a spend, publish, delete, or live trade happened. Approvals stay record-only.
+- NEVER claim a spend, publish, delete, or live trade happened. Agents never spend/publish/delete/trade without Approve.
 - After message_lead, report the tool result honestly (delivered, queued/DEMO, or failed). Never invent success.
-- Unknown slug or agentId: say you could not find that lead and that nothing was sent.
+- After create_task, report the tool result honestly (queued, waiting approval, or DEMO because the worker/keys are absent).
+- Unknown slug or agentId: say you could not find that lead or agent and that nothing was sent or queued.
 - Lead replies do not arrive in this chat. The hub still owns the reverse hop — replies appear in Message lead only after the hub POSTs /api/lead-inbound.
 - You can name which Lead bot owns a company from the lead map.`;
 
@@ -78,6 +81,23 @@ export const CEO_ANTHROPIC_TOOLS: Tool[] = [
       required: ['title', 'description', 'kind', 'risk'],
     },
   },
+  {
+    name: 'create_task',
+    description:
+      'Create an agent_tasks row. requiresApproval=true writes approvals.pending + waiting_approval; otherwise queued. Money or public-facing changes must require approval.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        agentId: { type: 'string', description: 'Agent id (contraxis.analytics-agent) or short ref (contraxis.analytics).' },
+        instruction: { type: 'string' },
+        title: { type: 'string' },
+        requiresApproval: { type: 'boolean' },
+        risk: { type: 'string', enum: [...RISKS] },
+        kind: { type: 'string', enum: [...APPROVAL_KINDS] },
+      },
+      required: ['agentId', 'instruction', 'requiresApproval', 'risk', 'title'],
+    },
+  },
 ];
 
 /** Kept for callers that only need names. Prefer CEO_ANTHROPIC_TOOLS. */
@@ -88,11 +108,13 @@ export interface CeoToolExecution {
   clientActions: CeoClientAction[];
   approval?: ProposeApprovalArgs;
   leadResult?: SendLeadMessageResult;
+  task?: CreatedTask;
 }
 
 export interface CeoToolDeps {
   sendLead?: typeof sendLeadMessage;
   outbound?: LeadOutboundDeps;
+  persistTask?: typeof persistCeoTask;
 }
 
 function asString(value: unknown): string | undefined {
@@ -191,15 +213,65 @@ export async function executeCeoTool(
     };
   }
 
+  if (call.name === 'create_task') {
+    const persist = deps.persistTask ?? persistCeoTask;
+    const args: CreateTaskArgs = {
+      agentId: asString(call.input.agentId) ?? '',
+      instruction: asString(call.input.instruction) ?? '',
+      title: asString(call.input.title) ?? '',
+      requiresApproval: call.input.requiresApproval === true,
+      risk: (asString(call.input.risk) as CreateTaskArgs['risk']) ?? 'low',
+      kind: asString(call.input.kind) as CreateTaskArgs['kind'] | undefined,
+    };
+    if (!args.agentId || !args.instruction || !args.title || !RISKS.includes(args.risk)) {
+      return { forModel: { error: 'Invalid create_task args' }, clientActions: [] };
+    }
+    const task = await persist(args);
+    const clientActions: CeoClientAction[] = task.ok
+      ? [
+          {
+            name: 'create_task',
+            taskId: task.taskId,
+            agentId: task.agentId,
+            projectSlug: task.projectSlug,
+            demo: task.demo,
+            requiresApproval: task.requiresApproval,
+            approval: task.approval,
+          },
+        ]
+      : [];
+    return {
+      forModel: {
+        ok: task.ok,
+        demo: task.demo,
+        taskId: task.taskId,
+        approvalId: task.approvalId,
+        status: task.status,
+        requiresApproval: task.requiresApproval,
+        agentId: task.agentId,
+        error: task.error,
+      },
+      clientActions,
+      approval: task.approval,
+      task,
+    };
+  }
+
   return { forModel: { error: `Unknown tool ${call.name}` }, clientActions: [] };
 }
 
-export function composeCeoText(modelText: string, leadResults: SendLeadMessageResult[]): string {
-  const statuses = leadResults.map(formatLeadSendStatus);
+export function composeCeoText(
+  modelText: string,
+  leadResults: SendLeadMessageResult[],
+  tasks: CreatedTask[] = [],
+): string {
+  const statuses = [...leadResults.map(formatLeadSendStatus), ...tasks.map(formatTaskCreateStatus)];
   const body = modelText.trim();
   if (statuses.length === 0) return body;
   const claimedDelivered = /delivered|sent successfully|message (?:was )?sent\b/i.test(body);
-  const failed = leadResults.some((result) => result.status === 'unknown' || result.status === 'failed');
+  const failed =
+    leadResults.some((result) => result.status === 'unknown' || result.status === 'failed') ||
+    tasks.some((task) => !task.ok);
   if (failed && claimedDelivered) return statuses.join('\n\n');
   return [body, ...statuses].filter(Boolean).join('\n\n');
 }

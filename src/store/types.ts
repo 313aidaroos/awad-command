@@ -55,6 +55,8 @@ export interface CommandState {
   briefingSeen: boolean;
   approvals: Approval[];
   leadMessages: LeadMessage[];
+  ceoReports: Array<{ id: string; text: string; ts: number }>;
+  trackedTaskIds: string[];
   voiceMuted: boolean;
   quality: { level: QualityLevel; auto: boolean };
 }
@@ -80,8 +82,10 @@ export interface CommandActions {
   toggleEventStream: (open?: boolean) => void;
   setQuality: (level: QualityLevel, auto?: boolean) => void;
   applyEvent: (event: CommandEvent) => void;
-  requestApproval: (approval: Omit<Approval, 'id' | 'status' | 'createdAt'>) => string;
+  requestApproval: (approval: Omit<Approval, 'id' | 'status' | 'createdAt'> & { id?: string }) => string;
   resolveApproval: (id: string, decision: 'approved' | 'denied') => void;
+  trackCeoTask: (taskId: string) => void;
+  pushCeoReport: (taskId: string, text: string) => void;
   queueLeadMessage: (message: LeadMessage) => void;
   mergeLeadMessages: (messages: LeadMessage[]) => void;
   setBriefingSeen: (seen: boolean) => void;

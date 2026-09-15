@@ -94,8 +94,11 @@ The CEO is an orchestrator, not text-only advice. It can call:
 | `navigate` | Client | Fly the camera to a project / agent / mode. |
 | `open_panel` | Client | Open a HUD panel (including Message lead). |
 | `propose_approval` | Client | Record-only approval card. Never spend / publish / delete / live trade. |
+| `create_task` | Server | Inserts `awad_command.agent_tasks` (queued) or `approvals.pending` + `waiting_approval`. |
 
 Ask something like “tell Contraxis Lead to ping me” and the CEO actually sends. The reply is honest: **delivered**, **queued (DEMO)**, or **failed**. Unknown slugs are errors — never fake success.
+
+`create_task` is how the CEO queues real agent work. Money or public-facing changes set `requiresApproval=true`. Approve / Deny on the card runs a **server action** (service role) that updates both the approval and the task. When the worker finishes, Realtime posts `Report: …` into the CEO console. With no `SUPABASE_SERVICE_ROLE_KEY`, create/approve stay local DEMO and the worker does not run.
 
 The hub still owns the reverse hop. Lead replies appear in Message lead only after the hub POSTs `/api/lead-inbound`. COMMAND does not pull Grok for answers.
 
@@ -109,7 +112,20 @@ Voice (Chrome / Safari Web Speech API):
 
 Shared project: `https://myfclypikkcvfurkbzmj.supabase.co`  
 Schema: `awad_command` (clients set `db.schema = "awad_command"`).  
-Migration copy (already applied): `supabase/migrations/0001_part_b.sql`.
+Migration copy (docs): `supabase/migrations/0001_part_b.sql`.  
+Part C task loop: `supabase/migrations/0002_tasks.sql` — extends the **existing** live `awad_command.approvals` table (does not create a second one) and adds `agent_tasks` + whitelist views.
+
+## Worker (Part C)
+
+Always-on process in `worker/`. Deploy on Railway with root directory `worker`. Env list:
+
+- `SUPABASE_URL` (or `NEXT_PUBLIC_SUPABASE_URL`)
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `ANTHROPIC_API_KEY`
+- `WORKER_MODEL` (default `claude-sonnet-5`)
+- `WORKER_ID` (default `awad-worker-1`)
+
+Details: [worker/README.md](worker/README.md). Apply `0002_tasks.sql` on the shared Contraxis project before the worker can claim rows.
 
 ## Vercel
 
