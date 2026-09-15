@@ -50,30 +50,28 @@ export function computerNavigateTool(runtime: ComputerRuntime): WorkerTool {
       }
 
       const projectSlug = ctx.projectSlug ?? 'unknown';
+      // Same persistent page as computer.screenshot. Leave it open after navigate.
       const session = await runtime.open(projectSlug);
-      try {
-        const page = await session.page();
-        await page.goto(parsed.toString(), { timeout: 20_000 });
-        const bytes = await page.screenshot({ fullPage: false });
-        const stored = await persistScreenshotPng(ctx.db, {
-          projectSlug,
-          taskId: ctx.task.id,
-          workerId: ctx.task.worker_id,
-          bytes,
-          dataDir: runtime.dataDir,
-        });
-        ctx.lastScreenshotUrl = stored.screenshot_url ?? undefined;
-        return {
-          ok: true,
-          risk: 'write',
-          url: page.url(),
-          screenshot_url: stored.screenshot_url,
-          storage_path: stored.storage_path,
-          local_path: stored.local_path ?? null,
-        };
-      } finally {
-        await session.close();
-      }
+      const page = await session.page();
+      await page.goto(parsed.toString(), { timeout: 20_000 });
+      const bytes = await page.screenshot({ fullPage: false });
+      const stored = await persistScreenshotPng(ctx.db, {
+        projectSlug,
+        taskId: ctx.task.id,
+        workerId: ctx.task.worker_id,
+        bytes,
+        dataDir: runtime.dataDir,
+        pageUrl: page.url(),
+      });
+      ctx.lastScreenshotUrl = stored.screenshot_url ?? undefined;
+      return {
+        ok: true,
+        risk: 'write',
+        url: page.url(),
+        screenshot_url: stored.screenshot_url,
+        storage_path: stored.storage_path,
+        local_path: stored.local_path ?? null,
+      };
     },
   };
 }

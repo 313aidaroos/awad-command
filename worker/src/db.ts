@@ -16,6 +16,7 @@ export interface ScreenRecordInput {
   worker_id?: string | null;
   storage_path: string;
   screenshot_url?: string | null;
+  page_url?: string | null;
 }
 
 export interface ScreenRecord {
@@ -254,6 +255,7 @@ export function createDb(client: SupabaseClient, leaseMs = 600_000): WorkerDb {
           worker_id: row.worker_id ?? null,
           storage_path: row.storage_path,
           screenshot_url: row.screenshot_url ?? null,
+          page_url: row.page_url ?? null,
           source: 'live',
         })
         .select('screenshot_url, storage_path')

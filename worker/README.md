@@ -56,7 +56,7 @@ Computer / Xvfb setup: [docs/COMPUTER_SETUP.md](../docs/COMPUTER_SETUP.md). Imag
 |---|---|---|
 | `supabase.query` | read | Whitelist views only: `v_leads`, `v_sales`, `v_events`, `v_metrics`. |
 | `http.fetch` | read | GET, 1 MB, 10 s, blocks private / link-local / metadata IPs. |
-| `computer.screenshot` | read | PNG of the agent browser. Requires `WORKER_CAPABILITIES=computer`. |
+| `computer.screenshot` | read | PNG of the current agent browser page (same Chromium session as navigate). Requires `WORKER_CAPABILITIES=computer`. |
 | `computer.navigate` | write | Open a public URL. Needs a human task or approved plan. Checkout / pay / publish / delete / send-to-customer pause. |
 
 `money` / `destructive` tools refuse to run in Phase 1 (Approve is record-only). `write` tools run only for a human-created task or an approved plan. Computer tools are registered only when `WORKER_CAPABILITIES` includes `computer`.

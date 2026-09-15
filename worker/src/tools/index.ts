@@ -12,6 +12,7 @@ export interface ToolContext {
   db: WorkerDb;
   projectSlug?: string | null;
   lastScreenshotUrl?: string;
+  lastPageUrl?: string;
 }
 
 export interface WorkerTool<T = unknown> {

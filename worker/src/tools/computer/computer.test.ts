@@ -111,4 +111,61 @@ describe('computer tools', () => {
       SensitiveActionPause,
     );
   });
+
+  it('reuses one browser page across navigate then later screenshots', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'awad-comp-'));
+    const { db, screens } = memoryDb();
+    const runtime = createFakeRuntime(dir);
+    const registry = createToolRegistry(computerTools(runtime));
+    const ctx: ToolContext = { task: task({ source: 'human' }), approval: null, db, projectSlug: 'contraxis' };
+
+    const nav = (await registry.execute('computer.navigate', { url: 'https://example.com/' }, ctx)) as {
+      url?: string;
+      screenshot_url?: string;
+    };
+    expect(nav.url).toBe('https://example.com/');
+    expect(nav.screenshot_url).toMatch(/signed\.example/);
+
+    const shot1 = (await registry.execute('computer.screenshot', {}, ctx)) as { url?: string };
+    const shot2 = (await registry.execute('computer.screenshot', {}, ctx)) as { url?: string };
+    expect(shot1.url).toBe('https://example.com/');
+    expect(shot2.url).toBe('https://example.com/');
+    expect(runtime.stats.opens).toBe(1);
+    expect(runtime.stats.closes).toBe(0);
+    expect(screens).toHaveLength(3);
+    expect(screens[0]).toMatchObject({ page_url: 'https://example.com/' });
+    expect(screens[2]).toMatchObject({ page_url: 'https://example.com/' });
+  });
+
+  it('resets to about:blank only after the process closes the session', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'awad-comp-'));
+    const { db } = memoryDb();
+    const runtime = createFakeRuntime(dir);
+    const registry = createToolRegistry(computerTools(runtime));
+    const ctx: ToolContext = { task: task({ source: 'human' }), approval: null, db, projectSlug: 'contraxis' };
+
+    await registry.execute('computer.navigate', { url: 'https://example.com/' }, ctx);
+    await runtime.closeAll();
+    const shot = (await registry.execute('computer.screenshot', {}, ctx)) as { url?: string };
+    expect(shot.url).toBe('about:blank');
+    expect(runtime.stats.opens).toBe(2);
+    expect(runtime.stats.closes).toBe(1);
+  });
+
+  it('keeps separate pages per project', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'awad-comp-'));
+    const { db } = memoryDb();
+    const runtime = createFakeRuntime(dir);
+    const registry = createToolRegistry(computerTools(runtime));
+    const contraxis: ToolContext = { task: task({ source: 'human' }), approval: null, db, projectSlug: 'contraxis' };
+    const lyrixis: ToolContext = { task: task({ source: 'human' }), approval: null, db, projectSlug: 'lyrixis' };
+
+    await registry.execute('computer.navigate', { url: 'https://example.com/' }, contraxis);
+    const other = (await registry.execute('computer.screenshot', {}, lyrixis)) as { url?: string };
+    const same = (await registry.execute('computer.screenshot', {}, contraxis)) as { url?: string };
+    expect(other.url).toBe('about:blank');
+    expect(same.url).toBe('https://example.com/');
+    expect(runtime.stats.opens).toBe(2);
+    expect(runtime.stats.closes).toBe(0);
+  });
 });

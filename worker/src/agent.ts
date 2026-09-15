@@ -149,7 +149,7 @@ export async function runTask(task: TaskRow, deps: AgentDeps): Promise<void> {
           project_slug: projectSlug,
           agent_id: task.agent_id,
           summary: text.slice(0, 180) || `Step ${step + 1} complete`,
-          payload: { task_id: task.id, step, spent_usd: spent, screenshot_url: ctx.lastScreenshotUrl },
+          payload: { task_id: task.id, step, spent_usd: spent, screenshot_url: ctx.lastScreenshotUrl, page_url: ctx.lastPageUrl },
         });
         break;
       }
@@ -209,6 +209,11 @@ export async function runTask(task: TaskRow, deps: AgentDeps): Promise<void> {
             ? String((payload as { screenshot_url?: string | null }).screenshot_url ?? '')
             : '';
         if (shot) ctx.lastScreenshotUrl = shot;
+        const pageUrl =
+          payload && typeof payload === 'object' && 'url' in payload
+            ? String((payload as { url?: string | null }).url ?? '')
+            : '';
+        if (pageUrl) ctx.lastPageUrl = pageUrl;
         const summary = `${toolName}: ${JSON.stringify(payload).slice(0, 140)}`;
         steps.push({ name: toolName, summary });
         await deps.db.insertEvent({
@@ -221,6 +226,7 @@ export async function runTask(task: TaskRow, deps: AgentDeps): Promise<void> {
             step,
             tool: toolName,
             screenshot_url: ctx.lastScreenshotUrl,
+            page_url: ctx.lastPageUrl,
           },
         });
         toolResults.push({
@@ -246,7 +252,7 @@ export async function runTask(task: TaskRow, deps: AgentDeps): Promise<void> {
       project_slug: projectSlug,
       agent_id: task.agent_id,
       summary: finalReport.slice(0, 240),
-      payload: { task_id: task.id, spent_usd: spent, screenshot_url: ctx.lastScreenshotUrl },
+      payload: { task_id: task.id, spent_usd: spent, screenshot_url: ctx.lastScreenshotUrl, page_url: ctx.lastPageUrl },
     });
     log('task.done', { taskId: task.id, spent });
   } catch (err) {

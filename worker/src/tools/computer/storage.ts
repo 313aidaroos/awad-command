@@ -16,6 +16,7 @@ export async function persistScreenshotPng(
     workerId?: string | null;
     bytes: Buffer;
     dataDir: string;
+    pageUrl?: string | null;
   },
 ): Promise<ScreenUpload> {
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -28,6 +29,7 @@ export async function persistScreenshotPng(
     worker_id: input.workerId ?? null,
     storage_path: uploaded.path,
     screenshot_url: uploaded.signedUrl ?? null,
+    page_url: input.pageUrl ?? null,
   });
 
   if (uploaded.signedUrl || recorded.screenshot_url) {

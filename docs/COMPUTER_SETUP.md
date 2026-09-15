@@ -8,7 +8,8 @@ First slice of Part D. This is the path a worker uses to drive a browser. It doe
 - Claim filter: a task’s `capabilities` must be a subset of the worker’s. Empty task capabilities stay claimable by an API worker.
 - Tools: `computer.screenshot` (read) and `computer.navigate` (write — human task or approved plan).
 - Playwright Chromium with a persistent profile per project at `$WORKER_DATA_DIR/profiles/<project>`.
-- Screenshots → private Storage bucket `agent-screens` (signed URL) or a local file under `$WORKER_DATA_DIR/screens/`.
+- The worker keeps that Chromium context/page open across tool calls. `computer.screenshot` captures the current URL; it does not launch a new blank tab.
+- Screenshots → private Storage bucket `agent-screens` (signed URL) or a local file under `$WORKER_DATA_DIR/screens/`. `agent_screens.page_url` is stored so the Computer status API can skip a newer `about:blank` frame when the same task already has content.
 - Sensitive-action middleware pauses purchase / publish / delete / send-to-customer.
 - Halt: `system_status.project_slug = worker:<WORKER_ID>` with `status=halt`.
 - Computer panel shows a real screenshot URL when one exists; otherwise it stays **coming online**.
@@ -20,7 +21,7 @@ The hub does not run Chromium. Until a process heartbeats with `WORKER_CAPABILIT
 Still missing after this slice:
 
 1. A Linux VM (or Railway service from `worker/Dockerfile.computer`) that stays on.
-2. Apply `supabase/migrations/0003_computer.sql` on the shared Contraxis project (`awad_command`).
+2. Apply `supabase/migrations/0003_computer.sql` and `0004_agent_screens_page_url.sql` on the shared Contraxis project (`awad_command`).
 3. Confirm Storage bucket `agent-screens` exists (the migration inserts it when `storage.buckets` is present; otherwise create it in the dashboard — private, PNG/JPEG, 5 MB).
 4. Tailscale / noVNC if you want a live stream in `system_status.detail.screen_url`. This slice does not embed noVNC.
 5. Agent-only Google / KDP / supplier accounts. Never copy Awad’s personal logins onto the box.
@@ -50,9 +51,9 @@ xvfb-run -a -s "-screen 0 1280x720x24" pnpm dev
 
 Smoke:
 
-1. Apply `0003_computer.sql`.
+1. Apply `0003_computer.sql` and `0004_agent_screens_page_url.sql`.
 2. Insert a `waiting_approval` → Approve (or `source=human`) task with `capabilities = '{computer}'` and instruction `Screenshot https://contraxis.com`.
-3. After navigate + screenshot, `awad_command.events.payload.screenshot_url` and `awad_command.agent_screens` should fill.
+3. After navigate + screenshot (and a second standalone screenshot in the same task), `awad_command.events.payload.screenshot_url` and `awad_command.agent_screens` should fill. Both frames should show the navigated page, not `about:blank`.
 4. Open Computer in the deck. The panel shows that URL or stays coming online if the worker never heartbeated.
 
 ## Docker / Railway

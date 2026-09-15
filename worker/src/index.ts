@@ -49,6 +49,7 @@ async function main() {
   const halt = async (signal: string) => {
     log('shutdown', { signal });
     await loop.shutdown();
+    await runtime.closeAll();
     process.exit(0);
   };
   process.on('SIGTERM', () => void halt('SIGTERM'));
