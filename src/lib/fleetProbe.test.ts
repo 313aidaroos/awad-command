@@ -55,4 +55,11 @@ describe('probeFleetSites', () => {
     expect(fetchImpl).toHaveBeenCalledTimes(FLEET_SITES.length);
     expect(rows.every((row) => row.ok)).toBe(true);
   });
+
+  it('includes Recovra, Geoxis, Launchixis, Nursery Toons, and Content Bot', () => {
+    const slugs = FLEET_SITES.map((site) => site.slug);
+    expect(slugs).toEqual(
+      expect.arrayContaining(['recovra', 'geoxis', 'launchixis', 'nursery-toons', 'contentbot']),
+    );
+  });
 });

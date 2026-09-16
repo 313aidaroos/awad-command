@@ -8,6 +8,11 @@ export const FLEET_SITES = [
   { slug: 'awadbot', name: 'AwadBot', url: 'https://awadbot.vercel.app' },
   { slug: 'apixis', name: 'Apixis', url: 'https://apixis.dev' },
   { slug: 'qahwahworld', name: 'Qahwahworld', url: 'https://qahwahworld.vercel.app' },
+  { slug: 'recovra', name: 'Recovra', url: 'https://recovra-three.vercel.app' },
+  { slug: 'geoxis', name: 'Geoxis', url: 'https://spatial-dashboard-xi.vercel.app' },
+  { slug: 'launchixis', name: 'Launchixis', url: 'https://launchixis.vercel.app' },
+  { slug: 'nursery-toons', name: 'Nursery Toons', url: 'https://nurserytoons.vercel.app' },
+  { slug: 'contentbot', name: 'Content Bot', url: 'https://personalcontentbot.vercel.app' },
 ] as const;
 
 export type FleetSiteDef = (typeof FLEET_SITES)[number];
