@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { applyEventToState } from '@/data/reducers';
+import { emptyFleet } from '@/lib/fleetProbe';
 import { uid } from '@/lib/ids';
 import { getProject, projects } from '@/projects/registry';
 import { projectEnterSequence, projectInteriorCam, UNIVERSE_CAM } from '@/scene/lib/cameraPaths';
@@ -36,6 +37,8 @@ export const useCommandStore = create<CommandState & CommandActions>((set, get) 
   paletteOpen: false,
   eventStreamOpen: false,
   newsOpen: false,
+  fleetOpen: true,
+  fleet: emptyFleet(),
   contextPanel: 'none',
   briefingSeen: false,
   approvals: [],
@@ -173,6 +176,8 @@ export const useCommandStore = create<CommandState & CommandActions>((set, get) 
   togglePalette: (open) => set({ paletteOpen: open ?? !get().paletteOpen }),
   toggleNews: (open) => set({ newsOpen: open ?? !get().newsOpen }),
   toggleEventStream: (open) => set({ eventStreamOpen: open ?? !get().eventStreamOpen }),
+  toggleFleet: (open) => set({ fleetOpen: open ?? !get().fleetOpen }),
+  applyFleet: (snapshot) => set({ fleet: snapshot }),
   setQuality: (level, auto = false) =>
     set((state) =>
       state.quality.level === level && state.quality.auto === auto ? state : { quality: { level, auto } },

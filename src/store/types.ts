@@ -1,3 +1,4 @@
+import type { FleetSnapshot } from '@/lib/fleetProbe';
 import type { AgentState } from '@/types/agent';
 import type { Approval, LeadMessage } from '@/types/approval';
 import type { CommandEvent } from '@/types/events';
@@ -51,6 +52,8 @@ export interface CommandState {
   paletteOpen: boolean;
   eventStreamOpen: boolean;
   newsOpen: boolean;
+  fleetOpen: boolean;
+  fleet: FleetSnapshot;
   contextPanel: ContextPanel;
   briefingSeen: boolean;
   approvals: Approval[];
@@ -80,6 +83,8 @@ export interface CommandActions {
   togglePalette: (open?: boolean) => void;
   toggleNews: (open?: boolean) => void;
   toggleEventStream: (open?: boolean) => void;
+  toggleFleet: (open?: boolean) => void;
+  applyFleet: (snapshot: FleetSnapshot) => void;
   setQuality: (level: QualityLevel, auto?: boolean) => void;
   applyEvent: (event: CommandEvent) => void;
   requestApproval: (approval: Omit<Approval, 'id' | 'status' | 'createdAt'> & { id?: string }) => string;

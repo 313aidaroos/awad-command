@@ -17,6 +17,7 @@ export function CommandPalette() {
   const openPanel = useCommandStore((s) => s.openPanel);
   const toggleNews = useCommandStore((s) => s.toggleNews);
   const toggleEventStream = useCommandStore((s) => s.toggleEventStream);
+  const toggleFleet = useCommandStore((s) => s.toggleFleet);
   const voiceMuted = useCommandStore((s) => s.voiceMuted);
   const setVoiceMuted = useCommandStore((s) => s.setVoiceMuted);
 
@@ -99,6 +100,9 @@ export function CommandPalette() {
             </Command.Item>
             <Command.Item className="cursor-pointer rounded-md px-2 py-1.5" onSelect={() => { toggleEventStream(); toggle(false); }}>
               Events
+            </Command.Item>
+            <Command.Item className="cursor-pointer rounded-md px-2 py-1.5" onSelect={() => { toggleFleet(); toggle(false); }}>
+              Fleet
             </Command.Item>
             <Command.Item className="cursor-pointer rounded-md px-2 py-1.5" onSelect={() => { toggleNews(); toggle(false); }}>
               News

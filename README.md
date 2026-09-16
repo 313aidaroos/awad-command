@@ -24,6 +24,8 @@ pnpm lint
 
 The demo deck stays **open** until `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `ALLOWED_EMAIL` are all set. Then magic-link login gates the site to that email.
 
+The universe HUD **Fleet** panel is live: `GET /api/fleet` probes public company URLs (no keys). Metrics elsewhere stay tagged DEMO until their sources connect.
+
 ## Lead bots on the orbs
 
 Every product orb is wired in `src/config/orbLeads.ts` and its project plugin under `src/projects/<slug>/`.

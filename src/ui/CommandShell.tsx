@@ -14,6 +14,7 @@ import { CeoConsole } from '@/ui/CeoConsole';
 import { CommandPalette } from '@/ui/CommandPalette';
 import { ComputerPanel } from '@/ui/ComputerPanel';
 import { EventStream } from '@/ui/EventStream';
+import { FleetPanel } from '@/ui/FleetPanel';
 import { Hotkeys } from '@/ui/Hotkeys';
 import { HoverHud } from '@/ui/HoverHud';
 import { ModeBar } from '@/ui/ModeBar';
@@ -77,6 +78,7 @@ export function CommandShell() {
           <ModeBar />
           <HoverHud />
           <EventStream />
+          <FleetPanel />
           <NewsCorner />
           <ProjectHud />
           <AgentFollowHud />
