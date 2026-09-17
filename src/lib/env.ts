@@ -1,4 +1,6 @@
-function readServerEnv(name: 'AI_PROVIDER' | 'ANTHROPIC_API_KEY' | 'ANTHROPIC_MODEL'): string {
+const DEFAULT_ALLOWED_EMAIL = 'awad@apixis.dev';
+
+function readServerEnv(name: 'AI_PROVIDER' | 'ANTHROPIC_API_KEY' | 'ANTHROPIC_MODEL' | 'ALLOWED_EMAIL'): string {
   // Index access so Next.js does not replace the value at build time.
   const raw = process.env[name];
   if (typeof raw !== 'string') return '';
@@ -12,12 +14,12 @@ function readServerEnv(name: 'AI_PROVIDER' | 'ANTHROPIC_API_KEY' | 'ANTHROPIC_MO
   return trimmed;
 }
 
+export function allowedEmail(): string {
+  return readServerEnv('ALLOWED_EMAIL') || DEFAULT_ALLOWED_EMAIL;
+}
+
 export function isAuthConfigured(): boolean {
-  return Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL &&
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
-      process.env.ALLOWED_EMAIL,
-  );
+  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY && allowedEmail());
 }
 
 export function anthropicApiKey(): string {

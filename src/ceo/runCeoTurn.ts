@@ -12,9 +12,11 @@ import type { CeoClientAction, ProposeApprovalArgs } from '@/ceo/tools.types';
 import { anthropicApiKey, anthropicModel, isAnthropicCeoEnabled } from '@/lib/env';
 import type { CreatedTask } from '@/lib/agentTasks';
 import type { SendLeadMessageResult } from '@/lib/leadOutbound';
+import type { MissionControlSnapshot } from '@/lib/missionControl';
 import type { CommandState } from '@/store/types';
 
-export type CeoSnapshot = Pick<CommandState, 'dataMode' | 'projects' | 'agents' | 'events' | 'approvals'>;
+export type CeoSnapshot = Pick<CommandState, 'dataMode' | 'projects' | 'agents' | 'events' | 'approvals'> &
+  Partial<Pick<CommandState, 'fleet'>> & { mission?: MissionControlSnapshot };
 
 export interface CeoChatMessage {
   role: 'user' | 'assistant';

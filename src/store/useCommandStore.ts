@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { applyEventToState } from '@/data/reducers';
 import { emptyFleet } from '@/lib/fleetProbe';
+import { emptyMissionControlSnapshot } from '@/lib/missionControl';
 import { uid } from '@/lib/ids';
 import { getProject, projects } from '@/projects/registry';
 import { projectEnterSequence, projectInteriorCam, UNIVERSE_CAM } from '@/scene/lib/cameraPaths';
@@ -38,7 +39,9 @@ export const useCommandStore = create<CommandState & CommandActions>((set, get) 
   eventStreamOpen: false,
   newsOpen: false,
   fleetOpen: true,
+  missionOpen: true,
   fleet: emptyFleet(),
+  mission: emptyMissionControlSnapshot(),
   contextPanel: 'none',
   briefingSeen: false,
   approvals: [],
@@ -177,7 +180,34 @@ export const useCommandStore = create<CommandState & CommandActions>((set, get) 
   toggleNews: (open) => set({ newsOpen: open ?? !get().newsOpen }),
   toggleEventStream: (open) => set({ eventStreamOpen: open ?? !get().eventStreamOpen }),
   toggleFleet: (open) => set({ fleetOpen: open ?? !get().fleetOpen }),
+  toggleMission: (open) => set({ missionOpen: open ?? !get().missionOpen }),
   applyFleet: (snapshot) => set({ fleet: snapshot }),
+  applyMission: (snapshot) =>
+    set((state) => {
+      const projectsNext = { ...state.projects };
+      if (snapshot.financial.revenueToday.available || snapshot.financial.leadsToday.available) {
+        const command = projectsNext.contraxis;
+        if (command) {
+          projectsNext.contraxis = {
+            ...command,
+            metrics: {
+              ...command.metrics,
+              revenueToday: snapshot.financial.revenueToday.available
+                ? snapshot.financial.revenueToday.amount
+                : command.metrics.revenueToday,
+              newLeads: snapshot.financial.leadsToday.available ? snapshot.financial.leadsToday.count : command.metrics.newLeads,
+            },
+          };
+        }
+      }
+      return {
+        mission: snapshot,
+        dataMode: snapshot.source === 'live' ? 'live' : state.dataMode,
+        projects: projectsNext,
+        events: snapshot.source === 'live' ? { buffer: state.events.buffer.filter((event) => event.source === 'live'), unread: 0 } : state.events,
+      };
+    }),
+  setDataMode: (mode) => set({ dataMode: mode }),
   setQuality: (level, auto = false) =>
     set((state) =>
       state.quality.level === level && state.quality.auto === auto ? state : { quality: { level, auto } },

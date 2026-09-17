@@ -58,3 +58,19 @@ describe('isAnthropicCeoEnabled', () => {
     expect(isAnthropicCeoEnabled()).toBe(false);
   });
 });
+
+describe('auth configuration', () => {
+  afterEach(() => {
+    delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+    delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    delete process.env.ALLOWED_EMAIL;
+  });
+
+  it('gates the deck when Supabase is configured, defaulting owner/admin to awad@apixis.dev', async () => {
+    const { allowedEmail, isAuthConfigured } = await import('@/lib/env');
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'anon';
+    expect(allowedEmail()).toBe('awad@apixis.dev');
+    expect(isAuthConfigured()).toBe(true);
+  });
+});

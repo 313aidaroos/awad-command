@@ -1,6 +1,7 @@
 import { DemoEventSource } from '@/data/DemoEventSource';
 import { startTaskReportSubscription } from '@/data/TaskReportSource';
 import type { FleetSnapshot } from '@/lib/fleetProbe';
+import type { MissionControlSnapshot } from '@/lib/missionControl';
 import { useCommandStore } from '@/store/useCommandStore';
 
 let source: DemoEventSource | null = null;
@@ -20,6 +21,22 @@ async function pullFleet() {
   }
 }
 
+async function pullMission() {
+  try {
+    const res = await fetch('/api/mission-control', { cache: 'no-store' });
+    if (!res.ok) return;
+    const body = (await res.json()) as MissionControlSnapshot;
+    if (!body || !body.source || !Array.isArray(body.support)) return;
+    useCommandStore.getState().applyMission(body);
+    if (body.source === 'live') {
+      source?.stop();
+      source = null;
+    }
+  } catch {
+    // Keep the last snapshot. Unavailable stays explicit.
+  }
+}
+
 export function startDataLayer() {
   if (source) return;
   useCommandStore.getState().initFromRegistry();
@@ -27,8 +44,10 @@ export function startDataLayer() {
   source.start((event) => useCommandStore.getState().applyEvent(event));
   stopReports = startTaskReportSubscription();
   void pullFleet();
+  void pullMission();
   fleetTimer = window.setInterval(() => {
     void pullFleet();
+    void pullMission();
   }, 60_000);
   let last = performance.now();
   let acc = 0;

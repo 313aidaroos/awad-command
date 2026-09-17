@@ -3,7 +3,7 @@
 import { createServerSupabase } from '@/lib/supabase/server';
 
 export async function sendMagicLink(email: string): Promise<{ error?: string }> {
-  const allowed = process.env.ALLOWED_EMAIL?.toLowerCase().trim();
+  const allowed = (await import('@/lib/env')).allowedEmail().toLowerCase().trim();
   if (!allowed || email.toLowerCase().trim() !== allowed) {
     return { error: 'This command center is private.' };
   }

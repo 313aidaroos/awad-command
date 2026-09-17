@@ -18,6 +18,7 @@ import { FleetPanel } from '@/ui/FleetPanel';
 import { Hotkeys } from '@/ui/Hotkeys';
 import { HoverHud } from '@/ui/HoverHud';
 import { ModeBar } from '@/ui/ModeBar';
+import { MissionControlPanel } from '@/ui/MissionControlPanel';
 import { MorningBriefing } from '@/ui/MorningBriefing';
 import { NewsCorner } from '@/ui/NewsCorner';
 import { ProjectHud } from '@/ui/ProjectHud';
@@ -79,6 +80,7 @@ export function CommandShell() {
           <HoverHud />
           <EventStream />
           <FleetPanel />
+          <MissionControlPanel />
           <NewsCorner />
           <ProjectHud />
           <AgentFollowHud />

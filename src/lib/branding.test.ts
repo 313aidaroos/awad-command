@@ -15,14 +15,17 @@ import {
 } from '@/lib/branding';
 
 describe('branding lock', () => {
-  it('names Cixy as the assistant and Anthropic as the provider', () => {
+  it('names Cixy as the assistant and Anthropic as the provider, with Muslim identity', () => {
     expect(ASSISTANT_NAME).toBe('Cixy');
     expect(ASSISTANT_PROVIDER).toBe('Anthropic');
     expect(PRODUCT_NAME).toBe('AWAD COMMAND');
     expect(poweredByProvider()).toBe('Powered by Anthropic');
-    expect(assistantSystemIdentity()).toBe(
-      'You are Cixy, the executive AI over Awad\'s businesses, powered by Anthropic.',
-    );
+    const identity = assistantSystemIdentity();
+    expect(identity).toContain('Muslim AI operator');
+    expect(identity).toContain('Assalamu alaykum');
+    expect(identity).toContain('not a scholar');
+    expect(identity).toContain('halal-conscious');
+    expect(identity).toContain('powered by Anthropic');
   });
 
   it('keeps the exact Apixis company line', () => {
@@ -55,5 +58,22 @@ describe('branding lock', () => {
     expect(leadAskedByAssistant('ping me')).toBe('Awad asked Cixy to tell you: ping me');
     expect(composeLeadOutboundMessage('ping me')).toBe('Awad asked Cixy to tell you: ping me');
     expect(composeLeadOutboundMessage('ping me')).not.toMatch(/AWAD CEO/);
+  });
+
+  it('includes Cixy Muslim identity: salaam greeting, not a scholar disclaimer, halal-conscious values', () => {
+    const identity = assistantSystemIdentity();
+    // Cixy is Muslim and greets with salaam (assalamu alaykum)
+    expect(identity.toLowerCase()).toContain('muslim');
+    expect(identity.toLowerCase()).toMatch(/assalamu|salaam/);
+    // She is not a scholar on religious matters
+    expect(identity.toLowerCase()).toContain('not a scholar');
+    // Halal-conscious principles
+    expect(identity.toLowerCase()).toContain('halal');
+  });
+
+  it('Mission Control context appears in CEO system prompt', () => {
+    expect(CEO_SYSTEM_PROMPT).toContain('Mission Control');
+    expect(CEO_SYSTEM_PROMPT).toContain('fleet');
+    expect(CEO_SYSTEM_PROMPT).toContain('support');
   });
 });

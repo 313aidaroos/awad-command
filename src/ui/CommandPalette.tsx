@@ -18,6 +18,7 @@ export function CommandPalette() {
   const toggleNews = useCommandStore((s) => s.toggleNews);
   const toggleEventStream = useCommandStore((s) => s.toggleEventStream);
   const toggleFleet = useCommandStore((s) => s.toggleFleet);
+  const toggleMission = useCommandStore((s) => s.toggleMission);
   const voiceMuted = useCommandStore((s) => s.voiceMuted);
   const setVoiceMuted = useCommandStore((s) => s.setVoiceMuted);
 
@@ -103,6 +104,9 @@ export function CommandPalette() {
             </Command.Item>
             <Command.Item className="cursor-pointer rounded-md px-2 py-1.5" onSelect={() => { toggleFleet(); toggle(false); }}>
               Fleet
+            </Command.Item>
+            <Command.Item className="cursor-pointer rounded-md px-2 py-1.5" onSelect={() => { toggleMission(); toggle(false); }}>
+              Mission Control
             </Command.Item>
             <Command.Item className="cursor-pointer rounded-md px-2 py-1.5" onSelect={() => { toggleNews(); toggle(false); }}>
               News

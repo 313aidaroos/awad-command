@@ -1,9 +1,36 @@
 import { describeLeadOwnership } from '@/config/orbLeads';
 import { projects } from '@/projects/registry';
+import type { MissionControlSnapshot } from '@/lib/missionControl';
 import type { CommandState } from '@/store/types';
 
-export function buildContext(state: Pick<CommandState, 'dataMode' | 'projects' | 'agents' | 'events' | 'approvals'>) {
+type CeoContextState = Pick<CommandState, 'dataMode' | 'projects' | 'agents' | 'events' | 'approvals'> &
+  Partial<Pick<CommandState, 'fleet'>> & { mission?: MissionControlSnapshot };
+
+export function buildContext(state: CeoContextState) {
   const lines: string[] = [`dataMode=${state.dataMode}`];
+  if (state.fleet?.source === 'live') {
+    const up = state.fleet.sites.filter((site) => site.ok).length;
+    const total = state.fleet.sites.length;
+    const down = state.fleet.sites.filter((site) => !site.ok).map((site) => site.name).join(', ') || 'none';
+    const slowest = [...state.fleet.sites].filter((site) => site.ok).sort((a, b) => b.ms - a.ms)[0];
+    lines.push(`Fleet: ${up}/${total} up; down=${down}; slowest=${slowest ? `${slowest.name} ${slowest.ms}ms` : 'unavailable'}`);
+  }
+  if (state.mission) {
+    const mission = state.mission;
+    lines.push(`Mission Control: source=${mission.source} ownerAdmin=${mission.ownerAdminEmail} cixy=${mission.cixy.status} provider=${mission.cixy.provider}`);
+    lines.push(
+      `Ops: openTasks=${mission.ops.openTasks.available ? mission.ops.openTasks.count : `unavailable (${mission.ops.openTasks.reason})`} computer=${mission.ops.computer.workerConnected ? 'online' : 'offline'} halted=${mission.ops.computer.halted}`,
+    );
+    lines.push(
+      `Revenue/leads today: revenue=${mission.financial.revenueToday.available ? mission.financial.revenueToday.amount : `unavailable (${mission.financial.revenueToday.reason})`} leads=${mission.financial.leadsToday.available ? mission.financial.leadsToday.count : `unavailable (${mission.financial.leadsToday.reason})`}`,
+    );
+    lines.push(`Costs: ${mission.financial.costs.available ? `$${mission.financial.costs.monthlyUsd}/mo paused=${mission.financial.costs.paused}` : `unavailable (${mission.financial.costs.reason})`}`);
+    lines.push(
+      `Support: ${mission.support
+        .map((item) => `${item.name} alias=${item.supportAlias} tickets=${item.openTickets.available ? item.openTickets.count : 'unavailable'} authAdmin=${item.authAdmin.available ? item.authAdmin.status : 'unavailable'}`)
+        .join('; ')}`,
+    );
+  }
   for (const project of projects) {
     const runtime = state.projects[project.slug];
     if (!runtime) continue;

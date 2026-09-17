@@ -29,3 +29,4 @@ next-env.d.ts
 # os / ide
 .DS_Store
 .vercel
+.env*
