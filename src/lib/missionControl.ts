@@ -1,6 +1,6 @@
 import { companyOps, ownerAdminEmail } from '@/config/companyOps';
 import type { ComputerStatus } from '@/lib/computerControl';
-import { anthropicModel, isAnthropicCeoEnabled } from '@/lib/env';
+import { anthropicModel, isAnthropicCeoEnabled, FLEET_BOT_MODEL, CRON_PAUSED } from '@/lib/env';
 import type { FleetSnapshot, FleetSiteStatus } from '@/lib/fleetProbe';
 import { createServiceSupabase } from '@/lib/supabase/service';
 
@@ -43,9 +43,9 @@ export interface MissionControlSnapshot {
   };
   ops: {
     openTasks: Availability<{ count: number }>;
-    computer: { workerConnected: boolean; halted: boolean; capabilities: string[]; demo: boolean };
+    computer: { workerConnected: boolean; halted: boolean; capabilities: string[]; demo: boolean; cronPaused: boolean };
   };
-  cixy: ReturnType<typeof summarizeCixyReadiness> & { provider: string; model: string };
+  cixy: ReturnType<typeof summarizeCixyReadiness> & { provider: string; model: string; fleetBotModel: string; cronPaused: boolean };
 }
 
 export function summarizeCixyReadiness(input: {
@@ -154,9 +154,9 @@ export function emptyMissionControlSnapshot(): MissionControlSnapshot {
     },
     ops: {
       openTasks: unavailable(reason),
-      computer: { workerConnected: false, halted: false, capabilities: [], demo: true },
+      computer: { workerConnected: false, halted: false, capabilities: [], demo: true, cronPaused: CRON_PAUSED },
     },
-    cixy: { status: 'offline', missing: ['live fleet', 'live ops database', 'computer worker'], provider: 'unknown', model: 'unknown' },
+    cixy: { status: 'offline', missing: ['live fleet', 'live ops database', 'computer worker'], provider: 'unknown', model: 'unknown', fleetBotModel: FLEET_BOT_MODEL, cronPaused: CRON_PAUSED },
   };
 }
 
@@ -217,8 +217,9 @@ export async function buildMissionControlSnapshot(input: {
         halted: input.computer.halted,
         capabilities: input.computer.capabilities,
         demo: input.computer.demo,
+        cronPaused: CRON_PAUSED,
       },
     },
-    cixy: { ...readiness, provider: cixyInput.provider, model: cixyInput.model },
+    cixy: { ...readiness, provider: cixyInput.provider, model: FLEET_BOT_MODEL, fleetBotModel: FLEET_BOT_MODEL, cronPaused: CRON_PAUSED },
   };
 }

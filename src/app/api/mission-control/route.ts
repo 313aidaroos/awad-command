@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { buildMissionControlSnapshot } from '@/lib/missionControl';
 import { readComputerStatus } from '@/lib/computerControl';
-import { isAnthropicCeoEnabled, anthropicModel } from '@/lib/env';
+import { isAnthropicCeoEnabled, FLEET_BOT_MODEL } from '@/lib/env';
 import { probeFleetSites, type FleetSnapshot } from '@/lib/fleetProbe';
 
 export const dynamic = 'force-dynamic';
@@ -18,7 +18,7 @@ export async function GET() {
     cixy: {
       provider: isAnthropicCeoEnabled() ? 'anthropic' : 'demo',
       enabled: isAnthropicCeoEnabled(),
-      model: anthropicModel(),
+      model: FLEET_BOT_MODEL,
     },
   });
   return NextResponse.json(body, { headers: { 'Cache-Control': 'no-store' } });

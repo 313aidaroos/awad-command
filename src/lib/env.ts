@@ -27,8 +27,12 @@ export function anthropicApiKey(): string {
 }
 
 export function anthropicModel(): string {
-  return readServerEnv('ANTHROPIC_MODEL') || 'claude-sonnet-5';
+  const raw = process.env.ANTHROPIC_MODEL || 'claude-sonnet-5';
+  return raw.replace(/["\s]/g, '');
 }
+
+export const FLEET_BOT_MODEL = 'xai/grok-4-fast (primary) + nous/hermes (fallback)';
+export const CRON_PAUSED = true; // both jobs paused
 
 /** True only when Anthropic is intentionally selected and a non-empty key is present. */
 export function isAnthropicCeoEnabled(): boolean {
