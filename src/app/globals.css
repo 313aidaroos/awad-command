@@ -15,8 +15,7 @@
   --s-warning: #f2994a;
   --s-error: #e5533d;
   --s-offline: #3a3e45;
-  --font-ui: 'Inter Tight', system-ui, sans-serif;
-  --font-num: 'Geist Mono', ui-monospace, monospace;
+  --font-main: 'Special Elite', monospace;
   --radius: 14px;
   --blur: 18px;
 }
@@ -27,8 +26,7 @@
   --color-text: var(--text);
   --color-muted: var(--muted);
   --color-accent: var(--accent);
-  --font-sans: var(--font-ui);
-  --font-num: var(--font-num);
+  --font-sans: var(--font-main);
 }
 
 * {
@@ -36,17 +34,13 @@
 }
 
 html,
-body {
+body,
+* {
   height: 100%;
   background: var(--void);
   color: var(--text);
-  font-family: var(--font-ui);
+  font-family: var(--font-main);
   overflow: hidden;
-}
-
-.font-num {
-  font-family: var(--font-num);
-  font-variant-numeric: tabular-nums;
 }
 
 .glass {

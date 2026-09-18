@@ -9,7 +9,7 @@ export default function GlobalError({ reset }: { error: Error; reset: () => void
           minHeight: '100vh',
           background: '#07080a',
           color: '#e6e8ec',
-          fontFamily: 'system-ui, sans-serif',
+          fontFamily: "'Special Elite', monospace",
         }}
       >
         <div
