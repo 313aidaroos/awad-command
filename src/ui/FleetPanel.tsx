@@ -17,7 +17,7 @@ export function FleetPanel() {
   const up = fleet.sites.filter((site) => site.ok).length;
 
   return (
-    <Glass className="fixed left-6 top-16 z-20 hidden md:block w-[280px] max-h-[calc(100vh-5rem)] overflow-auto p-3.5 text-[11px]">
+    <Glass className="fixed left-6 top-16 bottom-4 z-20 hidden md:block w-[280px] overflow-auto p-3.5 text-[11px]">
       <h4 className="mb-2 flex items-center justify-between text-[10px] tracking-[0.14em] text-[var(--muted)] font-normal">
         <span>
           <span className="dot" />

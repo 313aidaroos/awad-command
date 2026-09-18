@@ -20,7 +20,7 @@ export function MissionControlPanel() {
   const topSupport = mission.support.slice(0, 6);
 
   return (
-    <Glass className="fixed right-6 top-16 z-20 hidden xl:block w-[320px] max-h-[calc(100vh-5rem)] overflow-auto p-3.5 text-[11px]">
+    <Glass className="fixed right-6 top-16 bottom-4 z-20 hidden xl:block w-[320px] overflow-auto p-3.5 text-[11px]">
       <h4 className="mb-2 flex items-center justify-between text-[10px] tracking-[0.14em] text-[var(--muted)] font-normal">
         <span><span className="dot" />Mission Control</span>
         <span className="tag" style={{ margin: 0 }}>{mission.source === 'live' ? 'live' : 'unavailable'}</span>
