@@ -1,6 +1,7 @@
 import type { AgentDefinition } from '@/types/agent';
 import type { ProjectDefinition, ProjectMetrics, ProjectStatus } from '@/types/project';
 import type { Flow, WorldNode } from '@/types/world';
+import { OUTREACH_SEAT } from '@/projects/outreach';
 
 export function ringPositions(
   count: number,
@@ -24,8 +25,11 @@ export function makeAgents(
   }[],
   radius = 4.5,
 ): AgentDefinition[] {
-  const spots = ringPositions(members.length, radius, 0.4);
-  return members.map((member, i) => ({
+  const roster = members.some((m) => m.name === OUTREACH_SEAT.name)
+    ? members
+    : [...members, { ...OUTREACH_SEAT }];
+  const spots = ringPositions(roster.length, radius, 0.4);
+  return roster.map((member, i) => ({
     id: `${projectSlug}.${member.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
     projectSlug,
     name: member.name,
