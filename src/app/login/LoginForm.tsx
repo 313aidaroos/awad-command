@@ -23,7 +23,7 @@ export function LoginForm() {
       }}
     >
       <label className="text-sm">
-        Owner email
+        Owner or backup email
         <input
           type="email"
           required

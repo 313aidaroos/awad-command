@@ -1,16 +1,12 @@
 "use server";
 import { createServerSupabase } from "@/lib/supabase/server";
-import { allowedEmail } from "@/lib/env";
+import { isOwnerEmail } from "@/lib/env";
 import { redirect } from "next/navigation";
 export async function signInOwner(
   email: string,
   password: string,
 ): Promise<{ error?: string }> {
-  if (
-    email.trim().toLowerCase() !== allowedEmail().toLowerCase() ||
-    !password ||
-    password.length > 1024
-  )
+  if (!isOwnerEmail(email) || !password || password.length > 1024)
     return { error: "Invalid email or password." };
   const db = await createServerSupabase();
   if (!db)
@@ -19,10 +15,10 @@ export async function signInOwner(
         "The private login connection is not configured in this deployment.",
     };
   const { data, error } = await db.auth.signInWithPassword({
-    email: allowedEmail(),
+    email: email.trim().toLowerCase(),
     password,
   });
-  if (error || data.user?.email?.toLowerCase() !== allowedEmail().toLowerCase())
+  if (error || !isOwnerEmail(data.user?.email))
     return { error: "Invalid email or password." };
   redirect("/");
 }
@@ -35,8 +31,7 @@ export async function signOutOwner() {
 export async function sendMagicLink(
   email: string,
 ): Promise<{ error?: string }> {
-  if (email.trim().toLowerCase() !== allowedEmail().toLowerCase())
-    return { error: "This command center is private." };
+  if (!isOwnerEmail(email)) return { error: "This command center is private." };
   const db = await createServerSupabase();
   if (!db)
     return {
@@ -44,7 +39,7 @@ export async function sendMagicLink(
         "The private login connection is not configured in this deployment.",
     };
   const { error } = await db.auth.signInWithOtp({
-    email: allowedEmail(),
+    email: email.trim().toLowerCase(),
     options: {
       shouldCreateUser: false,
       emailRedirectTo: "https://awad-command.vercel.app/auth/callback",

@@ -18,6 +18,17 @@ export function allowedEmail(): string {
   return readServerEnv("ALLOWED_EMAIL") || DEFAULT_ALLOWED_EMAIL;
 }
 
+/** Explicit owner addresses only; backup is configured server-side. */
+export function isOwnerEmail(email: string | null | undefined): boolean {
+  if (!email) return false;
+  const normalized = email.trim().toLowerCase();
+  const backup = readServerEnv("BACKUP_OWNER_EMAIL").toLowerCase();
+  return (
+    normalized === allowedEmail().trim().toLowerCase() ||
+    (!!backup && normalized === backup)
+  );
+}
+
 export function isAuthConfigured(): boolean {
   return Boolean(supabaseUrl() && supabaseAnonKey() && allowedEmail());
 }

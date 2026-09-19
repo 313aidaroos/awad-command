@@ -14,8 +14,8 @@ export default function Page() {
         <section className="mx-auto max-w-lg space-y-5 rounded-xl border border-amber-200/30 bg-slate-950 p-6">
           <h1 className="font-serif text-2xl text-amber-100">Owner access</h1>
           <p>
-            You are the only authorized account. There is no public signup or
-            guest access.
+            Only your configured owner and backup emails can sign in. There is
+            no public signup or guest access.
           </p>
           <p>
             Set your password here privately. Do not put it in chat. Your
