@@ -3,6 +3,8 @@ import { useState, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { MessageSquare, Minus } from "lucide-react";
 import { ALL_LEADS, getLeadBySlug } from "@/config/orbLeads";
+import { projects } from "@/projects/registry";
+import { OfficeChat } from "./OfficeChat";
 import { LeadMessagePanel } from "./LeadMessagePanel";
 import { MODULES } from "@/config/modules";
 import "./lead-chat.css";
@@ -21,9 +23,20 @@ function LeadChat({ company }: { company?: string }) {
   const [open, setOpen] = useState(false),
     [selected, setSelected] = useState(company ?? "");
   const launcher = useRef<HTMLButtonElement>(null);
+  const [channel, setChannel] = useState("office");
+  const [agentChoice, setAgentChoice] = useState("");
+  const project = projects.find(
+    (p) => p.slug === (selected === "books" ? "publishing" : selected),
+  );
+  const agent =
+    project?.agents.find((a) => a.id === agentChoice) ??
+    project?.agents.find((a) => a.role === "Lead") ??
+    project?.agents[0];
   const lead = getLeadBySlug(selected);
   const title =
-    lead?.leadName ??
+    (channel === "office" && project
+      ? `${project.name} office`
+      : lead?.leadName) ??
     (company
       ? `${MODULES.find((m) => m.slug === company)?.name ?? company} lead`
       : "Business leads");
@@ -60,6 +73,17 @@ function LeadChat({ company }: { company?: string }) {
             </button>
           </header>
           <label className="lead-chat-selector">
+            Chat connection
+            <select
+              aria-label="Chat connection"
+              value={channel}
+              onChange={(e) => setChannel(e.target.value)}
+            >
+              <option value="office">Direct office AI</option>
+              <option value="hub">External lead hub</option>
+            </select>
+          </label>
+          <label className="lead-chat-selector">
             Speak to
             <select
               aria-label="Choose business lead"
@@ -67,10 +91,17 @@ function LeadChat({ company }: { company?: string }) {
               onChange={(e) => setSelected(e.target.value)}
             >
               <option value="">Choose a lead…</option>
-              {company && !getLeadBySlug(company) && (
+              {channel === "hub" && company && !getLeadBySlug(company) && (
                 <option value={company}>{title} — not configured</option>
               )}
-              {ALL_LEADS.map((l) => (
+              {(channel === "office"
+                ? projects.map((p) => ({
+                    slug: p.slug,
+                    leadName: p.name,
+                    comingSoon: false,
+                  }))
+                : ALL_LEADS
+              ).map((l) => (
                 <option key={l.slug} value={l.slug}>
                   {l.leadName}
                   {l.comingSoon ? " · pending setup" : ""}
@@ -78,7 +109,25 @@ function LeadChat({ company }: { company?: string }) {
               ))}
             </select>
           </label>
-          {lead ? (
+          {channel === "office" && agent ? (
+            <>
+              <label className="lead-chat-selector">
+                Agent
+                <select
+                  aria-label="Choose office agent"
+                  value={agent.id}
+                  onChange={(e) => setAgentChoice(e.target.value)}
+                >
+                  {project!.agents.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name} · {a.role}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <OfficeChat key={agent.id} agentId={agent.id} />
+            </>
+          ) : channel === "hub" && lead ? (
             <>
               <p className="lead-chat-note">
                 {lead.comingSoon

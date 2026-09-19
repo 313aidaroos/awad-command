@@ -1,6 +1,8 @@
 "use client";
 
 import "./hq.css";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { FloatingLeadChat } from "@/ui/FloatingLeadChat";
 import { WorkspaceRoom } from "./WorkspaceRoom";
 import { useEffect, useMemo, type ReactNode } from "react";
@@ -28,6 +30,18 @@ export function AppShell({
   embeddedCixy?: boolean;
   leadSlug?: string | null;
 }) {
+  const pathname = usePathname();
+  const selectedBusiness =
+    leadSlug ??
+    (pathname.startsWith("/projects/")
+      ? pathname.split("/")[2]
+      : (
+          {
+            "/books": "publishing",
+            "/content": "content",
+            "/crypto-floor": "awadbot",
+          } as Record<string, string>
+        )[pathname]);
   const data = useDashboard();
   useEffect(() => {
     // Cixy console renders nothing while the store is in 'boot'; landing pages are not 3D so mark ready.
@@ -63,6 +77,21 @@ export function AppShell({
             headquarters ? "hq-main" : "min-w-0 flex-1 px-4 pb-24 pt-5 lg:pb-10"
           }
         >
+          <nav
+            aria-label="Business controls"
+            className="mb-3 flex flex-wrap gap-4 text-xs text-cyan-200"
+          >
+            <Link
+              href={
+                selectedBusiness
+                  ? `/agents?company=${selectedBusiness === "books" ? "publishing" : selectedBusiness}`
+                  : "/agents"
+              }
+            >
+              Manage teams
+            </Link>
+            <Link href="/email">Cixy Mailroom</Link>
+          </nav>
           <WorkspaceRoom>{children(data)}</WorkspaceRoom>
         </main>
       </div>

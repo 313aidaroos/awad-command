@@ -1,3 +1,4 @@
+import { isLeadOwner } from "@/lib/leadOwner";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { runCeoTurn } from "@/ceo/runCeoTurn";
@@ -53,7 +54,15 @@ async function enrichContext(context: z.infer<typeof ContextSchema>) {
 }
 
 export async function POST(request: Request) {
-  const parsed = BodySchema.safeParse(await request.json());
+  if (!(await isLeadOwner()))
+    return NextResponse.json(
+      { error: "Sign in as owner to speak with Cixy." },
+      { status: 401 },
+    );
+  const origin = request.headers.get("origin");
+  if (origin && origin !== new URL(request.url).origin)
+    return NextResponse.json({ error: "Invalid origin." }, { status: 403 });
+  const parsed = BodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid body" }, { status: 400 });
   }
