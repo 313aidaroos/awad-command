@@ -1,6 +1,7 @@
 "use client";
 
 import "./hq.css";
+import { FloatingLeadChat } from "@/ui/FloatingLeadChat";
 import { WorkspaceRoom } from "./WorkspaceRoom";
 import { useEffect, useMemo, type ReactNode } from "react";
 import { MobileNavigation, Sidebar, TopNavigation } from "@/landing/Navigation";
@@ -20,10 +21,12 @@ export function AppShell({
   children,
   headquarters = true,
   embeddedCixy = false,
+  leadSlug,
 }: {
   children: (data: ReturnType<typeof useDashboard>) => ReactNode;
   headquarters?: boolean;
   embeddedCixy?: boolean;
+  leadSlug?: string | null;
 }) {
   const data = useDashboard();
   useEffect(() => {
@@ -75,6 +78,7 @@ export function AppShell({
         <MobileNavigation />
       )}
       {!embeddedCixy && <CeoConsole />}
+      <FloatingLeadChat companySlug={leadSlug} />
     </div>
   );
 }

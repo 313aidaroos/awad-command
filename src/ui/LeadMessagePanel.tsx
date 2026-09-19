@@ -1,18 +1,18 @@
-'use client';
+"use client";
 
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { getLeadBySlug } from '@/config/orbLeads';
-import { clock } from '@/lib/format';
-import { uid } from '@/lib/ids';
-import { useCommandStore } from '@/store/useCommandStore';
-import type { LeadMessage } from '@/types/approval';
-import type { EventType } from '@/types/events';
+import { useEffect, useMemo, useRef, useState } from "react";
+import { getLeadBySlug } from "@/config/orbLeads";
+import { clock } from "@/lib/format";
+import { uid } from "@/lib/ids";
+import { useCommandStore } from "@/store/useCommandStore";
+import type { LeadMessage } from "@/types/approval";
+import type { EventType } from "@/types/events";
 
 const POLL_MS = 3500;
 const THREAD_LIMIT = 16;
 
-function directionOf(item: LeadMessage): 'outbound' | 'inbound' {
-  return item.direction ?? 'outbound';
+function directionOf(item: LeadMessage): "outbound" | "inbound" {
+  return item.direction ?? "outbound";
 }
 
 export function LeadMessagePanel({ slug }: { slug: string }) {
@@ -29,8 +29,10 @@ export function LeadMessagePanel({ slug }: { slug: string }) {
         .slice(-THREAD_LIMIT),
     [leadMessages, slug],
   );
-  const [text, setText] = useState('');
+  const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const sendingRef = useRef(false);
   const [hint, setHint] = useState<string | null>(null);
   const seenRef = useRef(new Set<string>());
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -50,13 +52,30 @@ export function LeadMessagePanel({ slug }: { slug: string }) {
 
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
+    let pulling = false;
 
     async function pull() {
+      if (pulling || document.hidden || !lead) return;
+      pulling = true;
       try {
-        const res = await fetch(`/api/lead-thread?projectSlug=${encodeURIComponent(slug)}`, {
-          cache: 'no-store',
-        });
-        if (!res.ok || cancelled) return;
+        const res = await fetch(
+          `/api/lead-thread?projectSlug=${encodeURIComponent(slug)}`,
+          {
+            cache: "no-store",
+            signal: controller.signal,
+          },
+        );
+        if (cancelled) return;
+        if (!res.ok) {
+          setLoadError(
+            res.status === 401
+              ? "Sign in to read and send lead messages."
+              : "Conversation unavailable. Retrying…",
+          );
+          return;
+        }
+        setLoadError(null);
         const body = (await res.json()) as { messages?: LeadMessage[] };
         const incoming = body.messages ?? [];
         if (incoming.length === 0) return;
@@ -64,21 +83,23 @@ export function LeadMessagePanel({ slug }: { slug: string }) {
         for (const item of incoming) {
           if (seenRef.current.has(item.id)) continue;
           seenRef.current.add(item.id);
-          if (directionOf(item) !== 'inbound') continue;
+          if (directionOf(item) !== "inbound") continue;
           applyEvent({
             id: `evt_${item.id}`,
             ts: item.ts,
-            type: 'lead.message.replied' satisfies EventType,
+            type: "lead.message.replied" satisfies EventType,
             projectSlug: item.projectSlug,
             agentId: item.agentId,
             summary: `${item.leadName} replied`,
-            source: 'live',
+            source: "live",
             payload: { message: item.message },
           });
-          setHint('Reply received');
+          setHint("Reply received");
         }
       } catch {
-        // Thread stays on last known store state.
+        if (!cancelled) setLoadError("Connection interrupted. Retrying…");
+      } finally {
+        pulling = false;
       }
     }
 
@@ -86,34 +107,46 @@ export function LeadMessagePanel({ slug }: { slug: string }) {
     const timer = window.setInterval(() => void pull(), POLL_MS);
     return () => {
       cancelled = true;
+      controller.abort();
       window.clearInterval(timer);
     };
   }, [slug, mergeLeadMessages, applyEvent]);
 
   if (!lead) {
-    return <p className="mt-3 text-[11px] text-[var(--muted)]">No hub lead is wired to this orb yet.</p>;
+    return (
+      <p className="mt-3 text-[11px] text-[var(--muted)]">
+        No hub lead is wired to this orb yet.
+      </p>
+    );
   }
 
   async function send() {
     const message = text.trim();
-    if (!message || busy || !lead) return;
+    if (!message || sendingRef.current || !lead) return;
+    sendingRef.current = true;
     setBusy(true);
     setHint(null);
     try {
-      const res = await fetch('/api/lead-message', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/lead-message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ projectSlug: slug, message }),
       });
       const body = (await res.json()) as {
-        status: 'queued' | 'delivered' | 'failed';
+        status: "queued" | "delivered" | "failed";
         demo?: boolean;
         error?: string;
         id?: string;
         ts?: number;
       };
+      if (!["queued", "delivered", "failed"].includes(body.status)) {
+        setHint(
+          body.error ?? "Message was not accepted. Your text is kept below.",
+        );
+        return;
+      }
       const record: LeadMessage = {
-        id: body.id ?? uid('lm'),
+        id: body.id ?? uid("lm"),
         projectSlug: slug,
         leadName: lead.leadName,
         agentId: lead.agentId,
@@ -121,7 +154,7 @@ export function LeadMessagePanel({ slug }: { slug: string }) {
         status: body.status,
         ts: body.ts ?? Date.now(),
         error: body.error,
-        direction: 'outbound',
+        direction: "outbound",
       };
       seenRef.current.add(record.id);
       queue(record);
@@ -129,37 +162,50 @@ export function LeadMessagePanel({ slug }: { slug: string }) {
         id: record.id,
         ts: record.ts,
         type:
-          body.status === 'delivered'
-            ? 'lead.message.delivered'
-            : body.status === 'failed'
-              ? 'lead.message.failed'
-              : 'lead.message.queued',
+          body.status === "delivered"
+            ? "lead.message.delivered"
+            : body.status === "failed"
+              ? "lead.message.failed"
+              : "lead.message.queued",
         projectSlug: slug,
         summary:
-          body.status === 'delivered'
+          body.status === "delivered"
             ? `Message delivered to ${lead.leadName}`
-            : body.status === 'failed'
+            : body.status === "failed"
               ? `Lead message failed · ${lead.leadName}`
               : `Message queued for ${lead.leadName}`,
-        source: 'demo',
+        source: body.demo ? "demo" : "live",
         payload: { demo: body.demo ?? false },
       });
       setHint(
-        body.status === 'delivered'
-          ? 'Delivered'
-          : body.status === 'failed'
-            ? body.error ?? 'Not delivered'
-            : 'Queued · DEMO',
+        body.status === "delivered"
+          ? "Delivered"
+          : body.status === "failed"
+            ? (body.error ?? "Not delivered")
+            : "Saved as queued — not delivered to the lead.",
       );
-      if (body.status !== 'failed') setText('');
+      if (body.status !== "failed") setText("");
+    } catch {
+      setHint(
+        "Delivery could not be confirmed. Check the conversation before sending again.",
+      );
     } finally {
+      sendingRef.current = false;
       setBusy(false);
     }
   }
 
   return (
     <div className="mt-3 border-t border-[var(--line)] pt-3">
-      <div className="text-[10px] tracking-[0.14em] text-[var(--muted)] mb-2">Message lead</div>
+      <div className="text-[10px] tracking-[0.14em] text-[var(--muted)] mb-2">
+        Message lead
+      </div>
+      {loadError && (
+        <p role="status" className="lead-chat-error">
+          {loadError}{" "}
+          {loadError.startsWith("Sign in") && <a href="/login">Sign in →</a>}
+        </p>
+      )}
       <div
         ref={scrollerRef}
         className="mb-2 max-h-44 overflow-y-auto pr-0.5"
@@ -167,22 +213,33 @@ export function LeadMessagePanel({ slug }: { slug: string }) {
         aria-label="Lead conversation"
       >
         {thread.length === 0 ? (
-          <p className="text-[11px] text-[var(--muted)]">No messages yet. Replies from this lead land here.</p>
+          <p className="text-[11px] text-[var(--muted)]">
+            No messages yet. Replies from this lead land here.
+          </p>
         ) : (
           thread.map((item) => {
-            const inbound = directionOf(item) === 'inbound';
+            const inbound = directionOf(item) === "inbound";
             return (
               <div key={item.id} className="mb-2.5 last:mb-0">
                 <div className="flex items-center justify-between gap-2 text-[10px] text-[var(--muted)]">
                   <span>
-                    <span className="tag" style={{ marginLeft: 0, marginRight: 6 }}>
-                      {inbound ? 'lead' : item.status === 'delivered' ? 'sent' : item.status}
+                    <span
+                      className="tag"
+                      style={{ marginLeft: 0, marginRight: 6 }}
+                    >
+                      {inbound
+                        ? "lead"
+                        : item.status === "delivered"
+                          ? "sent"
+                          : item.status}
                     </span>
-                    {inbound ? item.leadName : 'You'}
+                    {inbound ? item.leadName : "You"}
                   </span>
                   <span className="font-num">{clock(item.ts)}</span>
                 </div>
-                <p className={`mt-1 text-[11px] leading-relaxed ${inbound ? 'text-[var(--text)]' : 'text-[var(--muted)]'}`}>
+                <p
+                  className={`mt-1 text-[11px] leading-relaxed ${inbound ? "text-[var(--text)]" : "text-[var(--muted)]"}`}
+                >
                   {item.message}
                 </p>
               </div>
@@ -191,6 +248,15 @@ export function LeadMessagePanel({ slug }: { slug: string }) {
         )}
       </div>
       <textarea
+        aria-label={`Message to ${lead.leadName}`}
+        maxLength={4000}
+        disabled={busy}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+            e.preventDefault();
+            void send();
+          }
+        }}
         value={text}
         onChange={(e) => setText(e.target.value)}
         placeholder={`Talk to ${lead.leadName}…`}
@@ -200,12 +266,19 @@ export function LeadMessagePanel({ slug }: { slug: string }) {
         <button
           type="button"
           onClick={() => void send()}
-          disabled={busy || !text.trim()}
+          disabled={busy || !text.trim() || !!loadError?.startsWith("Sign in")}
           className="rounded-full bg-[var(--accent)]/20 px-3 py-1 text-[11px] text-[var(--text)] disabled:opacity-40"
         >
-          {busy ? 'Sending' : 'Send'}
+          {busy ? "Sending" : "Send"}
         </button>
-        {hint ? <span className="font-num text-[10px] text-[var(--muted)]">{hint}</span> : null}
+        {hint ? (
+          <span
+            role="status"
+            className="font-num text-[10px] text-[var(--muted)]"
+          >
+            {hint}
+          </span>
+        ) : null}
       </div>
     </div>
   );
