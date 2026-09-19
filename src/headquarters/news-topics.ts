@@ -64,8 +64,8 @@ export const newsTopics = {
       '("military history" OR "world war" OR "on this day") (from:I_W_M OR from:USNatArchives OR from:HistoryExtra OR from:smithsonian)',
     feeds: [
       [
-        "Smithsonian History",
-        "https://www.smithsonianmag.com/rss/history_philosophy/",
+        "US National Archives",
+        "https://prologue.blogs.archives.gov/feed/",
       ],
     ],
   },
