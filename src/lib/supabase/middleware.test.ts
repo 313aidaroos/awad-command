@@ -5,7 +5,8 @@ vi.mock("@/lib/env", () => ({
   AWAD_COMMAND_SCHEMA: "awad_command",
   supabaseUrl: () => "https://example.supabase.co",
   supabaseAnonKey: () => "test-public-key",
-  allowedEmail: () => "owner@example.com",
+  isOwnerEmail: (email: string) =>
+    ["owner@example.com", "backup@example.com"].includes(email?.toLowerCase()),
   isAuthConfigured: vi.fn(() => true),
 }));
 import { createServerClient } from "@supabase/ssr";
@@ -73,6 +74,14 @@ describe("private owner perimeter", () => {
     );
     expect(r.status).toBe(200);
     expect(r.headers.get("cache-control")).toBe("private, no-store");
+  });
+  it("allows the configured backup owner through the same perimeter", async () => {
+    auth("backup@example.com");
+    const r = await updateSession(
+      new NextRequest("https://example.com/payments"),
+    );
+    expect(r.status).toBe(200);
+    expect(r.headers.get("Cache-Control")).toBe("private, no-store");
   });
   it("keeps the bearer-verified inbound webhook reachable without exposing GET", async () => {
     expect(

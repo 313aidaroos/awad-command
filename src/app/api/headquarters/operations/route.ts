@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceSupabase } from "@/lib/supabase/service";
-import { allowedEmail } from "@/lib/env";
+import { isOwnerEmail } from "@/lib/env";
 import { summarizeLedger } from "@/headquarters/normalize";
 export const runtime = "nodejs";
 export async function GET() {
   const auth = await createServerSupabase();
   const user = auth ? (await auth.auth.getUser()).data.user : null;
-  if (!user || user.email?.toLowerCase() !== allowedEmail().toLowerCase())
+  if (!user || !isOwnerEmail(user.email))
     return NextResponse.json(
       { error: "Sign in to view private tasks and financial records." },
       { status: 401, headers: { "Cache-Control": "no-store" } },

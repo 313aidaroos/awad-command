@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import {
   AWAD_COMMAND_SCHEMA,
-  allowedEmail,
+  isOwnerEmail,
   isAuthConfigured,
   supabaseUrl,
   supabaseAnonKey,
@@ -40,8 +40,7 @@ export async function updateSession(request: NextRequest) {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      owner =
-        !!user && user.email?.toLowerCase() === allowedEmail().toLowerCase();
+      owner = !!user && isOwnerEmail(user.email);
     } catch {
       owner = false;
     }

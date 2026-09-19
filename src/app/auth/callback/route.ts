@@ -1,4 +1,4 @@
-import { allowedEmail } from "@/lib/env";
+import { isOwnerEmail } from "@/lib/env";
 import { NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 
@@ -10,10 +10,7 @@ export async function GET(request: Request) {
     const supabase = await createServerSupabase();
     if (supabase) {
       const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-      if (
-        error ||
-        data.user?.email?.toLowerCase() !== allowedEmail().toLowerCase()
-      ) {
+      if (error || !isOwnerEmail(data.user?.email)) {
         await supabase.auth.signOut({ scope: "local" });
         return NextResponse.redirect(new URL("/login", origin));
       }
