@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createEmailDraft } from "@/lib/cixyEmail";
 import { OUTREACH_LIMIT } from "@/projects/outreach";
-import { publisherLetter } from "@/projects/lyrixis/outreachTemplate";
+import { letterFor } from "@/projects/outreachLetters";
 import { getProject } from "@/projects/registry";
 
 const Row = z.object({
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
 
   const drafts: { to: string; draftId?: string; error?: string }[] = [];
   for (const row of parsed.data.rows) {
-    const letter = publisherLetter(row);
+    const letter = letterFor(parsed.data.projectSlug, row);
     try {
       const saved = await createEmailDraft({
         to: letter.to,
