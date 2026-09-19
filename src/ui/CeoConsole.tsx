@@ -14,6 +14,7 @@ import { emotionForMessage, type CixyEmotion } from "@/lib/cixyCharacter";
 import { useRouter } from "next/navigation";
 import { Mic, MicOff, Keyboard, Send, Volume2, VolumeX } from "lucide-react";
 import { useCommandStore } from "@/store/useCommandStore";
+import { CixyCustomizer } from "@/ui/CixyCustomizer";
 
 interface ChatTurn {
   role: "user" | "ceo";
@@ -374,6 +375,7 @@ export function CeoConsole({
                 ? "Resume character animation"
                 : "Pause character animation"}
             </button>
+            <CixyCustomizer />
           </details>
           <div className="hq-cixy-shortcuts">
             {[

@@ -1,6 +1,8 @@
 "use server";
 import { createServerSupabase } from "@/lib/supabase/server";
+import { createServiceSupabase } from "@/lib/supabase/service";
 import { isOwnerEmail } from "@/lib/env";
+import { resendRequest } from "@/lib/cixyEmail";
 import { redirect } from "next/navigation";
 export async function signInOwner(
   email: string,
@@ -32,6 +34,35 @@ export async function sendMagicLink(
   email: string,
 ): Promise<{ error?: string }> {
   if (!isOwnerEmail(email)) return { error: "This command center is private." };
+  const normalizedEmail = email.trim().toLowerCase();
+  const admin = createServiceSupabase();
+  if (admin && process.env.RESEND_API_KEY) {
+    const generated = await admin.auth.admin.generateLink({
+      type: "magiclink",
+      email: normalizedEmail,
+      options: {
+        redirectTo: "https://awad-command.vercel.app/auth/callback",
+      },
+    });
+    const link = generated.data.properties?.action_link;
+    if (link && !generated.error) {
+      try {
+        await resendRequest("/emails", {
+          method: "POST",
+          body: JSON.stringify({
+            from: "AWAD COMMAND <awad@apixis.dev>",
+            reply_to: "awad@apixis.dev",
+            to: [normalizedEmail],
+            subject: "Your private AWAD COMMAND sign-in link",
+            text: `Use this private one-time link to enter AWAD COMMAND:\n\n${link}\n\nIf you did not request this, ignore this email.`,
+          }),
+        });
+        return {};
+      } catch {
+        // Fall back to Supabase's configured mailer below.
+      }
+    }
+  }
   const db = await createServerSupabase();
   if (!db)
     return {
@@ -39,7 +70,7 @@ export async function sendMagicLink(
         "The private login connection is not configured in this deployment.",
     };
   const { error } = await db.auth.signInWithOtp({
-    email: email.trim().toLowerCase(),
+    email: normalizedEmail,
     options: {
       shouldCreateUser: false,
       emailRedirectTo: "https://awad-command.vercel.app/auth/callback",

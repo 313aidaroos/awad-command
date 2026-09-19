@@ -1,0 +1,507 @@
+.boardroom {
+  padding: 18px clamp(12px, 2vw, 30px) 32px;
+  background:
+    radial-gradient(circle at 50% 0, #182339 0, transparent 34%), #070b0f;
+  min-height: calc(100vh - 98px);
+  color: #eee8da;
+}
+.boardroom-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: end;
+  margin-bottom: 14px;
+}
+.boardroom-heading small {
+  color: #69d9ee;
+  letter-spacing: 0.18em;
+  font-size: 9px;
+}
+.boardroom-heading h1 {
+  font: 700 clamp(25px, 3vw, 42px) / 1.1 var(--hq-display);
+  letter-spacing: 0.12em;
+  color: #edd4a0;
+  margin: 5px 0;
+}
+.boardroom-heading p {
+  color: #a8b9c5;
+  font-size: 12px;
+}
+.boardroom-count {
+  border: 1px solid #344858;
+  background: #0a121bdd;
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 0 9px;
+  align-items: center;
+  padding: 10px 16px;
+}
+.boardroom-count svg {
+  color: #64d9ee;
+}
+.boardroom-count strong {
+  font: 700 24px var(--hq-display);
+  color: #f0c674;
+}
+.boardroom-count span {
+  grid-column: 1/-1;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: #8da3b1;
+  text-transform: uppercase;
+}
+.boardroom-scene {
+  position: relative;
+  min-height: 330px;
+  max-height: 560px;
+  overflow: hidden;
+  border: 1px solid #7c6336;
+  box-shadow:
+    0 18px 70px #000,
+    inset 0 0 50px #000;
+}
+.boardroom-scene > img {
+  display: block;
+  width: 100%;
+  height: clamp(330px, 42vw, 560px);
+  object-fit: cover;
+  object-position: center;
+  filter: saturate(0.9) contrast(1.06);
+}
+.boardroom-scan {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(0deg, #fff0 0 3px, #bde7ff0a 4px),
+    linear-gradient(90deg, #0008, transparent 24%, transparent 76%, #0008);
+}
+.boardroom-throne,
+.boardroom-cixy,
+.boardroom-live {
+  position: absolute;
+  background: #07111be8;
+  border: 1px solid #886a35;
+  padding: 7px 10px;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.boardroom-throne {
+  bottom: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #f2c86e;
+}
+.boardroom-cixy {
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #66dff3;
+}
+.boardroom-cixy i,
+.boardroom-live i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #3df0a5;
+  box-shadow: 0 0 9px #3df0a5;
+  animation: boardroomPulse 1.8s infinite;
+}
+.boardroom-live {
+  top: 12px;
+  right: 12px;
+  color: #7ff4c0;
+  border-color: #315b4d;
+}
+.boardroom-seat-rail {
+  position: absolute;
+  top: 21%;
+  bottom: 17%;
+  width: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  opacity: 0.8;
+}
+.boardroom-seat-rail.left {
+  left: 7px;
+}
+.boardroom-seat-rail.right {
+  right: 7px;
+}
+.boardroom-seat-rail i {
+  width: 7px;
+  height: 7px;
+  background: #58dff4;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #58dff4;
+  animation: boardroomPulse 2.7s infinite;
+}
+.boardroom-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) 1fr;
+  gap: 14px;
+  margin-top: 14px;
+}
+.boardroom-roster,
+.boardroom-console {
+  border: 1px solid #2d4353;
+  background: #09121bd9;
+  min-width: 0;
+}
+.boardroom-roster > header,
+.boardroom-console > header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid #2d4353;
+  padding: 10px 12px;
+  color: #64d9ee;
+}
+.boardroom-roster h2,
+.boardroom-console h2 {
+  font: 600 11px var(--hq-display);
+  letter-spacing: 0.14em;
+}
+.boardroom-console > header span {
+  margin-left: auto;
+  font-size: 9px;
+  color: #d3b77f;
+}
+.boardroom-scope {
+  padding: 11px;
+  display: grid;
+  gap: 8px;
+  border-bottom: 1px solid #233746;
+}
+.boardroom-scope label {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: #91a8b6;
+  text-transform: uppercase;
+}
+.boardroom-scope select,
+.boardroom-scope input {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  background: #07101a;
+  color: #eee;
+  border: 1px solid #334b5d;
+  padding: 8px;
+  font-size: 11px;
+}
+.boardroom-agent-list {
+  max-height: 520px;
+  overflow: auto;
+  padding: 8px;
+}
+.boardroom-agent-list > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid;
+  padding: 7px 4px;
+}
+.boardroom-agent-list > div > span {
+  display: grid;
+  place-items: center;
+  width: 27px;
+  height: 27px;
+  border-radius: 2px;
+  color: #081019;
+  font-weight: 700;
+}
+.boardroom-agent-list p {
+  margin: 0;
+  min-width: 0;
+}
+.boardroom-agent-list strong,
+.boardroom-agent-list small {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.boardroom-agent-list strong {
+  font-size: 10px;
+}
+.boardroom-agent-list small {
+  font-size: 8px;
+  color: #8298a7;
+  margin-top: 2px;
+}
+.boardroom-agent-list i {
+  margin-left: auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #45df9d;
+  box-shadow: 0 0 7px #45df9d;
+  animation: boardroomPulse 2.3s infinite;
+}
+.boardroom-roster > p {
+  font-size: 8px;
+  color: #768d9d;
+  padding: 8px 11px;
+  border-top: 1px solid #233746;
+}
+.boardroom-log {
+  height: 540px;
+  overflow: auto;
+  padding: 14px;
+}
+.boardroom-empty {
+  display: grid;
+  place-items: center;
+  text-align: center;
+  min-height: 250px;
+  color: #819aaa;
+}
+.boardroom-empty strong {
+  font: 600 20px var(--hq-display);
+  color: #dfc28a;
+}
+.boardroom-empty p {
+  max-width: 520px;
+}
+.boardroom-turn {
+  margin-bottom: 18px;
+}
+.boardroom-you {
+  margin-left: auto;
+  max-width: 75%;
+  border: 1px solid #6d5b36;
+  background: #181710;
+  padding: 10px;
+}
+.boardroom-you strong {
+  color: #f0c674;
+  font: 600 10px var(--hq-display);
+}
+.boardroom-you span {
+  float: right;
+  color: #819aaa;
+  font-size: 8px;
+}
+.boardroom-you p {
+  margin-top: 7px;
+  font-size: 12px;
+}
+.boardroom-reply {
+  margin-top: 10px;
+  border: 1px solid #2d4b5e;
+  background: #0b1721;
+  padding: 12px;
+}
+.boardroom-reply > header {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+}
+.boardroom-reply > header img {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: 50% 25%;
+  border: 1px solid #b28b49;
+}
+.boardroom-reply > header strong,
+.boardroom-reply > header small {
+  display: block;
+}
+.boardroom-reply > header strong {
+  color: #6adff2;
+}
+.boardroom-reply > header small {
+  font-size: 8px;
+  color: #859dab;
+}
+.boardroom-reply > p {
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 11px 0;
+}
+.boardroom-councils {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.boardroom-councils section,
+.boardroom-actions,
+.boardroom-questions {
+  border: 1px solid #243c4c;
+  background: #07111a;
+  padding: 9px;
+}
+.boardroom-councils h3,
+.boardroom-actions h3,
+.boardroom-questions h3 {
+  font: 600 9px var(--hq-display);
+  letter-spacing: 0.08em;
+  color: #e2c286;
+}
+.boardroom-councils h3 span {
+  float: right;
+  color: #738c9c;
+  font: 8px var(--hq-mono);
+}
+.boardroom-councils p,
+.boardroom-actions p,
+.boardroom-questions p {
+  font-size: 10px;
+  line-height: 1.5;
+  color: #c0cdd5;
+  margin-top: 6px;
+}
+.boardroom-actions,
+.boardroom-questions {
+  margin-top: 8px;
+}
+.boardroom-thinking {
+  color: #76dff2;
+  font-size: 11px;
+  padding: 14px;
+}
+.boardroom-thinking i {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #76dff2;
+  margin-right: 4px;
+  animation: boardroomPulse 0.8s infinite;
+}
+.boardroom-console > form {
+  border-top: 1px solid #2d4353;
+  padding: 12px;
+}
+.boardroom-console > form label {
+  display: block;
+  font-size: 9px;
+  color: #d9bd82;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 6px;
+}
+.boardroom-console textarea {
+  width: 100%;
+  min-height: 92px;
+  resize: vertical;
+  background: #061019;
+  border: 1px solid #375269;
+  color: #f0ede6;
+  padding: 10px;
+  font-size: 12px;
+}
+.boardroom-console form > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+.boardroom-console form p {
+  color: #e88f8f;
+  font-size: 9px;
+  flex: 1;
+}
+.boardroom-console form span {
+  font-size: 8px;
+  color: #748b9a;
+}
+.boardroom-console form button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 12px;
+  border: 1px solid #a47b3c;
+  background: linear-gradient(#5c4927, #33260f);
+  color: #ffe5af;
+  font: 600 9px var(--hq-display);
+  letter-spacing: 0.08em;
+}
+.boardroom-console button:disabled {
+  opacity: 0.5;
+}
+.is-speaking .boardroom-cixy {
+  box-shadow: 0 0 22px #45dff055;
+}
+.is-speaking .boardroom-cixy i {
+  animation-duration: 0.45s;
+}
+@keyframes boardroomPulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.18);
+  }
+}
+@media (max-width: 900px) {
+  .boardroom-layout {
+    grid-template-columns: 1fr;
+  }
+  .boardroom-roster {
+    order: 2;
+  }
+  .boardroom-agent-list {
+    max-height: 260px;
+  }
+  .boardroom-log {
+    height: auto;
+    max-height: 650px;
+  }
+  .boardroom-councils {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 600px) {
+  .boardroom {
+    padding: 10px 8px 24px;
+  }
+  .boardroom-heading {
+    align-items: start;
+  }
+  .boardroom-count {
+    padding: 7px;
+  }
+  .boardroom-scene,
+  .boardroom-scene > img {
+    min-height: 260px;
+    height: 260px;
+  }
+  .boardroom-scene > img {
+    object-position: center;
+  }
+  .boardroom-throne {
+    bottom: 7px;
+  }
+  .boardroom-cixy {
+    top: 7px;
+  }
+  .boardroom-live {
+    display: none;
+  }
+  .boardroom-you {
+    max-width: 92%;
+  }
+  .boardroom-console form > div {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .boardroom-console form button {
+    justify-content: center;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .boardroom * {
+    animation: none !important;
+  }
+}

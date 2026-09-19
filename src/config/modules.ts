@@ -240,6 +240,7 @@ export const MODULES: ModuleDefinition[] = [
 export const PRIMARY_TABS = [
   { label: "Home", route: "/" },
   { label: "Headquarters", route: "/command" },
+  { label: "Boardroom", route: "/boardroom" },
   { label: "Business World", route: "/business-world" },
   { label: "Projects", route: "/projects" },
   { label: "Agents", route: "/agents" },
@@ -251,6 +252,7 @@ export const PRIMARY_TABS = [
 ] as const;
 
 export const SIDEBAR_ITEMS = [
+  { label: "Boardroom", route: "/boardroom", glyph: "▰" },
   { label: "Business World", route: "/business-world", glyph: "▦" },
   { label: "Command Center", route: "/command", glyph: "◈" },
   { label: "Projects", route: "/projects", glyph: "⬢" },
