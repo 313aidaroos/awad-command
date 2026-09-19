@@ -21,7 +21,9 @@ export function FloatingLeadChat({
 }
 function LeadChat({ company }: { company?: string }) {
   const [open, setOpen] = useState(false),
-    [selected, setSelected] = useState(company ?? "");
+    [selected, setSelected] = useState(
+      company === "books" ? "publishing" : (company ?? ""),
+    );
   const launcher = useRef<HTMLButtonElement>(null);
   const [channel, setChannel] = useState("office");
   const [agentChoice, setAgentChoice] = useState("");

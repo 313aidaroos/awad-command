@@ -1,0 +1,243 @@
+.daily-desk {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin: 18px 0;
+  color: #e0d3b5;
+}
+.daily-card {
+  min-width: 0;
+  border: 1px solid #6b5738;
+  border-radius: 7px;
+  background: linear-gradient(140deg, #152733, #0a141d 70%);
+  overflow: hidden;
+  box-shadow: inset 0 0 25px #0006;
+}
+.daily-card header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border-bottom: 1px solid #4b4232;
+  font: 11px monospace;
+  letter-spacing: 1px;
+  color: #d8bb80;
+}
+.daily-card header span,
+.daily-card header button {
+  margin-left: auto;
+}
+.daily-inner {
+  padding: 18px;
+}
+.daily-inner h2 {
+  font-family: Georgia, serif;
+  font-size: 28px;
+  margin: 4px 0 12px;
+  color: #efd4a0;
+}
+.daily-inner p {
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 9px 0;
+}
+.daily-inner blockquote {
+  border-left: 2px solid #8c754a;
+  padding-left: 12px;
+  margin: 16px 0;
+  font:
+    italic 15px/1.5 Georgia,
+    serif;
+}
+.daily-inner small {
+  display: block;
+  font-size: 10px;
+  color: #9ea9b0;
+  margin-top: 8px;
+  line-height: 1.5;
+}
+.daily-card button,
+.daily-card input {
+  border: 1px solid #5a6671;
+  border-radius: 4px;
+  padding: 7px;
+  background: #0a1823;
+  color: #e3d0a9;
+  font: 11px monospace;
+}
+.daily-card button {
+  cursor: pointer;
+}
+.daily-card button:hover {
+  background: #253746;
+}
+.daily-card input {
+  display: block;
+  width: 100%;
+  margin: 7px 0;
+}
+.daily-card a {
+  color: #7fd5dc;
+  text-decoration: underline;
+}
+.daily-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  margin: 12px 0;
+}
+.location-watermark {
+  font: 11px monospace;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #82bebf;
+  overflow-wrap: anywhere;
+}
+.retro-clock {
+  display: block;
+  font: 32px monospace;
+  letter-spacing: 4px;
+  color: #eed09a;
+  text-shadow: 0 0 13px #f6c57740;
+  margin: 8px 0;
+}
+.weather-reading {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin: 15px 0;
+}
+.weather-reading strong {
+  font:
+    27px Georgia,
+    serif;
+}
+.weather-reading p {
+  margin: 3px 0;
+}
+.weather-reading button {
+  margin-left: auto;
+}
+.weather-motion {
+  color: #f2ce85;
+  animation: observatory-drift 6s ease-in-out infinite;
+}
+.moon-reading {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font: 12px monospace;
+}
+.moon-reading svg {
+  width: 40px;
+  height: 40px;
+}
+.moon-reading small {
+  margin-top: 4px;
+}
+.city-choice {
+  display: block;
+  width: 100%;
+  text-align: left;
+  margin-bottom: 6px;
+}
+.daily-inner label {
+  font: 12px monospace;
+}
+.history-card .daily-inner > p {
+  max-height: 160px;
+  overflow: auto;
+}
+.daily-card button:focus-visible,
+.daily-card a:focus-visible,
+.daily-card input:focus-visible {
+  outline: 2px solid #70cedd;
+  outline-offset: 3px;
+}
+@keyframes observatory-drift {
+  50% {
+    transform: translateY(-4px);
+    filter: drop-shadow(0 0 7px #e7c57d);
+  }
+}
+@media (max-width: 1050px) {
+  .daily-desk {
+    grid-template-columns: 1fr 1fr;
+  }
+  .weather-card {
+    grid-column: 1/-1;
+  }
+}
+@media (max-width: 600px) {
+  .daily-desk {
+    grid-template-columns: 1fr;
+  }
+  .weather-card {
+    grid-column: auto;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .weather-motion {
+    animation: none;
+  }
+}
+.news-controls {
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+  font: 11px monospace;
+  color: #acb8bf;
+}
+.news-controls label {
+  display: grid;
+  gap: 6px;
+}
+.news-controls select {
+  width: 100%;
+  padding: 9px;
+  color: #e5cc9f;
+  background: #0c1b27;
+  border: 1px solid #566578;
+  border-radius: 4px;
+}
+.news-controls button,
+.news-notice button {
+  padding: 6px 10px;
+  background: #102532;
+  color: #b5d9df;
+  border: 1px solid #466576;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.news-controls button[aria-pressed="true"] {
+  background: #354144;
+  color: #f9dfa6;
+  border-color: #c6a369;
+}
+.news-controls [role="group"] {
+  display: flex;
+  gap: 8px;
+}
+.news-scroll {
+  max-height: 350px;
+  overflow: auto;
+}
+.news-scroll a > div {
+  min-width: 0;
+}
+.news-scroll h3 {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.news-notice {
+  font-size: 10px;
+  line-height: 1.6;
+  color: #a8b7c0;
+  margin: 10px 12px;
+}
+.news-notice summary {
+  cursor: pointer;
+}

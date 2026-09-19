@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { AppShell } from "@/landing/AppShell";
 import { saveOwnerPassword } from "./actions";
-import { signOutOwner } from "@/app/login/actions";
+import { signOutOwner, sendMagicLink } from "@/app/login/actions";
 export default function Page() {
   const [password, setPassword] = useState(""),
     [repeat, setRepeat] = useState(""),
@@ -79,6 +79,28 @@ export default function Page() {
             </button>
             <p role="status">{notice}</p>
           </form>
+          <button
+            disabled={busy}
+            className="rounded border border-amber-200 p-3"
+            onClick={async () => {
+              setBusy(true);
+              try {
+                const result = await sendMagicLink("awad@apixis.dev");
+                setNotice(
+                  result.error ??
+                    "Sign-in link requested. Check awad@apixis.dev, including spam.",
+                );
+              } catch {
+                setNotice(
+                  "The sign-in email could not be requested. Please try again.",
+                );
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            Email me a magic link
+          </button>
           <button onClick={() => signOutOwner()} className="text-amber-200">
             Sign out of this browser
           </button>

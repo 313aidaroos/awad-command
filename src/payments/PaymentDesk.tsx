@@ -29,7 +29,8 @@ const amount = (value: number, currency = "usd") =>
       (new Intl.NumberFormat("en-US", {
         style: "currency",
         currency,
-      }).resolvedOptions().maximumFractionDigits === 0
+      }).resolvedOptions().maximumFractionDigits === 0 &&
+      !["isk", "ugx"].includes(currency.toLowerCase())
         ? 1
         : 100),
   );
