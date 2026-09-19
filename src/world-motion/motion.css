@@ -1,0 +1,213 @@
+.scene-activity {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+.scene-traveler {
+  animation: office-walk-a 16s linear infinite;
+  animation-delay: var(--phase);
+}
+.traveler-1 {
+  animation-name: office-walk-b;
+  animation-duration: 19s;
+}
+.traveler-2 {
+  animation-name: office-walk-c;
+  animation-duration: 22s;
+}
+.traveler-3 {
+  animation-name: office-walk-d;
+  animation-duration: 18s;
+}
+.scene-person {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: actor-step 0.55s ease-in-out infinite;
+}
+.scene-leg {
+  transform-origin: 0 17px;
+  animation: actor-leg 0.55s ease-in-out infinite alternate;
+}
+.right-leg {
+  animation-delay: -0.275s;
+}
+.scene-arm {
+  transform-origin: -8px 0;
+  animation: actor-type 0.42s ease-in-out infinite alternate;
+}
+.other-arm {
+  animation-delay: -0.2s;
+}
+.scene-bubble {
+  animation: actor-chat 8s ease-in-out infinite;
+  animation-delay: var(--phase);
+  opacity: 0;
+}
+.scene-code-lines {
+  animation: monitor-type 1.7s steps(4) infinite;
+}
+.scene-light {
+  animation: monitor-type 1s steps(2) infinite;
+}
+.scene-data-packet {
+  animation: data-travel 2s linear infinite;
+}
+.scene-trading {
+  z-index: 0;
+  top: 20%;
+  height: 50%;
+  width: 100%;
+}
+.scene-trading .scene-person {
+  transform: scale(0.75);
+}
+.scene-paused * {
+  animation-play-state: paused !important;
+}
+.scene-motion-control {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px;
+  border: 1px solid #3a5868;
+  border-radius: 5px;
+  background: #0c1c29;
+  color: #a5e5e6;
+  font: 11px monospace;
+}
+.scene-motion-control[aria-pressed="true"] {
+  color: #dfc098;
+}
+.scene-motion-note {
+  font-size: 10px;
+  color: #92a8b8;
+}
+.cf-room-brand,
+.cf-desks {
+  position: relative;
+  z-index: 2;
+}
+.world-office .scene-activity {
+  filter: drop-shadow(0 0 2px #0009);
+}
+@keyframes office-walk-a {
+  0%,
+  100% {
+    transform: translate(65px, 235px);
+  }
+  20%,
+  34% {
+    transform: translate(153px, 275px);
+  }
+  55%,
+  70% {
+    transform: translate(233px, 236px);
+  }
+  85% {
+    transform: translate(153px, 275px);
+  }
+}
+@keyframes office-walk-b {
+  0%,
+  100% {
+    transform: translate(320px, 227px);
+  }
+  22%,
+  38% {
+    transform: translate(246px, 265px);
+  }
+  62%,
+  78% {
+    transform: translate(175px, 228px);
+  }
+}
+@keyframes office-walk-c {
+  0%,
+  100% {
+    transform: translate(132px, 189px);
+  }
+  25%,
+  45% {
+    transform: translate(204px, 221px);
+  }
+  65%,
+  84% {
+    transform: translate(276px, 185px);
+  }
+}
+@keyframes office-walk-d {
+  0%,
+  100% {
+    transform: translate(225px, 296px);
+  }
+  30%,
+  48% {
+    transform: translate(294px, 257px);
+  }
+  72%,
+  87% {
+    transform: translate(330px, 281px);
+  }
+}
+@keyframes actor-step {
+  50% {
+    translate: 0 -2px;
+  }
+}
+@keyframes actor-leg {
+  from {
+    rotate: -12deg;
+  }
+  to {
+    rotate: 12deg;
+  }
+}
+@keyframes actor-type {
+  to {
+    rotate: -15deg;
+  }
+}
+@keyframes actor-chat {
+  0%,
+  48%,
+  100% {
+    opacity: 0;
+    translate: 0 4px;
+  }
+  55%,
+  85% {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+@keyframes monitor-type {
+  0% {
+    opacity: 0.3;
+  }
+  70%,
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes data-travel {
+  to {
+    stroke-dashoffset: -54;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scene-activity * {
+    animation: none !important;
+  }
+}
+.cf-room-brand .scene-motion-control {
+  margin: 8px auto 0;
+}
+.scene-trading .scene-monitor {
+  opacity: 0.8;
+}
+.world-building:hover .scene-person {
+  filter: drop-shadow(0 0 3px #67e7ee);
+}

@@ -27,3 +27,7 @@ Prompts used:
 - First campus sheet: eight equal 4x2 isometric open-roof office rooms, adult anime agents, walnut/brass, blue engineering, violet social, orange contractor, emerald finance, bronze materials, magenta music, cyan geospatial, purple launch; no text/logos.
 - Expanded campus sheet: eight equal 4x2 cells: teal finance cubicles, amber coffee operations, mint invoice recovery, coral animation, violet video editing, golden publishing, blue media production, then neoclassical exchange facade with six Corinthian columns, pediment, steps and flags; pixel-anime, no text/logos.
 - Exchange interior: wide pixel-anime grand exchange trading floor, brass/dark wood, market boards, central circular post and red/cyan/green/violet trading islands, anime brokers, warm vintage lighting, no website UI.
+
+## Animated room activity
+
+Company offices and the exchange now render independent SVG actors over the room scenery: walking routes, articulated arms/legs, conversation bubbles, monitor activity and moving data lines. These are visual loops, not fabricated completed tasks or trades. Campus and floor include pause controls; system reduced-motion settings stop actor animations. Existing task feeds and trading-engine behavior are unchanged.

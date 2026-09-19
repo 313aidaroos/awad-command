@@ -8,6 +8,7 @@ import {
   Users,
   RefreshCw,
 } from "lucide-react";
+import { SceneActivity } from "@/world-motion/SceneActivity";
 import { AppShell } from "@/landing/AppShell";
 import { MODULES } from "@/config/modules";
 import { getProject, projects } from "@/projects/registry";
@@ -40,7 +41,15 @@ const companies = [
 const projectFor = (slug: string) =>
   getProject(slug === "books" ? "publishing" : slug);
 const artIndex = (slug: string) => companies.findIndex((m) => m.slug === slug);
-function Office({ index, large = false }: { index: number; large?: boolean }) {
+function Office({
+  index,
+  large = false,
+  paused = false,
+}: {
+  index: number;
+  large?: boolean;
+  paused?: boolean;
+}) {
   return (
     <div
       aria-hidden="true"
@@ -51,10 +60,12 @@ function Office({ index, large = false }: { index: number; large?: boolean }) {
       }}
     >
       <span className="world-screen-glow" />
+      <SceneActivity seed={index} paused={paused} />
     </div>
   );
 }
 export default function BusinessWorld() {
+  const [paused, setPaused] = useState(false);
   const [company, setCompany] = useState<string | null>(null),
     [agent, setAgent] = useState<string | null>(null),
     [ops, setOps] = useState<OpsSnapshot | null>(null),
@@ -137,6 +148,13 @@ export default function BusinessWorld() {
             </Link>
           </header>
           <div className="world-toolbar">
+            <button
+              className="scene-motion-control"
+              aria-pressed={paused}
+              onClick={() => setPaused((p) => !p)}
+            >
+              {paused ? "▶ Resume room activity" : "Ⅱ Pause room activity"}
+            </button>
             <span>
               <Globe2 size={16} /> {companies.length} company offices
             </span>
@@ -161,13 +179,14 @@ export default function BusinessWorld() {
             </small>
           </div>
           <p className="world-caption">
-            Illustrated workspaces with ambient motion. Agent names come from
-            your project registry; task labels come from connected operations.
+            Animated workspace scenes: walking, typing and conversation loops.
+            Agent names come from your project registry; task labels come from
+            connected operations.
           </p>
           {!selected ? (
             <>
               <Link href="/crypto-floor" className="world-exchange">
-                <Office index={15} />
+                <Office index={15} paused={paused} />
                 <div>
                   <span>THE EXCHANGE</span>
                   <h2>THE CRYPTO FLOOR</h2>
@@ -199,7 +218,7 @@ export default function BusinessWorld() {
                         </span>
                         <ArrowUpRight size={15} />
                       </div>
-                      <Office index={i} />
+                      <Office index={i} paused={paused} />
                       <div className="world-building-footer">
                         <strong>
                           {team.length
@@ -237,7 +256,11 @@ export default function BusinessWorld() {
               </div>
               <div className="world-inside-layout">
                 <div className="world-stage">
-                  <Office index={artIndex(selected.slug)} large />
+                  <Office
+                    index={artIndex(selected.slug)}
+                    large
+                    paused={paused}
+                  />
                   <div className="world-stage-plaque">
                     {selected.name.toUpperCase()}
                     <small>ILLUSTRATED WORKSPACE</small>

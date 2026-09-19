@@ -38,6 +38,7 @@ import { sampleSnapshot } from "./sample";
 import { awadScore, defaultScoreConfig, type ScoreConfig } from "./scoring";
 import { agentRoleForEvent, filterEvents, type ReplayFilter } from "./replay";
 import "./floor.css";
+import { SceneActivity } from "@/world-motion/SceneActivity";
 
 const tabs = [
   "FLOOR",
@@ -203,6 +204,7 @@ function Portfolio({ snapshot, demo }: { snapshot: Snapshot; demo: boolean }) {
   );
 }
 export default function CryptoFloor() {
+  const [roomPaused, setRoomPaused] = useState(false);
   const [demo, setDemo] = useState(true),
     [tab, setTab] = useState<Tab>("FLOOR"),
     [selected, setSelected] = useState({ team: 0, role: 1 }),
@@ -744,10 +746,24 @@ export default function CryptoFloor() {
                     sizes="100vw"
                     alt="Grand exchange trading floor with four illuminated red, cyan, green and violet trading pits"
                   />
+                  <SceneActivity
+                    seed={99}
+                    trading
+                    paused={!demo || roomPaused}
+                  />
                   <div className="cf-room-brand">
                     <small>AWAD COMMAND</small>
                     <h2>THE CRYPTO FLOOR</h2>
                     <span>FOUR STRATEGIES. SIXTEEN MINDS. ONE FLOOR.</span>
+                    <button
+                      className="scene-motion-control"
+                      aria-pressed={roomPaused}
+                      onClick={() => setRoomPaused((p) => !p)}
+                    >
+                      {roomPaused
+                        ? "▶ Resume floor motion"
+                        : "Ⅱ Pause floor motion"}
+                    </button>
                   </div>
                   <div className="cf-desks">
                     {desks.map((desk, ti) => {
