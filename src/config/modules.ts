@@ -1,8 +1,3 @@
-/**
- * Central module/room registry for the AWAD COMMAND landing.
- * Navigation, module strip, and project routes read from here.
- * Add a company = add one row. Nothing else to touch.
- */
 export type ModuleCategory = "core" | "company" | "studio" | "system";
 
 export interface ModuleDefinition {
@@ -14,9 +9,7 @@ export interface ModuleDefinition {
   route: string;
   category: ModuleCategory;
   accent: string;
-  /** Slug used by fleetProbe / companyOps when this module is a probed company. */
   fleetSlug?: string;
-  /** Public site, when one exists. */
   url?: string;
   glyph: string;
 }
@@ -32,6 +25,19 @@ export const MODULES: ModuleDefinition[] = [
     category: "core",
     accent: "#f4b942",
     glyph: "◈",
+  },
+  {
+    id: "wallet",
+    slug: "wallet",
+    name: "Apixis Wallet",
+    short: "WALLET",
+    description: "Family XP cash register",
+    route: "/wallet",
+    category: "core",
+    accent: "#c8ff63",
+    fleetSlug: "wallet",
+    url: "https://apixis-wallet.vercel.app",
+    glyph: "◇",
   },
   {
     id: "crypto",
@@ -55,7 +61,7 @@ export const MODULES: ModuleDefinition[] = [
     accent: "#3c8dff",
     fleetSlug: "apixis",
     url: "https://apixis.dev",
-    glyph: "⬢",
+    glyph: "⬡",
   },
   {
     id: "socixis",
@@ -240,6 +246,7 @@ export const MODULES: ModuleDefinition[] = [
 export const PRIMARY_TABS = [
   { label: "Home", route: "/" },
   { label: "Headquarters", route: "/command" },
+  { label: "Wallet", route: "/wallet" },
   { label: "Boardroom", route: "/boardroom" },
   { label: "Business World", route: "/business-world" },
   { label: "Projects", route: "/projects" },
@@ -252,10 +259,11 @@ export const PRIMARY_TABS = [
 ] as const;
 
 export const SIDEBAR_ITEMS = [
-  { label: "Boardroom", route: "/boardroom", glyph: "▰" },
+  { label: "Boardroom", route: "/boardroom", glyph: "▬" },
   { label: "Business World", route: "/business-world", glyph: "▦" },
   { label: "Command Center", route: "/command", glyph: "◈" },
-  { label: "Projects", route: "/projects", glyph: "⬢" },
+  { label: "Apixis Wallet", route: "/wallet", glyph: "◇" },
+  { label: "Projects", route: "/projects", glyph: "⬡" },
   { label: "Agents", route: "/agents", glyph: "◉" },
   { label: "Analytics", route: "/analytics", glyph: "▥" },
   { label: "News", route: "/news", glyph: "≣" },
