@@ -13,7 +13,11 @@ export async function signInOwner(
   )
     return { error: "Invalid email or password." };
   const db = await createServerSupabase();
-  if (!db) return { error: "Private access is temporarily unavailable." };
+  if (!db)
+    return {
+      error:
+        "The private login connection is not configured in this deployment.",
+    };
   const { data, error } = await db.auth.signInWithPassword({
     email: allowedEmail(),
     password,
@@ -34,7 +38,11 @@ export async function sendMagicLink(
   if (email.trim().toLowerCase() !== allowedEmail().toLowerCase())
     return { error: "This command center is private." };
   const db = await createServerSupabase();
-  if (!db) return { error: "Private access is temporarily unavailable." };
+  if (!db)
+    return {
+      error:
+        "The private login connection is not configured in this deployment.",
+    };
   const { error } = await db.auth.signInWithOtp({
     email: allowedEmail(),
     options: {
@@ -45,7 +53,11 @@ export async function sendMagicLink(
   return error
     ? {
         error:
-          "Could not send the sign-in link. Please wait before trying again.",
+          error.code === "over_email_send_rate_limit"
+            ? "The email service has reached its sending limit. Please wait before retrying."
+            : error.code === "email_address_not_authorized"
+              ? "The sign-in email service has not authorized this recipient. Its sending configuration needs to be fixed."
+              : "The email service could not send your link. Please try again later.",
       }
     : {};
 }

@@ -1,6 +1,12 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { AWAD_COMMAND_SCHEMA, allowedEmail, isAuthConfigured } from "@/lib/env";
+import {
+  AWAD_COMMAND_SCHEMA,
+  allowedEmail,
+  isAuthConfigured,
+  supabaseUrl,
+  supabaseAnonKey,
+} from "@/lib/env";
 
 export function isPublicEntry(path: string, method: string) {
   return (
@@ -16,24 +22,20 @@ export async function updateSession(request: NextRequest) {
   const path = request.nextUrl.pathname;
   let owner = false;
   if (isAuthConfigured()) {
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        db: { schema: AWAD_COMMAND_SCHEMA },
-        cookies: {
-          getAll: () => request.cookies.getAll(),
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value }) =>
-              request.cookies.set(name, value),
-            );
-            cookiesToSet.forEach(({ name, value, options }) =>
-              response.cookies.set(name, value, options),
-            );
-          },
+    const supabase = createServerClient(supabaseUrl()!, supabaseAnonKey()!, {
+      db: { schema: AWAD_COMMAND_SCHEMA },
+      cookies: {
+        getAll: () => request.cookies.getAll(),
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value),
+          );
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options),
+          );
         },
       },
-    );
+    });
     try {
       const {
         data: { user },
