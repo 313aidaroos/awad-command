@@ -55,13 +55,8 @@ function unlockSpeech() {
   if (typeof window === "undefined" || !window.speechSynthesis) return;
   try {
     window.speechSynthesis.resume();
-    const warm = new SpeechSynthesisUtterance(" ");
-    warm.volume = 0;
-    warm.rate = 1;
-    window.speechSynthesis.speak(warm);
-    window.speechSynthesis.cancel();
   } catch {
-    /* Safari / Chrome may reject warmup — never crash the shell */
+    /* ignore */
   }
 }
 
@@ -70,6 +65,7 @@ export function useVoice() {
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [voiceName, setVoiceName] = useState("");
   const utterRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [supported, setSupported] = useState(false);
   const [listening, setListening] = useState(false);
   const [interim, setInterim] = useState("");
@@ -84,15 +80,11 @@ export function useVoice() {
     } catch {}
     try {
       setVoices(window.speechSynthesis?.getVoices() ?? []);
-    } catch {
-      /* ignore */
-    }
+    } catch {}
     const onVoices = () => {
       try {
         setVoices(window.speechSynthesis?.getVoices() ?? []);
-      } catch {
-        /* ignore */
-      }
+      } catch {}
     };
     window.speechSynthesis?.addEventListener?.("voiceschanged", onVoices);
     return () => {
@@ -100,52 +92,38 @@ export function useVoice() {
       try {
         if (recRef.current?.abort) recRef.current.abort();
         else recRef.current?.stop();
-      } catch {
-        /* ignore */
-      }
+      } catch {}
       try {
         window.speechSynthesis?.cancel();
-      } catch {
-        /* ignore */
-      }
+      } catch {}
+      audioRef.current?.pause();
     };
   }, []);
 
   const stopSpeaking = useCallback(() => {
     setSpeaking(false);
     utterRef.current = null;
-    if (typeof window === "undefined") return;
+    audioRef.current?.pause();
+    audioRef.current = null;
     try {
       window.speechSynthesis?.cancel();
-    } catch {
-      /* ignore */
-    }
+    } catch {}
   }, []);
 
-  const speak = useCallback(
-    (text: string) => {
+  const speakDevice = useCallback(
+    (cleaned: string) => {
       if (typeof window === "undefined" || !window.speechSynthesis) return;
-      const cleaned = text.replace(/\s+/g, " ").trim();
-      if (!cleaned) return;
       try {
         window.speechSynthesis.cancel();
-        window.speechSynthesis.resume();
         const utter = new SpeechSynthesisUtterance(cleaned);
-        utter.rate = 1;
         utter.lang = "en-GB";
-        utter.rate = 0.96;
+        utter.rate = 0.92;
+        utter.pitch = 0.98;
         const available = window.speechSynthesis.getVoices();
         const voice =
           available.find((v) => v.name === voiceName) ??
           preferredBritishVoice(available);
-        if (!voice) {
-          setHint(
-            "No British female voice is installed. Add an English (UK) female system voice, then reopen this page.",
-          );
-          setSpeaking(false);
-          return;
-        }
-        utter.voice = voice;
+        if (voice) utter.voice = voice;
         utterRef.current = utter;
         utter.onstart = () => {
           if (utterRef.current === utter) setSpeaking(true);
@@ -157,12 +135,7 @@ export function useVoice() {
           }
         };
         utter.onerror = () => {
-          if (utterRef.current === utter) {
-            setSpeaking(false);
-            setHint(
-              "Spoken reply could not play. Tap Preview voice to enable audio.",
-            );
-          }
+          if (utterRef.current === utter) setSpeaking(false);
         };
         window.speechSynthesis.speak(utter);
       } catch {
@@ -172,14 +145,51 @@ export function useVoice() {
     [voiceName],
   );
 
+  const speak = useCallback(
+    (text: string) => {
+      const cleaned = text.replace(/\s+/g, " ").trim();
+      if (!cleaned) return;
+      stopSpeaking();
+      void (async () => {
+        try {
+          const res = await fetch("/api/cixy-speak", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text: cleaned }),
+          });
+          const type = res.headers.get("content-type") ?? "";
+          if (res.ok && type.includes("audio")) {
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const audio = new Audio(url);
+            audioRef.current = audio;
+            audio.onplay = () => setSpeaking(true);
+            audio.onended = () => {
+              setSpeaking(false);
+              URL.revokeObjectURL(url);
+            };
+            audio.onerror = () => {
+              setSpeaking(false);
+              speakDevice(cleaned);
+            };
+            await audio.play();
+            return;
+          }
+        } catch {
+          /* fall through */
+        }
+        speakDevice(cleaned);
+      })();
+    },
+    [speakDevice, stopSpeaking],
+  );
+
   const stop = useCallback(() => {
     setListening(false);
     setInterim("");
     try {
       recRef.current?.stop();
-    } catch {
-      /* ignore */
-    }
+    } catch {}
   }, []);
 
   const start = useCallback(
@@ -251,7 +261,6 @@ export function useVoice() {
   const prime = useCallback(() => {
     unlockSpeech();
   }, []);
-
   const chooseVoice = useCallback((name: string) => {
     setVoiceName(name);
     try {
