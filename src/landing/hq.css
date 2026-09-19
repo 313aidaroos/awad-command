@@ -1133,3 +1133,114 @@
     transition: none !important;
   }
 }
+
+/* Shared command-room color language: cyan screens, violet command, green telemetry. */
+.hq-shell {
+  background:
+    radial-gradient(ellipse at 15% 0%, #24204433, transparent 40%),
+    radial-gradient(ellipse at 90% 30%, #073d5922, transparent 45%), #040a12;
+}
+.hq-shell .hq-topbar {
+  border-bottom-color: #284d70;
+  background: linear-gradient(90deg, #0b1020, #05101a 60%, #101329);
+}
+.hq-shell .hq-hero h1 {
+  color: #e7f2ff;
+  text-shadow: 0 0 40px #566ff542;
+}
+.hq-shell .hq-hero h2 {
+  color: #4ddcff;
+}
+.hq-shell .hq-eyebrow {
+  color: #9aafff;
+}
+.hq-shell .hq-hero {
+  border-bottom-color: #235475;
+  background: linear-gradient(90deg, #08121f, transparent);
+}
+.hq-shell .hq-room {
+  filter: saturate(1.4);
+}
+.hq-shell .hq-monitor-title strong {
+  color: #d0e8ff;
+  text-shadow: 0 0 12px #199fff;
+}
+.hq-shell .hq-monitor-title span,
+.hq-shell .hq-monitor-left,
+.hq-shell .hq-monitor-right {
+  color: #68d4ff;
+}
+.hq-shell .hq-module-strip {
+  border-color: #273b61;
+  background: linear-gradient(
+    90deg,
+    #160f27aa,
+    #031b2daa,
+    #08251b88,
+    #200e2d99
+  );
+}
+.hq-shell .hq-module-strip a:hover {
+  background: #173757;
+  box-shadow: inset 0 -2px #5cceff;
+}
+.hq-shell .retro-panel {
+  border-color: #24405c;
+  background: linear-gradient(135deg, #0d1a2aee, #050d16f5);
+  box-shadow:
+    inset 0 1px #6098d518,
+    0 8px 24px #0002;
+}
+.hq-shell .retro-panel:nth-child(4n + 1) {
+  border-top-color: #517fe0;
+}
+.hq-shell .retro-panel:nth-child(4n + 2) {
+  border-top-color: #ad65e5;
+}
+.hq-shell .retro-panel:nth-child(4n + 3) {
+  border-top-color: #39ab8c;
+}
+.hq-shell .retro-panel:nth-child(4n) {
+  border-top-color: #358ebd;
+}
+.hq-shell .hq-features a:nth-child(1) {
+  background: linear-gradient(110deg, #0e2440, #08121c);
+  border-color: #255a82;
+}
+.hq-shell .hq-features a:nth-child(2) {
+  background: linear-gradient(110deg, #17143c, #0a1120);
+  border-color: #554688;
+}
+.hq-shell .hq-features a:nth-child(3) {
+  background: linear-gradient(110deg, #082f29, #081720);
+  border-color: #24755c;
+}
+.hq-shell .hq-footer {
+  border-top-color: #28435d;
+  color: #88adcd;
+}
+.hq-shell .cmd-btn.primary {
+  background: linear-gradient(110deg, #6d51e8, #246ca8);
+  border-color: #9583ff;
+  color: #fff;
+  box-shadow: 0 0 24px #725cdd33;
+}
+.hq-shell .cmd-btn.primary:hover {
+  background: linear-gradient(110deg, #8265ff, #3188cc);
+  border-color: #c3b8ff;
+}
+.hq-shell .hq-tabs > a.active {
+  background: linear-gradient(110deg, #343076, #132f4c);
+  border-color: #685bc0;
+  color: #d8eaff;
+  box-shadow: inset 0 -2px #9781ff;
+}
+.hq-shell .hq-features a:nth-child(1) > svg {
+  color: #41cfff;
+}
+.hq-shell .hq-features a:nth-child(2) > svg {
+  color: #ae8aff;
+}
+.hq-shell .hq-features a:nth-child(3) > svg {
+  color: #40dcb1;
+}
