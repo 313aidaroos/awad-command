@@ -1,0 +1,54 @@
+.art-loop {
+  position: absolute;
+  inset: 0;
+  display: block;
+  overflow: hidden;
+  pointer-events: none;
+}
+.art-loop video {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  max-width: none;
+}
+.art-loop-tile video {
+  object-fit: fill;
+}
+.cf-room > .art-loop {
+  z-index: -2;
+}
+.cf-room > .art-loop video {
+  object-position: center 40%;
+}
+.world-office {
+  overflow: hidden;
+}
+.cf-animated-exchange .cf-room-brand {
+  padding-bottom: 190px;
+}
+.scene-motion-control {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px;
+  border: 1px solid #3a5868;
+  border-radius: 5px;
+  background: #0c1c29;
+  color: #a5e5e6;
+  font: 11px monospace;
+}
+.cf-room-brand .scene-motion-control {
+  margin: 8px auto 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .art-loop {
+    display: none;
+  }
+}
+.art-loop-tile {
+  clip-path: polygon(50% 0%, 100% 25%, 100% 77%, 50% 100%, 0% 77%, 0% 25%);
+}
+.art-loop-exterior {
+  clip-path: none;
+}

@@ -8,7 +8,8 @@ import {
   Users,
   RefreshCw,
 } from "lucide-react";
-import { SceneActivity } from "@/world-motion/SceneActivity";
+
+import { ArtLoop } from "@/art-motion/ArtLoop";
 import { AppShell } from "@/landing/AppShell";
 import { MODULES } from "@/config/modules";
 import { getProject, projects } from "@/projects/registry";
@@ -59,8 +60,13 @@ function Office({
         backgroundPosition: `${((index % 4) * 100) / 3}% ${Math.floor((index % 8) / 4) * 100}%`,
       }}
     >
-      <span className="world-screen-glow" />
-      <SceneActivity seed={index} paused={paused} />
+      {
+        <ArtLoop
+          src={`/business-world/${index < 8 ? "offices" : "more-offices"}-loop.mp4`}
+          tile={index % 8}
+          paused={paused}
+        />
+      }
     </div>
   );
 }
@@ -179,9 +185,9 @@ export default function BusinessWorld() {
             </small>
           </div>
           <p className="world-caption">
-            Animated workspace scenes: walking, typing and conversation loops.
-            Agent names come from your project registry; task labels come from
-            connected operations.
+            Animated original artwork. Motion is illustrative; task status comes
+            from connected operations. Agent names come from your project
+            registry; task labels come from connected operations.
           </p>
           {!selected ? (
             <>

@@ -38,7 +38,7 @@ import { sampleSnapshot } from "./sample";
 import { awadScore, defaultScoreConfig, type ScoreConfig } from "./scoring";
 import { agentRoleForEvent, filterEvents, type ReplayFilter } from "./replay";
 import "./floor.css";
-import { SceneActivity } from "@/world-motion/SceneActivity";
+import { ArtLoop } from "@/art-motion/ArtLoop";
 
 const tabs = [
   "FLOOR",
@@ -746,10 +746,10 @@ export default function CryptoFloor() {
                     sizes="100vw"
                     alt="Grand exchange trading floor with four illuminated red, cyan, green and violet trading pits"
                   />
-                  <SceneActivity
-                    seed={99}
-                    trading
-                    paused={!demo || roomPaused}
+
+                  <ArtLoop
+                    src="/crypto-floor/exchange-loop.mp4"
+                    paused={roomPaused}
                   />
                   <div className="cf-room-brand">
                     <small>AWAD COMMAND</small>
