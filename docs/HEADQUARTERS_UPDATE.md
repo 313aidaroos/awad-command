@@ -31,3 +31,11 @@ Prompts used:
 ## Animated room activity
 
 Company offices and the exchange now render independent SVG actors over the room scenery: walking routes, articulated arms/legs, conversation bubbles, monitor activity and moving data lines. These are visual loops, not fabricated completed tasks or trades. Campus and floor include pause controls; system reduced-motion settings stop actor animations. Existing task feeds and trading-engine behavior are unchanged.
+
+## Original-art motion and consistent workspaces
+
+The vector actor overlay was rejected and removed. Room motion now uses muted, inline looping videos generated from the original illustrated sheets and exchange interior. The existing drawn people and screens animate within the artwork. Motion pauses with the room control, offscreen, when the document is hidden, and for reduced-motion preferences; the original still remains as fallback. These clips are visual illustrations, not operations telemetry.
+
+Projects, Agents, Analytics, News, Strategy, Content, Books, Automations, System, Settings and company detail pages now share a vintage office entrance, one-sentence purpose, three direct actions, a Headquarters return link and an office chooser. Existing page controls and data remain below the entrance. News now reads the same real headline adapter as Headquarters. Content links to the already registered external Content Bot site; reminders do not become publishing jobs.
+
+Higgsfield generation IDs: exchange b11afc3e-ff3f-46e5-8653-128edfa024c6; first office sheet 9baae0bc-f211-416d-83c8-11a0e571eba9; second office sheet ecf1a2d5-4057-43d1-867d-333209bb8ff7. Prompts request a locked camera, unchanged grid/composition/drawing style, subtle existing-character motion and screen updates, with no added figures/icons/bubbles. Video generated from existing public project artwork.

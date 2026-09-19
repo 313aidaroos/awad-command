@@ -1,6 +1,7 @@
 "use client";
 
 import "./hq.css";
+import { WorkspaceRoom } from "./WorkspaceRoom";
 import { useEffect, useMemo, type ReactNode } from "react";
 import { MobileNavigation, Sidebar, TopNavigation } from "@/landing/Navigation";
 import type { LedTone } from "@/landing/primitives";
@@ -59,7 +60,7 @@ export function AppShell({
             headquarters ? "hq-main" : "min-w-0 flex-1 px-4 pb-24 pt-5 lg:pb-10"
           }
         >
-          {children(data)}
+          <WorkspaceRoom>{children(data)}</WorkspaceRoom>
         </main>
       </div>
       {headquarters ? (
