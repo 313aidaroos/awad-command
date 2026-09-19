@@ -17,7 +17,7 @@ export function SceneActivity({
   return (
     <svg
       className={`scene-activity ${trading ? "scene-trading" : ""} ${paused ? "scene-paused" : ""}`}
-      viewBox="0 0 400 380"
+      viewBox={trading ? "0 0 1200 380" : "0 0 400 380"}
       preserveAspectRatio="none"
       aria-hidden="true"
     >
@@ -32,7 +32,7 @@ export function SceneActivity({
           <feDropShadow dx="0" dy="2" stdDeviation="2" floodOpacity=".6" />
         </filter>
       </defs>
-      {[0, 1, 2].map((i) => (
+      {Array.from({ length: trading ? 11 : 3 }, (_, i) => i).map((i) => (
         <g
           key={`screen-${i}`}
           transform={`translate(${90 + i * 96} ${110 + (i % 2) * 28})`}
@@ -41,7 +41,7 @@ export function SceneActivity({
           <path
             d="M0 0L35 15V37L0 22Z"
             fill="#051c2b"
-            stroke={colors[i]}
+            stroke={colors[i % 4]}
             strokeWidth="1"
           />
           <g
@@ -50,7 +50,7 @@ export function SceneActivity({
           >
             <path
               d="M4 7L26 16M4 12L18 18M4 17L29 27"
-              stroke={colors[i]}
+              stroke={colors[i % 4]}
               strokeWidth="1.4"
             />
           </g>
@@ -58,68 +58,86 @@ export function SceneActivity({
             cx="30"
             cy="30"
             r="1.5"
-            fill={colors[i]}
+            fill={colors[i % 4]}
             className="scene-light"
           />
         </g>
       ))}
-      {[0, 1, 2, 3].map((i) => (
+      {Array.from({ length: trading ? 12 : 4 }, (_, i) => i).map((i) => (
         <g
           key={i}
-          className={`scene-traveler traveler-${i}`}
-          style={
-            {
-              "--phase": `${-((seed % 7) + i * 2.7)}s`,
-              "--uniform": colors[i],
-            } as CSSProperties
-          }
+          transform={`translate(${trading ? Math.floor(i / 4) * 400 : 0} 0)`}
         >
-          <g className="scene-person" filter={`url(#actor-shadow-${seed})`}>
-            <ellipse cx="0" cy="32" rx="10" ry="4" fill="#000" opacity=".35" />
-            <g className="scene-leg left-leg">
-              <path d="M-4 16L-5 29" stroke="#223650" strokeWidth="5" />
-              <path d="M-5 29H-1" stroke="#b4bdc7" strokeWidth="3" />
+          <g
+            className={`scene-traveler traveler-${i % 4}`}
+            style={
+              {
+                "--phase": `${-((seed % 7) + i * 2.7)}s`,
+                "--uniform": colors[i % 4],
+              } as CSSProperties
+            }
+          >
+            <g className="scene-person" filter={`url(#actor-shadow-${seed})`}>
+              <ellipse
+                cx="0"
+                cy="32"
+                rx="10"
+                ry="4"
+                fill="#000"
+                opacity=".35"
+              />
+              <g className="scene-leg left-leg">
+                <path d="M-4 16L-5 29" stroke="#223650" strokeWidth="5" />
+                <path d="M-5 29H-1" stroke="#b4bdc7" strokeWidth="3" />
+              </g>
+              <g className="scene-leg right-leg">
+                <path d="M4 16L5 29" stroke="#293f58" strokeWidth="5" />
+                <path d="M5 29H9" stroke="#b4bdc7" strokeWidth="3" />
+              </g>
+              <path
+                d="M-8 -2Q0 -6 8 -2L9 17H-9Z"
+                fill="#15263a"
+                stroke="var(--uniform)"
+                strokeWidth="1.4"
+              />
+              <path d="M-2 -2L0 10L3 -2" fill="var(--uniform)" />
+              <g className="scene-arm">
+                <path d="M-8 0L-12 11L-6 14" stroke="#243d52" strokeWidth="4" />
+                <circle cx="-6" cy="14" r="2" fill="#dbac8a" />
+              </g>
+              <g className="scene-arm other-arm">
+                <path d="M8 0L12 10L6 12" stroke="#243d52" strokeWidth="4" />
+                <rect x="4" y="8" width="7" height="9" rx="1" fill="#67c9de" />
+              </g>
+              <rect
+                x="-6"
+                y="-17"
+                width="12"
+                height="15"
+                rx="5"
+                fill="#dcb390"
+              />
+              <path
+                d="M-7 -10V-18Q0 -24 7 -17L6 -10L2 -15L-4 -13Z"
+                fill="#111820"
+              />
+              <circle cx="3" cy="-9" r="1" fill="#15263a" />
             </g>
-            <g className="scene-leg right-leg">
-              <path d="M4 16L5 29" stroke="#293f58" strokeWidth="5" />
-              <path d="M5 29H9" stroke="#b4bdc7" strokeWidth="3" />
+            <g className="scene-bubble">
+              <rect
+                x="-21"
+                y="-44"
+                width="42"
+                height="19"
+                rx="6"
+                fill="#061522"
+                stroke="var(--uniform)"
+              />
+              <path d="M-3 -25L0 -20L4 -25" fill="#061522" />
+              <circle cx="-9" cy="-34" r="2" fill="var(--uniform)" />
+              <circle cx="0" cy="-34" r="2" fill="var(--uniform)" />
+              <circle cx="9" cy="-34" r="2" fill="var(--uniform)" />
             </g>
-            <path
-              d="M-8 -2Q0 -6 8 -2L9 17H-9Z"
-              fill="#15263a"
-              stroke="var(--uniform)"
-              strokeWidth="1.4"
-            />
-            <path d="M-2 -2L0 10L3 -2" fill="var(--uniform)" />
-            <g className="scene-arm">
-              <path d="M-8 0L-12 11L-6 14" stroke="#243d52" strokeWidth="4" />
-              <circle cx="-6" cy="14" r="2" fill="#dbac8a" />
-            </g>
-            <g className="scene-arm other-arm">
-              <path d="M8 0L12 10L6 12" stroke="#243d52" strokeWidth="4" />
-              <rect x="4" y="8" width="7" height="9" rx="1" fill="#67c9de" />
-            </g>
-            <rect x="-6" y="-17" width="12" height="15" rx="5" fill="#dcb390" />
-            <path
-              d="M-7 -10V-18Q0 -24 7 -17L6 -10L2 -15L-4 -13Z"
-              fill="#111820"
-            />
-            <circle cx="3" cy="-9" r="1" fill="#15263a" />
-          </g>
-          <g className="scene-bubble">
-            <rect
-              x="-21"
-              y="-44"
-              width="42"
-              height="19"
-              rx="6"
-              fill="#061522"
-              stroke="var(--uniform)"
-            />
-            <path d="M-3 -25L0 -20L4 -25" fill="#061522" />
-            <circle cx="-9" cy="-34" r="2" fill="var(--uniform)" />
-            <circle cx="0" cy="-34" r="2" fill="var(--uniform)" />
-            <circle cx="9" cy="-34" r="2" fill="var(--uniform)" />
           </g>
         </g>
       ))}

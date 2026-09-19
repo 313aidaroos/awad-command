@@ -736,7 +736,7 @@ export default function CryptoFloor() {
                   </Panel>
                 </div>
                 <section
-                  className="cf-room"
+                  className="cf-room cf-animated-exchange"
                   aria-label="Four trading desks with sixteen illustrated agents"
                 >
                   <Image

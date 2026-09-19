@@ -211,3 +211,32 @@
 .world-building:hover .scene-person {
   filter: drop-shadow(0 0 3px #67e7ee);
 }
+.cf-animated-exchange .cf-room-brand {
+  padding-bottom: 295px;
+}
+.cf-animated-exchange .scene-trading {
+  top: 85px;
+  height: 320px;
+  z-index: 1;
+  pointer-events: none;
+}
+.cf-animated-exchange .scene-trading .scene-person {
+  transform: none;
+}
+.cf-animated-exchange > img {
+  object-position: center 40%;
+}
+.cf-animated-exchange .scene-monitor {
+  filter: drop-shadow(0 0 5px #50dcff);
+}
+@media (max-width: 700px) {
+  .cf-animated-exchange .cf-room-brand {
+    padding-bottom: 210px;
+  }
+  .cf-animated-exchange .scene-trading {
+    height: 245px;
+    top: 85px;
+    width: 180%;
+    left: -40%;
+  }
+}
