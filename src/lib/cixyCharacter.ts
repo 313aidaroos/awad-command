@@ -26,7 +26,7 @@ export function preferredBritishVoice<T extends { lang: string; name: string }>(
   const british = voices.filter((v) => /^en[-_]GB$/i.test(v.lang));
   return british.find(
     (v) =>
-      /serena|kate|martha|hazel|sonia|libby|female|susan|amy|emma/i.test(
+      /serena|kate|martha|hazel|sonia|libby|female|susan|amy|emma|flo|shelley|sandy|grandma/i.test(
         v.name,
       ) && !/(^|[^a-z])male([^a-z]|$)/i.test(v.name),
   );

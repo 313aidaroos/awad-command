@@ -18,6 +18,7 @@ describe("Cixy British voice", () => {
       ]),
     ).toBeUndefined();
   });
+  it("supports installed macOS British voices",()=>{expect(preferredBritishVoice([{name:"Daniel",lang:"en-GB"},{name:"Flo (English (United Kingdom))",lang:"en-GB"}])?.name).toContain("Flo");});
   it("supports Google UK English Female", () => {
     expect(
       preferredBritishVoice([
