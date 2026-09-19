@@ -1212,3 +1212,41 @@
   background: #020813c9;
   backdrop-filter: blur(7px);
 }
+
+.hq-cixy-art .art-loop video {
+  object-position: 50% 38%;
+}
+.hq-cixy-art > div {
+  z-index: 2;
+}
+.is-speaking .hq-wave i {
+  animation: voice-wave 0.65s ease-in-out infinite alternate;
+}
+.cixy-preferences {
+  font: 11px monospace;
+  color: #b5c5d1;
+  margin: 10px 0;
+}
+.cixy-preferences summary {
+  cursor: pointer;
+  color: #dec799;
+  padding: 8px 0;
+}
+.cixy-preferences select {
+  display: block;
+  max-width: 100%;
+  padding: 8px;
+  background: #0b1b29;
+  border: 1px solid #405463;
+  color: #ddd;
+}
+.cixy-preferences button {
+  padding: 8px;
+  margin: 8px 8px 0 0;
+  border: 1px solid #405463;
+  border-radius: 4px;
+}
+.cixy-preferences p {
+  margin: 8px 0;
+  line-height: 1.5;
+}

@@ -11,7 +11,8 @@ export function ArtLoop({
   tile?: number;
 }) {
   const ref = useRef<HTMLVideoElement>(null);
-  const [failed, setFailed] = useState(false);
+  const container = useRef<HTMLSpanElement>(null);
+  const [failed, setFailed] = useState<string | null>(null);
   useEffect(() => {
     const video = ref.current;
     if (!video) return;
@@ -25,7 +26,7 @@ export function ArtLoop({
       visible = entry.isIntersecting;
       sync();
     });
-    observer.observe(video);
+    observer.observe(container.current ?? video);
     media.addEventListener("change", sync);
     document.addEventListener("visibilitychange", sync);
     return () => {
@@ -35,30 +36,35 @@ export function ArtLoop({
       video.pause();
     };
   }, [paused, src]);
-  if (failed) return null;
+
   return (
     <span
+      ref={container}
       className={`art-loop ${tile === undefined ? "art-loop-full" : `art-loop-tile ${tile === 7 && src.includes("more-offices") ? "art-loop-exterior" : ""}`}`}
       aria-hidden="true"
     >
       <video
         ref={ref}
+        key={src}
         src={src}
         autoPlay
         muted
         loop
         playsInline
         preload="metadata"
-        onError={() => setFailed(true)}
+        onError={() => setFailed(src)}
+        onLoadedData={() => setFailed(null)}
         style={
-          tile === undefined
-            ? undefined
-            : {
-                width: "400%",
-                height: "200%",
-                left: `-${(tile % 4) * 100}%`,
-                top: `-${Math.floor(tile / 4) * 100}%`,
-              }
+          failed === src
+            ? { display: "none" }
+            : tile === undefined
+              ? undefined
+              : {
+                  width: "400%",
+                  height: "200%",
+                  left: `-${(tile % 4) * 100}%`,
+                  top: `-${Math.floor(tile / 4) * 100}%`,
+                }
         }
       />
     </span>
