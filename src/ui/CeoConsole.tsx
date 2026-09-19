@@ -9,6 +9,8 @@ import { CEO_OPEN_EVENT } from "@/lib/ceoBridge";
 import { useVoice } from "@/lib/voice";
 import { Glass } from "@/ui/Glass";
 import Image from "next/image";
+import { ArtLoop } from "@/art-motion/ArtLoop";
+import { emotionForMessage, type CixyEmotion } from "@/lib/cixyCharacter";
 import { useRouter } from "next/navigation";
 import { Mic, MicOff, Keyboard, Send, Volume2, VolumeX } from "lucide-react";
 import { useCommandStore } from "@/store/useCommandStore";
@@ -27,6 +29,8 @@ export function CeoConsole({
   dashboardContext?: unknown;
 }) {
   const router = useRouter();
+  const [emotion, setEmotion] = useState<CixyEmotion>("warm");
+  const [motionPaused, setMotionPaused] = useState(false);
   const [typing, setTyping] = useState(false);
   const [provider, setProvider] = useState("");
   const logEnd = useRef<HTMLDivElement>(null);
@@ -126,6 +130,7 @@ export function CeoConsole({
       const message = text.trim();
       if (!message || busyRef.current) return;
       busyRef.current = true;
+      setEmotion(emotionForMessage(message));
       if (!voiceMutedRef.current) prime();
       setOpen(true);
       setInput("");
@@ -240,7 +245,7 @@ export function CeoConsole({
   if (embedded)
     return (
       <section
-        className={`hq-cixy-console ${voice.listening ? "is-listening" : ""} ${busy ? "is-thinking" : ""}`}
+        className={`hq-cixy-console ${voice.listening ? "is-listening" : ""} ${busy ? "is-thinking" : ""} ${voice.speaking ? "is-speaking" : ""}`}
         aria-label="Cixy voice headquarters"
       >
         <div className="hq-cixy-art">
@@ -251,9 +256,27 @@ export function CeoConsole({
             priority
             sizes="(max-width: 760px) 100vw, 45vw"
           />
+          <ArtLoop
+            src={`/headquarters/cixy-${voice.speaking ? "speaking" : emotion === "blushing" || emotion === "happy" ? "blushing" : "idle"}.mp4`}
+            paused={motionPaused}
+          />
           <div>
             <h2>CIXY</h2>
-            <p>What would you like to work on, Awad?</p>
+            <p>
+              {voice.listening
+                ? "I’m listening, Awad."
+                : busy
+                  ? "Let me think that through…"
+                  : voice.speaking
+                    ? "Speaking to you…"
+                    : emotion === "blushing"
+                      ? "You’ve made me blush, Awad."
+                      : emotion === "happy"
+                        ? "That’s lovely, Awad."
+                        : emotion === "concerned"
+                          ? "I’m here to listen."
+                          : "What would you like to work on, Awad?"}
+            </p>
           </div>
         </div>
         <div className="hq-cixy-controls">
@@ -311,6 +334,47 @@ export function CeoConsole({
                   : "Microphone off · Tap to begin")}
             {provider && ` · ${provider}`}
           </p>
+          <details className="cixy-preferences">
+            <summary>Voice & character</summary>
+            <p>British female voice · animated AI character</p>
+            <label>
+              Voice
+              <select
+                aria-label="Cixy voice"
+                value={voice.selectedVoice?.name ?? ""}
+                onChange={(e) => voice.chooseVoice(e.target.value)}
+              >
+                <option value="" disabled>
+                  British female voice unavailable
+                </option>
+                {voice.voices.map((v) => (
+                  <option key={v.voiceURI} value={v.name}>
+                    {v.name} · {v.lang}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {!voice.selectedVoice && (
+              <p>
+                Install an English (UK) female voice in your device’s speech
+                settings to enable British spoken replies.
+              </p>
+            )}
+            <button
+              onClick={() =>
+                voice.speak(
+                  "Hello Awad. I’m Cixy. What shall we work on together?",
+                )
+              }
+            >
+              Preview voice
+            </button>
+            <button onClick={() => setMotionPaused((v) => !v)}>
+              {motionPaused
+                ? "Resume character animation"
+                : "Pause character animation"}
+            </button>
+          </details>
           <div className="hq-cixy-shortcuts">
             {[
               [

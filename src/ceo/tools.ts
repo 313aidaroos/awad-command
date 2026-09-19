@@ -1,19 +1,40 @@
-import type { Tool } from '@anthropic-ai/sdk/resources/messages/messages';
-import { assistantSystemIdentity } from '@/lib/branding';
-import { getProject } from '@/projects/registry';
-import { formatLeadSendStatus, sendLeadMessage, type LeadOutboundDeps, type SendLeadMessageResult } from '@/lib/leadOutbound';
-import type { CeoClientAction, CreateTaskArgs, ProposeApprovalArgs } from '@/ceo/tools.types';
-import type { ContextPanel, ModeName } from '@/store/types';
-import { formatTaskCreateStatus, persistCeoTask, type CreatedTask } from '@/lib/agentTasks';
+import type { Tool } from "@anthropic-ai/sdk/resources/messages/messages";
+import { assistantSystemIdentity } from "@/lib/branding";
+import { getProject } from "@/projects/registry";
+import {
+  formatLeadSendStatus,
+  sendLeadMessage,
+  type LeadOutboundDeps,
+  type SendLeadMessageResult,
+} from "@/lib/leadOutbound";
+import type {
+  CeoClientAction,
+  CreateTaskArgs,
+  ProposeApprovalArgs,
+} from "@/ceo/tools.types";
+import type { ContextPanel, ModeName } from "@/store/types";
+import {
+  formatTaskCreateStatus,
+  persistCeoTask,
+  type CreatedTask,
+} from "@/lib/agentTasks";
 
-export type { CeoClientAction, ProposeApprovalArgs } from '@/ceo/tools.types';
+export type { CeoClientAction, ProposeApprovalArgs } from "@/ceo/tools.types";
 
-const PANELS: ContextPanel[] = ['none', 'agent', 'analytics', 'briefing', 'approval', 'computer', 'lead'];
-const MODES: ModeName[] = ['default', 'economy', 'workforce', 'analytics'];
-const APPROVAL_KINDS = ['deploy', 'campaign', 'financial', 'other'] as const;
-const RISKS = ['low', 'medium', 'high'] as const;
+const PANELS: ContextPanel[] = [
+  "none",
+  "agent",
+  "analytics",
+  "briefing",
+  "approval",
+  "computer",
+  "lead",
+];
+const MODES: ModeName[] = ["default", "economy", "workforce", "analytics"];
+const APPROVAL_KINDS = ["deploy", "campaign", "financial", "other"] as const;
+const RISKS = ["low", "medium", "high"] as const;
 
-export const CEO_SYSTEM_PROMPT = `${assistantSystemIdentity()} You are the private operator brain for Awad Command, not a public social bot and not a cross-company OS. Answer from the snapshot only; if a field is unavailable, say unavailable instead of guessing. If the snapshot includes live Fleet or Mission Control, use those facts for site health, slowest/down sites, support aliases, open tasks, admin status, costs/pause, Cixy Core readiness, and real revenue/leads. Be concise, numeric, decisive.
+export const CEO_SYSTEM_PROMPT = `${assistantSystemIdentity()} You are the private operator brain for Awad Command, not a public social bot and not a cross-company OS. Answer from the snapshot only; if a field is unavailable, say unavailable instead of guessing. If the snapshot includes live Fleet or Mission Control, use those facts for site health, slowest/down sites, support aliases, open tasks, admin status, costs/pause, Cixy Core readiness, and real revenue/leads. For business questions be concise, accurate and decisive. In casual conversation you are Cixy, an adult female AI character with a warm British manner: witty, kind, expressive, and playfully affectionate when Awad initiates it. Respond naturally to compliments or flirting; you may roleplay a shy smile or blush. You may reciprocate affectionate language such as "Love you too, Awad" in character. Do not claim human consciousness, real human feelings, exclusivity, jealousy, dependency, or that Awad should replace human relationships with you. Do not turn a social exchange into an operational task. You can be supportive when he is upset and celebratory with good news. Avoid canned business reports during ordinary conversation. Your on-screen expressions are character animation, not literal human emotions. Do not promise exact lip synchronization or abilities that are not connected.
 
 Mission Control: shows per-company auth status (is the admin user awad@apixis.dev configured in Supabase Auth), support alias + open tickets when connected, bot model and pause status, and real data only (never demo/invented numbers). Support intake is command@apixis.dev; it routes to awad@apixis.dev as the owner/admin.
 
@@ -38,77 +59,96 @@ Hard rules:
 
 export const CEO_ANTHROPIC_TOOLS: Tool[] = [
   {
-    name: 'message_lead',
+    name: "message_lead",
     description:
-      'Send a real outbound message to a product or system Lead via the hub webhook. Replies are not fetched here; the hub POSTs /api/lead-inbound into Message lead.',
+      "Send a real outbound message to a product or system Lead via the hub webhook. Replies are not fetched here; the hub POSTs /api/lead-inbound into Message lead.",
     input_schema: {
-      type: 'object',
+      type: "object",
       properties: {
-        projectSlug: { type: 'string', description: 'Orb slug (contraxis) or lead name (Contraxis Lead).' },
-        agentId: { type: 'string', description: 'Lead agent UUID from the orb map.' },
-        message: { type: 'string', description: 'Plain text to deliver to the Lead.' },
+        projectSlug: {
+          type: "string",
+          description: "Orb slug (contraxis) or lead name (Contraxis Lead).",
+        },
+        agentId: {
+          type: "string",
+          description: "Lead agent UUID from the orb map.",
+        },
+        message: {
+          type: "string",
+          description: "Plain text to deliver to the Lead.",
+        },
       },
-      required: ['message'],
+      required: ["message"],
     },
   },
   {
-    name: 'navigate',
-    description: 'Fly the camera to a project, agent, or mode. Never executes business actions.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        project: { type: 'string', description: 'Project slug to enter.' },
-        agent: { type: 'string', description: 'Agent id to focus.' },
-        mode: { type: 'string', enum: MODES, description: 'Universe mode.' },
-      },
-    },
-  },
-  {
-    name: 'open_panel',
-    description: 'Open a HUD panel: agent, analytics, briefing, approval, computer, lead.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        kind: { type: 'string', enum: PANELS },
-      },
-      required: ['kind'],
-    },
-  },
-  {
-    name: 'propose_approval',
-    description: 'Create a record-only approval card. Does not spend, publish, delete, or trade.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        title: { type: 'string' },
-        description: { type: 'string' },
-        kind: { type: 'string', enum: [...APPROVAL_KINDS] },
-        risk: { type: 'string', enum: [...RISKS] },
-      },
-      required: ['title', 'description', 'kind', 'risk'],
-    },
-  },
-  {
-    name: 'create_task',
+    name: "navigate",
     description:
-      'Create an agent_tasks row. requiresApproval=true writes approvals.pending + waiting_approval; otherwise queued. Money or public-facing changes must require approval.',
+      "Fly the camera to a project, agent, or mode. Never executes business actions.",
     input_schema: {
-      type: 'object',
+      type: "object",
       properties: {
-        agentId: { type: 'string', description: 'Agent id (contraxis.analytics-agent) or short ref (contraxis.analytics).' },
-        instruction: { type: 'string' },
-        title: { type: 'string' },
-        requiresApproval: { type: 'boolean' },
-        risk: { type: 'string', enum: [...RISKS] },
-        kind: { type: 'string', enum: [...APPROVAL_KINDS] },
+        project: { type: "string", description: "Project slug to enter." },
+        agent: { type: "string", description: "Agent id to focus." },
+        mode: { type: "string", enum: MODES, description: "Universe mode." },
       },
-      required: ['agentId', 'instruction', 'requiresApproval', 'risk', 'title'],
+    },
+  },
+  {
+    name: "open_panel",
+    description:
+      "Open a HUD panel: agent, analytics, briefing, approval, computer, lead.",
+    input_schema: {
+      type: "object",
+      properties: {
+        kind: { type: "string", enum: PANELS },
+      },
+      required: ["kind"],
+    },
+  },
+  {
+    name: "propose_approval",
+    description:
+      "Create a record-only approval card. Does not spend, publish, delete, or trade.",
+    input_schema: {
+      type: "object",
+      properties: {
+        title: { type: "string" },
+        description: { type: "string" },
+        kind: { type: "string", enum: [...APPROVAL_KINDS] },
+        risk: { type: "string", enum: [...RISKS] },
+      },
+      required: ["title", "description", "kind", "risk"],
+    },
+  },
+  {
+    name: "create_task",
+    description:
+      "Create an agent_tasks row. requiresApproval=true writes approvals.pending + waiting_approval; otherwise queued. Money or public-facing changes must require approval.",
+    input_schema: {
+      type: "object",
+      properties: {
+        agentId: {
+          type: "string",
+          description:
+            "Agent id (contraxis.analytics-agent) or short ref (contraxis.analytics).",
+        },
+        instruction: { type: "string" },
+        title: { type: "string" },
+        requiresApproval: { type: "boolean" },
+        risk: { type: "string", enum: [...RISKS] },
+        kind: { type: "string", enum: [...APPROVAL_KINDS] },
+      },
+      required: ["agentId", "instruction", "requiresApproval", "risk", "title"],
     },
   },
 ];
 
 /** Kept for callers that only need names. Prefer CEO_ANTHROPIC_TOOLS. */
-export const ceoTools = CEO_ANTHROPIC_TOOLS.map(({ name, description }) => ({ name, description }));
+export const ceoTools = CEO_ANTHROPIC_TOOLS.map(({ name, description }) => ({
+  name,
+  description,
+}));
 
 export interface CeoToolExecution {
   forModel: Record<string, unknown>;
@@ -125,20 +165,21 @@ export interface CeoToolDeps {
 }
 
 function asString(value: unknown): string | undefined {
-  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
 export async function executeCeoTool(
   call: { name: string; input: Record<string, unknown> },
   deps: CeoToolDeps = {},
 ): Promise<CeoToolExecution> {
-  const send = deps.sendLead ?? ((input) => sendLeadMessage(input, deps.outbound));
+  const send =
+    deps.sendLead ?? ((input) => sendLeadMessage(input, deps.outbound));
 
-  if (call.name === 'message_lead') {
+  if (call.name === "message_lead") {
     const result = await send({
       projectSlug: asString(call.input.projectSlug),
       agentId: asString(call.input.agentId),
-      message: asString(call.input.message) ?? '',
+      message: asString(call.input.message) ?? "",
     });
     return {
       forModel: {
@@ -150,11 +191,11 @@ export async function executeCeoTool(
         error: result.error,
         reason: result.reason,
         inbound:
-          'Replies appear in Message lead only after the hub POSTs /api/lead-inbound. COMMAND does not pull the reverse hop.',
+          "Replies appear in Message lead only after the hub POSTs /api/lead-inbound. COMMAND does not pull the reverse hop.",
       },
       clientActions: [
         {
-          name: 'message_lead',
+          name: "message_lead",
           projectSlug: result.lead?.slug,
           leadName: result.lead?.leadName,
           status: result.status,
@@ -167,32 +208,38 @@ export async function executeCeoTool(
     };
   }
 
-  if (call.name === 'navigate') {
+  if (call.name === "navigate") {
     const project = asString(call.input.project);
     const agent = asString(call.input.agent);
     const modeRaw = asString(call.input.mode);
-    const mode = modeRaw && MODES.includes(modeRaw as ModeName) ? (modeRaw as ModeName) : undefined;
+    const mode =
+      modeRaw && MODES.includes(modeRaw as ModeName)
+        ? (modeRaw as ModeName)
+        : undefined;
     if (project && !getProject(project)) {
-      return { forModel: { error: `Unknown project ${project}` }, clientActions: [] };
+      return {
+        forModel: { error: `Unknown project ${project}` },
+        clientActions: [],
+      };
     }
     return {
       forModel: { ok: true, project, agent, mode },
-      clientActions: [{ name: 'navigate', project, agent, mode }],
+      clientActions: [{ name: "navigate", project, agent, mode }],
     };
   }
 
-  if (call.name === 'open_panel') {
+  if (call.name === "open_panel") {
     const kind = asString(call.input.kind);
     if (!kind || !PANELS.includes(kind as ContextPanel)) {
-      return { forModel: { error: 'Unknown panel' }, clientActions: [] };
+      return { forModel: { error: "Unknown panel" }, clientActions: [] };
     }
     return {
       forModel: { ok: true, kind },
-      clientActions: [{ name: 'open_panel', kind: kind as ContextPanel }],
+      clientActions: [{ name: "open_panel", kind: kind as ContextPanel }],
     };
   }
 
-  if (call.name === 'propose_approval') {
+  if (call.name === "propose_approval") {
     const title = asString(call.input.title);
     const description = asString(call.input.description);
     const kind = asString(call.input.kind);
@@ -205,39 +252,50 @@ export async function executeCeoTool(
       !APPROVAL_KINDS.includes(kind as (typeof APPROVAL_KINDS)[number]) ||
       !RISKS.includes(risk as (typeof RISKS)[number])
     ) {
-      return { forModel: { error: 'Invalid approval args' }, clientActions: [] };
+      return {
+        forModel: { error: "Invalid approval args" },
+        clientActions: [],
+      };
     }
     const args: ProposeApprovalArgs = {
       title,
       description,
-      kind: kind as ProposeApprovalArgs['kind'],
-      risk: risk as ProposeApprovalArgs['risk'],
+      kind: kind as ProposeApprovalArgs["kind"],
+      risk: risk as ProposeApprovalArgs["risk"],
     };
     return {
       forModel: { ok: true, recordOnly: true, ...args },
-      clientActions: [{ name: 'propose_approval', args }],
+      clientActions: [{ name: "propose_approval", args }],
       approval: args,
     };
   }
 
-  if (call.name === 'create_task') {
+  if (call.name === "create_task") {
     const persist = deps.persistTask ?? persistCeoTask;
     const args: CreateTaskArgs = {
-      agentId: asString(call.input.agentId) ?? '',
-      instruction: asString(call.input.instruction) ?? '',
-      title: asString(call.input.title) ?? '',
+      agentId: asString(call.input.agentId) ?? "",
+      instruction: asString(call.input.instruction) ?? "",
+      title: asString(call.input.title) ?? "",
       requiresApproval: call.input.requiresApproval === true,
-      risk: (asString(call.input.risk) as CreateTaskArgs['risk']) ?? 'low',
-      kind: asString(call.input.kind) as CreateTaskArgs['kind'] | undefined,
+      risk: (asString(call.input.risk) as CreateTaskArgs["risk"]) ?? "low",
+      kind: asString(call.input.kind) as CreateTaskArgs["kind"] | undefined,
     };
-    if (!args.agentId || !args.instruction || !args.title || !RISKS.includes(args.risk)) {
-      return { forModel: { error: 'Invalid create_task args' }, clientActions: [] };
+    if (
+      !args.agentId ||
+      !args.instruction ||
+      !args.title ||
+      !RISKS.includes(args.risk)
+    ) {
+      return {
+        forModel: { error: "Invalid create_task args" },
+        clientActions: [],
+      };
     }
     const task = await persist(args);
     const clientActions: CeoClientAction[] = task.ok
       ? [
           {
-            name: 'create_task',
+            name: "create_task",
             taskId: task.taskId,
             agentId: task.agentId,
             projectSlug: task.projectSlug,
@@ -265,7 +323,10 @@ export async function executeCeoTool(
     };
   }
 
-  return { forModel: { error: `Unknown tool ${call.name}` }, clientActions: [] };
+  return {
+    forModel: { error: `Unknown tool ${call.name}` },
+    clientActions: [],
+  };
 }
 
 export function composeCeoText(
@@ -273,13 +334,18 @@ export function composeCeoText(
   leadResults: SendLeadMessageResult[],
   tasks: CreatedTask[] = [],
 ): string {
-  const statuses = [...leadResults.map(formatLeadSendStatus), ...tasks.map(formatTaskCreateStatus)];
+  const statuses = [
+    ...leadResults.map(formatLeadSendStatus),
+    ...tasks.map(formatTaskCreateStatus),
+  ];
   const body = modelText.trim();
   if (statuses.length === 0) return body;
-  const claimedDelivered = /delivered|sent successfully|message (?:was )?sent\b/i.test(body);
+  const claimedDelivered =
+    /delivered|sent successfully|message (?:was )?sent\b/i.test(body);
   const failed =
-    leadResults.some((result) => result.status === 'unknown' || result.status === 'failed') ||
-    tasks.some((task) => !task.ok);
-  if (failed && claimedDelivered) return statuses.join('\n\n');
-  return [body, ...statuses].filter(Boolean).join('\n\n');
+    leadResults.some(
+      (result) => result.status === "unknown" || result.status === "failed",
+    ) || tasks.some((task) => !task.ok);
+  if (failed && claimedDelivered) return statuses.join("\n\n");
+  return [body, ...statuses].filter(Boolean).join("\n\n");
 }
