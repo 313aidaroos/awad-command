@@ -1,0 +1,119 @@
+.floating-lead-chat {
+  position: fixed;
+  left: 18px;
+  bottom: 18px;
+  z-index: 45;
+  max-width: calc(100vw - 36px);
+  color: #dce7ef;
+  font: 12px monospace;
+}
+.lead-chat-launcher {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  max-width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #a58b59;
+  border-radius: 24px;
+  background: linear-gradient(120deg, #162330, #0a1520);
+  color: #eddbb7;
+  box-shadow: 0 4px 24px #0008;
+}
+.lead-chat-window {
+  width: min(400px, calc(100vw - 36px));
+  max-height: calc(100dvh - 145px);
+  overflow: auto;
+  background: linear-gradient(140deg, #101c29, #07111c);
+  border: 1px solid #796649;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  box-shadow: 0 16px 60px #000b;
+  padding: 16px;
+}
+.lead-chat-window header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px solid #364859;
+  padding-bottom: 12px;
+}
+.lead-chat-window header small {
+  font-size: 8px;
+  letter-spacing: 1.5px;
+  color: #a69273;
+}
+.lead-chat-window h2 {
+  font:
+    20px Georgia,
+    serif;
+  color: #efd9b2;
+  margin: 7px 0 0;
+}
+.lead-chat-window header button {
+  padding: 8px;
+  border: 1px solid #364859;
+  border-radius: 4px;
+}
+.lead-chat-selector {
+  display: grid;
+  gap: 7px;
+  margin-top: 13px;
+  color: #b8c7d4;
+}
+.lead-chat-selector select {
+  width: 100%;
+  min-width: 0;
+  background: #081421;
+  color: #e4eaf0;
+  border: 1px solid #364859;
+  border-radius: 5px;
+  padding: 9px;
+}
+.lead-chat-note,
+.lead-chat-empty {
+  font-size: 11px;
+  line-height: 1.6;
+  color: #a4b5c3;
+  margin: 12px 0;
+}
+.lead-chat-window textarea:focus,
+.lead-chat-window button:focus-visible,
+.lead-chat-window select:focus-visible {
+  outline: 2px solid #c5a767;
+  outline-offset: 2px;
+}
+.lead-chat-window [aria-label="Lead conversation"] {
+  max-height: 32dvh;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.lead-chat-window textarea {
+  font-size: 14px;
+}
+.lead-chat-window button:disabled {
+  opacity: 0.45;
+}
+.lead-chat-window [role="status"] {
+  max-width: 240px;
+  line-height: 1.5;
+}
+.lead-chat-window .lead-chat-error a {
+  color: #edce90;
+  text-decoration: underline;
+}
+@media (max-width: 600px) {
+  .floating-lead-chat {
+    left: 10px;
+    bottom: 64px;
+    max-width: calc(100vw - 20px);
+  }
+  .lead-chat-window {
+    width: calc(100vw - 20px);
+    max-height: calc(100dvh - 170px);
+  }
+  .lead-chat-launcher {
+    font-size: 11px;
+    padding: 10px 13px;
+  }
+}

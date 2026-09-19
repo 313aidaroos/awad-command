@@ -136,7 +136,7 @@ export default function BusinessWorld() {
     setAgent(null);
   }
   return (
-    <AppShell>
+    <AppShell leadSlug={company}>
       {() => (
         <div className="business-world">
           <header className="world-heading">
