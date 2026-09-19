@@ -3,6 +3,8 @@ import { NextRequest } from "next/server";
 vi.mock("@supabase/ssr", () => ({ createServerClient: vi.fn() }));
 vi.mock("@/lib/env", () => ({
   AWAD_COMMAND_SCHEMA: "awad_command",
+  supabaseUrl: () => "https://example.supabase.co",
+  supabaseAnonKey: () => "test-public-key",
   allowedEmail: () => "owner@example.com",
   isAuthConfigured: vi.fn(() => true),
 }));
