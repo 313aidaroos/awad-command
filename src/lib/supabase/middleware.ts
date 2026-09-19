@@ -1,50 +1,71 @@
-import { createServerClient } from '@supabase/ssr';
-import { NextResponse, type NextRequest } from 'next/server';
-import { AWAD_COMMAND_SCHEMA, isAuthConfigured } from '@/lib/env';
+import { createServerClient } from "@supabase/ssr";
+import { NextResponse, type NextRequest } from "next/server";
+import { AWAD_COMMAND_SCHEMA, allowedEmail, isAuthConfigured } from "@/lib/env";
 
+export function isPublicEntry(path: string, method: string) {
+  return (
+    path === "/login" ||
+    path === "/auth/callback" ||
+    (path === "/api/lead-inbound" && method === "POST")
+  ); // Route verifies the hub bearer secret.
+}
 export async function updateSession(request: NextRequest) {
   const response = NextResponse.next({ request });
-  if (!isAuthConfigured()) return response;
-
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-  const supabase = createServerClient(url, anon, {
-    db: { schema: AWAD_COMMAND_SCHEMA },
-    cookies: {
-      getAll() {
-        return request.cookies.getAll();
-      },
-      setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-        cookiesToSet.forEach(({ name, value, options }) => {
-          response.cookies.set(name, value, options);
-        });
-      },
-    },
-  });
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  response.headers.set("Cache-Control", "private, no-store");
+  response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
   const path = request.nextUrl.pathname;
-  const publicPath =
-    path.startsWith('/login') ||
-    path.startsWith('/auth') ||
-    path.startsWith('/api/') ||
-    path === '/awad-command-preview.html';
-
-  if (!user && !publicPath) {
-    const redirect = request.nextUrl.clone();
-    redirect.pathname = '/login';
-    return NextResponse.redirect(redirect);
+  let owner = false;
+  if (isAuthConfigured()) {
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        db: { schema: AWAD_COMMAND_SCHEMA },
+        cookies: {
+          getAll: () => request.cookies.getAll(),
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value }) =>
+              request.cookies.set(name, value),
+            );
+            cookiesToSet.forEach(({ name, value, options }) =>
+              response.cookies.set(name, value, options),
+            );
+          },
+        },
+      },
+    );
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      owner =
+        !!user && user.email?.toLowerCase() === allowedEmail().toLowerCase();
+    } catch {
+      owner = false;
+    }
   }
-
-  if (user && path.startsWith('/login')) {
-    const home = request.nextUrl.clone();
-    home.pathname = '/';
-    return NextResponse.redirect(home);
+  let result = response;
+  if (!owner && !isPublicEntry(path, request.method)) {
+    if (path.startsWith("/api/"))
+      result = NextResponse.json(
+        { error: "Owner sign-in required." },
+        { status: 401 },
+      );
+    else {
+      const target = request.nextUrl.clone();
+      target.pathname = "/login";
+      target.search = "";
+      result = NextResponse.redirect(target);
+    }
+  } else if (owner && path === "/login") {
+    const target = request.nextUrl.clone();
+    target.pathname = "/";
+    target.search = "";
+    result = NextResponse.redirect(target);
   }
-
-  return response;
+  if (result !== response)
+    for (const cookie of response.cookies.getAll()) result.cookies.set(cookie);
+  result.headers.set("Cache-Control", "private, no-store");
+  result.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
+  return result;
 }

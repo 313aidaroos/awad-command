@@ -1,3 +1,4 @@
+import { requestPayment, stripeSummary } from "@/lib/payments";
 import {
   createEmailDraft,
   listReceivedEmails,
@@ -51,6 +52,8 @@ Mail: Awad's main mailbox is awad@apixis.dev. Business aliases such as socixis@a
 You can draft and save emails for review, read mail actually available through the email tool, and delegate business research. You cannot currently launch Meta/Google campaigns; campaign approval cards do not execute ads. Never claim a campaign launched or an email sent from drafting or task creation alone.
 
 Tools:
+- request_payment — save a payment request for Awad to approve in /payments. Never charges a card. Use integer cents and USD.
+- stripe_summary — read verified income and balances from the connected Stripe account. Never confuse Stripe balances with permission to spend or net profit.
 - list_business_agents — find the correct company-specific agent ID before assigning work. Never pick a same-named agent from another business.
 - draft_email — save a real email draft for the Mailroom at /email. Show recipient, sender, subject, and text; ask Awad to use Send in the Mailroom. Do not say sent.
 - list_received_email / read_email — read only mail routed to Resend for apixis.dev. Clearly label this limited source.
@@ -69,6 +72,31 @@ Hard rules:
 - You can name which Lead bot owns a company from the lead map.`;
 
 export const CEO_ANTHROPIC_TOOLS: Tool[] = [
+  {
+    name: "request_payment",
+    description:
+      "Save a payment request for owner review. No charge, transfer, or purchase occurs.",
+    input_schema: {
+      type: "object",
+      properties: {
+        merchant: { type: "string" },
+        purpose: { type: "string" },
+        amountCents: { type: "integer" },
+        currency: { type: "string", enum: ["usd"] },
+        url: {
+          type: "string",
+          description: "Optional verified merchant HTTPS checkout URL.",
+        },
+      },
+      required: ["merchant", "purpose", "amountCents", "currency"],
+    },
+  },
+  {
+    name: "stripe_summary",
+    description:
+      "Read today’s payments, refunds, and Stripe balance. One account, Chicago time. Not permission to spend.",
+    input_schema: { type: "object", properties: {} },
+  },
   {
     name: "list_business_agents",
     description:
@@ -301,6 +329,26 @@ export async function executeCeoTool(
       },
       clientActions: [],
     };
+  }
+
+  if (call.name === "request_payment" || call.name === "stripe_summary") {
+    try {
+      return {
+        forModel:
+          call.name === "request_payment"
+            ? await requestPayment(call.input)
+            : await stripeSummary(),
+        clientActions: [],
+      };
+    } catch {
+      return {
+        forModel: {
+          error:
+            "Payment data or request unavailable. Open /payments to check. No payment was made.",
+        },
+        clientActions: [],
+      };
+    }
   }
 
   if (call.name === "navigate") {

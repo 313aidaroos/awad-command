@@ -91,6 +91,7 @@ export function AppShell({
               Manage teams
             </Link>
             <Link href="/email">Cixy Mailroom</Link>
+            <Link href="/payments">Payments & Wallet</Link>
           </nav>
           <WorkspaceRoom>{children(data)}</WorkspaceRoom>
         </main>

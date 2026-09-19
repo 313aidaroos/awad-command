@@ -11,6 +11,12 @@ export default function Page() {
       {(d) => (
         <div className="space-y-4">
           <h1 className="font-display text-[14px]">SETTINGS</h1>
+          <Link href="/payments" className="block text-cyan-300">
+            PAYMENTS, WALLET & STRIPE →
+          </Link>
+          <Link href="/settings/security" className="block text-amber-200">
+            OWNER LOGIN & PASSWORD →
+          </Link>
           <p className="text-[12px] text-[var(--muted)]">
             Owner/admin and access.
           </p>

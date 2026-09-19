@@ -1,14 +1,17 @@
-import { isAuthConfigured } from '@/lib/env';
-import { LoginForm } from '@/app/login/LoginForm';
-import { redirect } from 'next/navigation';
-
+import { LoginForm } from "./LoginForm";
 export default function LoginPage() {
-  if (!isAuthConfigured()) redirect('/');
   return (
-    <main className="grid h-dvh place-items-center bg-[var(--void)] px-6">
-      <div className="glass w-[min(420px,100%)] p-6 text-center">
-        <h1 className="text-sm font-light tracking-[0.32em]">AWAD COMMAND</h1>
-        <p className="mt-3 text-xs text-[var(--muted)]">Private deck. Magic link for the allowed email only.</p>
+    <main className="grid min-h-dvh place-items-center bg-[#060f18] px-6 text-slate-200">
+      <div className="w-full max-w-md rounded-xl border border-amber-200/30 bg-[#0d1b28] p-8 shadow-2xl">
+        <p className="text-center text-xs tracking-[.35em] text-amber-200">
+          PRIVATE ACCESS
+        </p>
+        <h1 className="mt-4 text-center font-serif text-3xl text-amber-100">
+          AWAD COMMAND
+        </h1>
+        <p className="mt-3 text-center text-sm text-slate-400">
+          Owner access only.
+        </p>
         <LoginForm />
       </div>
     </main>
