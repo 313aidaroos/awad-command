@@ -17,10 +17,12 @@ import { useCommandStore } from "@/store/useCommandStore";
 /** Wraps every non-3D page: header, tabs, sidebar, Cixy console, live data. */
 export function AppShell({
   children,
-  headquarters = false,
+  headquarters = true,
+  embeddedCixy = false,
 }: {
   children: (data: ReturnType<typeof useDashboard>) => ReactNode;
   headquarters?: boolean;
+  embeddedCixy?: boolean;
 }) {
   const data = useDashboard();
   useEffect(() => {
@@ -71,7 +73,7 @@ export function AppShell({
       ) : (
         <MobileNavigation />
       )}
-      <CeoConsole />
+      {!embeddedCixy && <CeoConsole />}
     </div>
   );
 }

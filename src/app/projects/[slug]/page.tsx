@@ -2,13 +2,15 @@
 
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { getProject } from '@/projects/registry';
 import { getModule } from '@/config/modules';
 import { AppShell } from '@/landing/AppShell';
 import { CommandButton, RetroPanel, StatusBadge } from '@/landing/primitives';
 
 export default function ProjectPage() {
   const { slug } = useParams<{ slug: string }>();
-  const mod = getModule(slug);
+  const project = getProject(slug);
+  const mod = getModule(slug) ?? (project ? {name:project.name,accent:project.accent,glyph:'▣',description:project.tagline,url:undefined} : undefined);
   return (
     <AppShell>
       {(d) => {
@@ -36,7 +38,7 @@ export default function ProjectPage() {
                 <p className="text-[11px] text-[var(--muted)]">Company ledger not connected to Command. Revenue, expenses and profit appear here once the aggregation layer reads this company&apos;s Supabase schema.</p>
               </RetroPanel>
             </div>
-            <CommandButton href="/command">VIEW IN 3D DECK →</CommandButton>
+            <CommandButton href={`/business-world?company=${encodeURIComponent(slug)}`}>ENTER COMPANY OFFICE →</CommandButton>
           </div>
         );
       }}

@@ -738,11 +738,11 @@ export default function CryptoFloor() {
                   aria-label="Four trading desks with sixteen illustrated agents"
                 >
                   <Image
-                    src="/crypto-floor/room.png"
+                    src="/crypto-floor/exchange-room.png"
                     fill
                     priority
                     sizes="100vw"
-                    alt="Anime trading room with four illuminated red, cyan, green and violet trading pits"
+                    alt="Grand exchange trading floor with four illuminated red, cyan, green and violet trading pits"
                   />
                   <div className="cf-room-brand">
                     <small>AWAD COMMAND</small>
