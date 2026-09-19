@@ -12,8 +12,10 @@ export function isPublicEntry(path: string, method: string) {
   return (
     path === "/login" ||
     path === "/auth/callback" ||
+    path === "/preview" ||
+    path.startsWith("/preview/") ||
     (path === "/api/lead-inbound" && method === "POST")
-  ); // Route verifies the hub bearer secret.
+  );
 }
 export async function updateSession(request: NextRequest) {
   const response = NextResponse.next({ request });
