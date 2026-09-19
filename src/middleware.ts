@@ -1,10 +1,8 @@
-import type { NextRequest } from 'next/server';
-import { updateSession } from '@/lib/supabase/middleware';
-
+import type { NextRequest } from "next/server";
+import { updateSession } from "@/lib/supabase/middleware";
 export async function middleware(request: NextRequest) {
   return updateSession(request);
 }
-
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|awad-command-preview.html|.*\\.(?:svg|png|jpg|ico)$).*)'],
+  matcher: ["/((?!_next/static|favicon.ico).*)"],
 };

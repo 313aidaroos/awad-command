@@ -26,6 +26,8 @@ import { useHeadquartersData } from "./useHeadquartersData";
 import { notebookKey, readNotebook } from "./notebook";
 import type { Candle, NewsItem, NotebookItem, FinancePoint } from "./types";
 import "./headquarters.css";
+import { NewsDesk } from "./NewsDesk";
+import { DailyDesk } from "./DailyDesk";
 const usd = (n: number | null | undefined) =>
   n === null || n === undefined
     ? "—"
@@ -395,15 +397,7 @@ export default function Headquarters() {
           </div>
           <div className="room-main-grid">
             <div className="room-news-column">
-              <NewsBox
-                title="WORLD NEWS"
-                items={feeds?.world ?? []}
-                error={
-                  feedError ||
-                  feeds?.errors.find((e) => e.startsWith("World")) ||
-                  ""
-                }
-              />
+              <NewsDesk />
               <NewsBox
                 title="CRYPTO NEWS"
                 crypto
@@ -564,6 +558,7 @@ export default function Headquarters() {
               </Box>
             </div>
           </div>
+          <DailyDesk />
           <div className="room-lower-grid">
             <Box
               title="ECOSYSTEM FINANCES"

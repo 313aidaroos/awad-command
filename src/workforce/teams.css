@@ -1,0 +1,102 @@
+.team-desk {
+  color: #c9d8df;
+  max-width: 1500px;
+  margin: auto;
+  font-size: 13px;
+}
+.team-desk header,
+.team-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+.team-desk h1 {
+  font-family: Georgia, serif;
+  color: #e0c58b;
+  font-size: clamp(23px, 4vw, 36px);
+  letter-spacing: 0.04em;
+}
+.team-desk h2 {
+  font-family: Georgia, serif;
+  color: #e0c58b;
+  font-size: 19px;
+}
+.team-desk small {
+  letter-spacing: 0.12em;
+  color: #63cee1;
+}
+.team-desk p {
+  line-height: 1.65;
+  margin: 8px 0;
+}
+.team-desk button,
+.team-desk select {
+  background: #102431;
+  border: 1px solid #4c6575;
+  border-radius: 5px;
+  padding: 9px 12px;
+  color: #e2d1a5;
+}
+.team-desk button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.team-desk a {
+  color: #60d5e7;
+}
+.team-desk label {
+  display: grid;
+  gap: 7px;
+}
+.team-brief,
+.team-connections,
+.team-agent {
+  background: linear-gradient(140deg, #102330, #07121c);
+  border: 1px solid #344b58;
+  border-radius: 8px;
+  padding: 18px;
+}
+.team-brief,
+.team-connections {
+  margin: 16px 0;
+}
+.team-connections {
+  border-color: #7a6232;
+}
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 310px), 1fr));
+  gap: 16px;
+}
+.team-agent {
+  border-top: 2px solid #aa874c;
+  overflow-wrap: anywhere;
+}
+.team-agent span {
+  font-size: 11px;
+  color: #94b8c6;
+}
+.team-controls {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+}
+.team-controls textarea {
+  width: 100%;
+  min-height: 130px;
+  padding: 10px;
+  background: #050e17;
+  color: #dce7ec;
+  border: 1px solid #456270;
+  border-radius: 4px;
+  resize: vertical;
+}
+.team-desk button:focus-visible,
+.team-desk select:focus-visible,
+.team-desk textarea:focus-visible {
+  outline: 2px solid #62dbe9;
+  outline-offset: 3px;
+}

@@ -256,6 +256,7 @@ export default function BusinessWorld() {
                 >
                   <ArrowLeft size={16} /> Back to campus
                 </button>
+                <Link href={`/agents?company=${projectFor(selected.slug)?.slug ?? selected.slug}`}>Manage team →</Link>
                 <Link href={selected.route}>
                   Company dashboard <ArrowUpRight size={14} />
                 </Link>

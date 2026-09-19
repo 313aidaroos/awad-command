@@ -1,10 +1,5 @@
 export type AgentStatus =
-  | 'working'
-  | 'idle'
-  | 'waiting'
-  | 'blocked'
-  | 'error'
-  | 'needs_approval';
+  "working" | "idle" | "waiting" | "blocked" | "error" | "needs_approval";
 
 export interface AgentDefinition {
   id: string;
@@ -13,6 +8,7 @@ export interface AgentDefinition {
   role: string;
   objective: string;
   tools: string[];
+  responsibilities?: string[];
   homePosition: [number, number, number];
 }
 
