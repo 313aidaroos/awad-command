@@ -1250,3 +1250,279 @@
   margin: 8px 0;
   line-height: 1.5;
 }
+.cixy-customizer {
+  margin-top: 8px;
+  border-top: 1px solid #2d4658;
+}
+.cixy-customizer > summary {
+  color: #69dced;
+}
+.cixy-studio {
+  display: grid;
+  grid-template-columns: 132px 1fr;
+  gap: 12px;
+  padding: 10px;
+  background: #07111a;
+  border: 1px solid #2c4557;
+}
+.cixy-style-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+.cixy-style-controls label {
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.cixy-style-controls select {
+  width: 100%;
+  margin-top: 3px;
+}
+.cixy-style-controls fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+.cixy-style-controls legend {
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.cixy-style-controls fieldset button {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  padding: 0;
+  margin: 2px;
+  border: 2px solid #243747;
+}
+.cixy-style-controls fieldset button[aria-pressed="true"] {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px #63dcec;
+}
+.cixy-style-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.cixy-style-actions span {
+  font-size: 8px;
+  color: #6de0ae;
+}
+.cixy-render-note {
+  font-size: 8px !important;
+  color: #7f95a4 !important;
+}
+.cixy-portrait {
+  --hair: #15121b;
+  --skin: #d99a72;
+  --eyes: #436f82;
+  position: relative;
+  width: 132px;
+  height: 170px;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 25%, #26384a, #070d14 70%);
+  border: 1px solid #6d5732;
+}
+.cixy-face {
+  position: absolute;
+  z-index: 3;
+  left: 34px;
+  top: 36px;
+  width: 64px;
+  height: 80px;
+  border-radius: 46% 46% 48% 48%;
+  background: var(--skin);
+  box-shadow: inset -8px -4px #5d2d2524;
+}
+.cixy-neck {
+  position: absolute;
+  z-index: 2;
+  left: 55px;
+  top: 99px;
+  width: 24px;
+  height: 35px;
+  background: var(--skin);
+}
+.cixy-hair-back {
+  position: absolute;
+  z-index: 1;
+  left: 20px;
+  top: 18px;
+  width: 94px;
+  height: 126px;
+  border-radius: 48% 48% 32% 32%;
+  background: var(--hair);
+  box-shadow: inset -12px 0 #ffffff0a;
+}
+.cixy-hair-front {
+  position: absolute;
+  z-index: 4;
+  left: 27px;
+  top: 19px;
+  width: 81px;
+  height: 53px;
+  border-radius: 50% 50% 42% 20%;
+  border-top: 18px solid var(--hair);
+  border-left: 15px solid var(--hair);
+  transform: rotate(-3deg);
+}
+.cixy-eye {
+  position: absolute;
+  top: 36px;
+  width: 13px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--eyes);
+  border-top: 2px solid #16121a;
+  animation: cixyBlink 5s infinite;
+}
+.cixy-eye.left {
+  left: 13px;
+}
+.cixy-eye.right {
+  right: 13px;
+}
+.cixy-brow {
+  position: absolute;
+  top: 27px;
+  width: 15px;
+  height: 2px;
+  background: #31201d;
+}
+.cixy-brow.left {
+  left: 11px;
+  transform: rotate(-5deg);
+}
+.cixy-brow.right {
+  right: 11px;
+  transform: rotate(5deg);
+}
+.cixy-nose {
+  position: absolute;
+  left: 30px;
+  top: 43px;
+  width: 5px;
+  height: 11px;
+  border-right: 1px solid #714836;
+}
+.cixy-mouth {
+  position: absolute;
+  left: 25px;
+  top: 60px;
+  width: 16px;
+  height: 6px;
+  border-bottom: 2px solid #883c50;
+  border-radius: 50%;
+}
+.cixy-outfit {
+  position: absolute;
+  z-index: 2;
+  left: 14px;
+  bottom: -18px;
+  width: 105px;
+  height: 81px;
+  border-radius: 46% 46% 0 0;
+  background: #11151c;
+  border-top: 3px solid #a98245;
+}
+.cixy-outfit i {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  color: #d3a754;
+  font: 700 12px var(--hq-display);
+}
+.outfit-command .cixy-outfit {
+  background: #101d2b;
+  border-color: #4cd9ff;
+}
+.outfit-evening .cixy-outfit {
+  background: #29162d;
+  border-color: #a86ed8;
+}
+.outfit-casual .cixy-outfit {
+  background: #27313a;
+  border-color: #8aa5b6;
+}
+.hair-locs .cixy-hair-back {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--hair) 0 7px,
+    #0004 8px 10px
+  );
+  border-radius: 45% 45% 18% 18%;
+}
+.hair-locs .cixy-hair-front {
+  border-radius: 40%;
+  transform: rotate(0);
+}
+.hair-braids .cixy-hair-back {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--hair) 0 4px,
+    #0006 5px 7px
+  );
+  border-radius: 45% 45% 12% 12%;
+}
+.hair-braids .cixy-hair-front {
+  border-left-width: 9px;
+}
+.hair-curls .cixy-hair-back {
+  left: 15px;
+  width: 104px;
+  background:
+    radial-gradient(
+        circle at 8px 8px,
+        var(--hair) 0 7px,
+        #0004 8px 9px,
+        transparent 10px
+      )
+      0 0/18px 18px,
+    var(--hair);
+  border-radius: 50% 50% 38% 38%;
+}
+.hair-curls .cixy-hair-front {
+  border-radius: 50%;
+  border-width: 20px 12px 0;
+}
+.hair-straight .cixy-hair-back {
+  border-radius: 42% 42% 8% 8%;
+  height: 140px;
+}
+.hair-straight .cixy-hair-front {
+  border-radius: 55% 35% 15% 10%;
+}
+.hair-bob .cixy-hair-back {
+  height: 102px;
+  border-radius: 48% 48% 22% 22%;
+}
+.hair-bob .cixy-hair-front {
+  border-radius: 50% 50% 30% 15%;
+}
+@keyframes cixyBlink {
+  0%,
+  45%,
+  48%,
+  100% {
+    transform: scaleY(1);
+  }
+  46%,
+  47% {
+    transform: scaleY(0.12);
+  }
+}
+@media (max-width: 520px) {
+  .cixy-studio {
+    grid-template-columns: 1fr;
+  }
+  .cixy-portrait {
+    margin: auto;
+  }
+  .cixy-style-controls {
+    grid-template-columns: 1fr;
+  }
+}
