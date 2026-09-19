@@ -1,7 +1,6 @@
-'use client';
-
-import { AppShell } from '@/landing/AppShell';
-import { HeroCommandCenter, ModuleStrip } from '@/landing/Hero';
+"use client";
+import { AppShell } from "@/landing/AppShell";
+import { HeroCommandCenter, ModuleStrip } from "@/landing/Hero";
 import {
   BuildScaleImpact,
   CixyPanel,
@@ -13,29 +12,46 @@ import {
   QuickCommands,
   RecentActivity,
   SystemHealthPanel,
-} from '@/landing/Panels';
-
+} from "@/landing/Panels";
 export function LandingPage() {
   return (
-    <AppShell>
+    <AppShell headquarters>
       {(d) => (
-        <div className="space-y-6">
-          <HeroCommandCenter up={d.sites.filter((s) => s.ok).length} total={d.sites.length} />
-          <ModuleStrip />
-          <div className="grid gap-4 lg:grid-cols-3">
-            <GlobalFinancialOverview summary={d.finance} />
-            <ProjectStatusPanel rows={d.rows} loading={d.loading} />
-            <SystemHealthPanel health={d.health} />
-            <CixyPanel mission={d.mission} rows={d.rows} />
-            <QuickCommands />
+        <>
+          <HeroCommandCenter
+            up={d.sites.filter((s) => s.ok).length}
+            total={d.sites.length}
+          />
+          <div className="hq-content">
+            <ModuleStrip />
+            <div className="hq-dashboard">
+              <GlobalFinancialOverview summary={d.finance} compact />
+              <ProjectStatusPanel rows={d.rows} loading={d.loading} compact />
+              <SystemHealthPanel health={d.health} compact />
+              <NewsFeed compact />
+              <div className="hq-mobile-cixy">
+                <CixyPanel mission={d.mission} rows={d.rows} />
+              </div>
+            </div>
+            <BuildScaleImpact />
+            <div className="hq-secondary">
+              <div className="hq-desktop-cixy">
+                <CixyPanel mission={d.mission} rows={d.rows} />
+              </div>
+              <QuickCommands />
+            </div>
+            <div className="hq-secondary">
+              <DailyBrief mission={d.mission} rows={d.rows} />
+              <RecentActivity items={d.activity} />
+            </div>
             <ProjectHealthGrid rows={d.rows} />
-            <DailyBrief mission={d.mission} rows={d.rows} />
-            <RecentActivity items={d.activity} />
-            <NewsFeed />
+            {d.error && (
+              <p className="hq-source-error" role="status">
+                Live sources: {d.error}
+              </p>
+            )}
           </div>
-          <BuildScaleImpact />
-          {d.error ? <p className="text-[10px] text-[var(--red)]">Live sources: {d.error}</p> : null}
-        </div>
+        </>
       )}
     </AppShell>
   );
