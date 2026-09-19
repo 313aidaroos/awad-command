@@ -1,0 +1,414 @@
+.business-world {
+  padding: 26px;
+  min-height: 85vh;
+  background:
+    radial-gradient(ellipse at 50% 35%, #16283d, transparent 68%), #040b13;
+  color: #dce6ed;
+}
+.world-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+.world-heading span,
+.world-agent-detail > div > span {
+  font: 10px monospace;
+  letter-spacing: 3px;
+  color: #ad9773;
+}
+.world-heading h1 {
+  font:
+    clamp(25px, 3vw, 43px) Georgia,
+    serif;
+  letter-spacing: 2px;
+  color: #efdab5;
+  margin: 10px 0;
+}
+.world-heading p {
+  font-size: 13px;
+  color: #92a9ba;
+}
+.world-heading a,
+.world-inside-top a,
+.world-agent-detail a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #69d8e6;
+}
+.world-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 16px 0;
+  border-block: 1px solid #263542;
+  margin-top: 25px;
+  font: 12px monospace;
+}
+.world-toolbar span {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.world-toolbar small {
+  margin-left: auto;
+  color: #92a8b8;
+}
+.world-caption {
+  font-size: 11px;
+  color: #8298aa;
+  margin: 16px 0;
+}
+.world-campus {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+  padding: 12px 0 35px;
+  background-image:
+    linear-gradient(#23405318 1px, transparent 1px),
+    linear-gradient(90deg, #23405318 1px, transparent 1px);
+  background-size: 35px 35px;
+}
+.world-building {
+  min-width: 0;
+  text-align: left;
+  border: 1px solid #2d3c4d;
+  border-top: 2px solid var(--office-accent);
+  border-radius: 9px;
+  background: linear-gradient(#0d1a2be0, #06101a);
+  overflow: hidden;
+  transition:
+    transform 0.25s,
+    border-color 0.25s,
+    box-shadow 0.25s;
+  cursor: pointer;
+}
+.world-building:hover {
+  transform: translateY(-5px);
+  border-color: var(--office-accent);
+  box-shadow: 0 10px 40px #0009;
+}
+.world-building-label {
+  display: flex;
+  justify-content: space-between;
+  padding: 14px;
+  color: var(--office-accent);
+  font: 12px monospace;
+  letter-spacing: 2px;
+}
+.world-office {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1.045;
+  background-image: url("/business-world/offices.png");
+  background-size: 400% 200%;
+  background-repeat: no-repeat;
+}
+.world-screen-glow {
+  position: absolute;
+  inset: 20% 25% 32%;
+  background: radial-gradient(ellipse, #51e4ff18, transparent 70%);
+  animation: office-breathe 5s ease-in-out infinite;
+  pointer-events: none;
+}
+.world-building:nth-child(even) .world-screen-glow {
+  animation-delay: -2.5s;
+}
+.world-building-footer {
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 5px;
+  align-items: center;
+  border-top: 1px solid #263747;
+  font-size: 9px;
+}
+.world-building-footer strong {
+  font-weight: 400;
+  color: #bdc7cf;
+}
+.world-building-footer span {
+  font: 8px monospace;
+  color: var(--office-accent);
+}
+.world-inside {
+  animation: office-enter 0.35s ease-out;
+}
+.world-inside-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 0;
+}
+.world-inside-top button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #d9c5a4;
+}
+.world-inside-layout {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 25px;
+}
+.world-stage {
+  position: relative;
+  max-width: 720px;
+  margin: auto;
+  width: 100%;
+}
+.world-stage-plaque {
+  position: absolute;
+  bottom: 4%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 35px;
+  border: 1px solid var(--office-accent);
+  background: #06101bef;
+  color: var(--office-accent);
+  font: 20px Georgia;
+  text-align: center;
+}
+.world-stage-plaque small {
+  display: block;
+  font: 8px monospace;
+  letter-spacing: 2px;
+  margin-top: 5px;
+}
+.world-roster {
+  padding: 20px;
+  border: 1px solid #384657;
+  background: #091522;
+  border-radius: 8px;
+  align-self: center;
+}
+.world-roster h2 {
+  font: 18px Georgia;
+  color: #e3c99d;
+  margin-bottom: 15px;
+}
+.world-roster > p {
+  font-size: 13px;
+  color: #9bb0c1;
+  line-height: 1.8;
+}
+.world-roster button {
+  width: 100%;
+  display: flex;
+  gap: 15px;
+  padding: 12px 5px;
+  text-align: left;
+  border-top: 1px solid #233547;
+  align-items: center;
+}
+.world-roster button:hover,
+.world-roster button[aria-pressed="true"] {
+  background: #203447;
+}
+.world-avatar {
+  width: 54px;
+  height: 62px;
+  flex-shrink: 0;
+  background-image: url("/crypto-floor/agents.png");
+  background-size: 400% 400%;
+  border-radius: 7px;
+  border-bottom: 1px solid var(--office-accent);
+}
+.world-roster strong {
+  font-size: 13px;
+}
+.world-roster small,
+.world-roster em {
+  display: block;
+  font-size: 10px;
+  margin-top: 4px;
+  color: #9aaebe;
+  font-style: normal;
+}
+.world-roster em {
+  color: #b3c99c;
+}
+.world-agent-detail {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  border: 1px solid #49513f;
+  padding: 25px;
+  background: #0b1825;
+  margin: 20px 0;
+}
+.world-agent-detail h2 {
+  font: 23px Georgia;
+  color: #e8cca0;
+  margin: 7px 0;
+}
+.world-agent-detail p {
+  font-size: 13px;
+  line-height: 1.8;
+}
+.world-agent-detail small {
+  display: block;
+  font-size: 10px;
+  color: #9aaebe;
+}
+.world-agent-detail h3 {
+  font: 11px monospace;
+  letter-spacing: 2px;
+  color: #8adac8;
+  margin-bottom: 12px;
+}
+.world-agent-detail a {
+  margin-top: 15px;
+}
+.world-footer {
+  display: flex;
+  justify-content: space-between;
+  font: 10px monospace;
+  letter-spacing: 1px;
+  color: #a9906e;
+  border-top: 1px solid #314254;
+  padding: 20px 0;
+}
+.business-world :is(button, a):focus-visible {
+  outline: 2px solid #64e3ed;
+  outline-offset: 4px;
+}
+@keyframes office-breathe {
+  50% {
+    opacity: 0.2;
+  }
+}
+@keyframes office-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@media (max-width: 1150px) {
+  .world-campus {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 700px) {
+  .business-world {
+    padding: 16px;
+  }
+  .world-heading {
+    align-items: start;
+    flex-direction: column;
+  }
+  .world-toolbar {
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .world-toolbar small {
+    width: 100%;
+    margin-left: 0;
+  }
+  .world-campus {
+    gap: 10px;
+  }
+  .world-building-label {
+    font-size: 10px;
+    padding: 10px;
+    letter-spacing: 1px;
+  }
+  .world-building-footer {
+    flex-direction: column;
+    align-items: start;
+  }
+  .world-inside-layout,
+  .world-agent-detail {
+    grid-template-columns: 1fr;
+  }
+  .world-roster {
+    padding: 15px;
+  }
+  .world-footer {
+    gap: 15px;
+    font-size: 8px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .world-screen-glow,
+  .world-inside {
+    animation: none;
+  }
+  .world-building {
+    transition: none;
+  }
+}
+.world-exchange {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 35px;
+  margin: 24px 0;
+  border: 1px solid #5c6359;
+  border-radius: 12px;
+  background: radial-gradient(ellipse at 25% 60%, #173f53, #08121d 70%);
+  overflow: hidden;
+}
+.world-exchange > .world-office {
+  width: 300px;
+  flex-shrink: 0;
+}
+.world-exchange > div:last-child {
+  padding: 20px;
+}
+.world-exchange span {
+  font: 10px monospace;
+  letter-spacing: 4px;
+  color: #e1c39a;
+}
+.world-exchange h2 {
+  font: 30px Georgia;
+  color: #e8d4af;
+  margin: 12px 0;
+}
+.world-exchange p {
+  font-size: 13px;
+  color: #a7bcca;
+}
+.world-exchange strong {
+  display: block;
+  font: 12px monospace;
+  color: #5cddec;
+  margin-top: 24px;
+}
+.world-exchange small {
+  display: block;
+  font-size: 9px;
+  color: #8a9fab;
+  margin-top: 12px;
+}
+.world-exchange:hover {
+  border-color: #66dfe9;
+}
+@media (max-width: 700px) {
+  .world-exchange {
+    gap: 0;
+  }
+  .world-exchange > .world-office {
+    width: 42%;
+  }
+  .world-exchange h2 {
+    font-size: 19px;
+  }
+  .world-exchange strong {
+    font-size: 9px;
+  }
+  .world-exchange p {
+    font-size: 11px;
+  }
+  .world-exchange > div:last-child {
+    padding: 12px;
+  }
+}

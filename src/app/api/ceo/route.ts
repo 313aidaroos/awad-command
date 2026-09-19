@@ -1,19 +1,20 @@
-import { NextResponse } from 'next/server';
-import { z } from 'zod';
-import { runCeoTurn } from '@/ceo/runCeoTurn';
-import { buildMissionControlSnapshot } from '@/lib/missionControl';
-import { readComputerStatus } from '@/lib/computerControl';
-import { anthropicModel, isAnthropicCeoEnabled } from '@/lib/env';
-import { probeFleetSites, type FleetSnapshot } from '@/lib/fleetProbe';
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { runCeoTurn } from "@/ceo/runCeoTurn";
+import { buildMissionControlSnapshot } from "@/lib/missionControl";
+import { readComputerStatus } from "@/lib/computerControl";
+import { anthropicModel, isAnthropicCeoEnabled } from "@/lib/env";
+import { probeFleetSites, type FleetSnapshot } from "@/lib/fleetProbe";
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
 
 const ContextSchema = z.object({
-  dataMode: z.enum(['demo', 'live']),
+  dataMode: z.enum(["demo", "live"]),
   projects: z.record(z.any()),
   agents: z.record(z.any()),
   events: z.object({ buffer: z.array(z.any()), unread: z.number() }),
   approvals: z.array(z.any()),
+  headquarters: z.unknown().optional(),
   fleet: z.any().optional(),
   mission: z.any().optional(),
 });
@@ -21,7 +22,7 @@ const ContextSchema = z.object({
 const BodySchema = z.object({
   messages: z.array(
     z.object({
-      role: z.enum(['user', 'assistant']),
+      role: z.enum(["user", "assistant"]),
       content: z.string(),
     }),
   ),
@@ -30,18 +31,22 @@ const BodySchema = z.object({
 
 async function enrichContext(context: z.infer<typeof ContextSchema>) {
   try {
-    const fleet: FleetSnapshot = { source: 'live', checkedAt: Date.now(), sites: await probeFleetSites() };
+    const fleet: FleetSnapshot = {
+      source: "live",
+      checkedAt: Date.now(),
+      sites: await probeFleetSites(),
+    };
     const computer = await readComputerStatus();
     const mission = await buildMissionControlSnapshot({
       fleet,
       computer,
       cixy: {
-        provider: isAnthropicCeoEnabled() ? 'anthropic' : 'demo',
+        provider: isAnthropicCeoEnabled() ? "anthropic" : "demo",
         enabled: isAnthropicCeoEnabled(),
         model: anthropicModel(),
       },
     });
-    return { ...context, dataMode: 'live' as const, fleet, mission };
+    return { ...context, dataMode: "live" as const, fleet, mission };
   } catch {
     return context;
   }
@@ -50,8 +55,11 @@ async function enrichContext(context: z.infer<typeof ContextSchema>) {
 export async function POST(request: Request) {
   const parsed = BodySchema.safeParse(await request.json());
   if (!parsed.success) {
-    return NextResponse.json({ error: 'Invalid body' }, { status: 400 });
+    return NextResponse.json({ error: "Invalid body" }, { status: 400 });
   }
-  const result = await runCeoTurn({ ...parsed.data, context: await enrichContext(parsed.data.context) });
+  const result = await runCeoTurn({
+    ...parsed.data,
+    context: await enrichContext(parsed.data.context),
+  });
   return NextResponse.json(result);
 }

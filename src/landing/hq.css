@@ -1244,3 +1244,7 @@
 .hq-shell .hq-features a:nth-child(3) > svg {
   color: #40dcb1;
 }
+.hq-hero-entering{transform-origin:73% 43%;animation:landing-tv-enter .65s ease-in forwards;pointer-events:none}
+.hq-hero-entering .hq-hero-copy{opacity:0;transition:opacity .2s}
+@keyframes landing-tv-enter{to{transform:scale(3.3);filter:brightness(.3);opacity:.05}}
+@media(prefers-reduced-motion:reduce){.hq-hero-entering{animation:none}.hq-hero-entering .hq-hero-copy{transition:none}}
