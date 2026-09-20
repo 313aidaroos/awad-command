@@ -13,6 +13,7 @@ import {
   RecentActivity,
   SystemHealthPanel,
 } from "@/landing/Panels";
+import { WalletPanel } from "@/landing/WalletPanel";
 export function LandingPage() {
   return (
     <AppShell headquarters>
@@ -28,6 +29,7 @@ export function LandingPage() {
               <GlobalFinancialOverview summary={d.finance} compact />
               <ProjectStatusPanel rows={d.rows} loading={d.loading} compact />
               <SystemHealthPanel health={d.health} compact />
+              <WalletPanel />
               <NewsFeed compact />
               <div className="hq-mobile-cixy">
                 <CixyPanel mission={d.mission} rows={d.rows} />
