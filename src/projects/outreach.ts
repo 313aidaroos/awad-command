@@ -5,6 +5,6 @@ export const OUTREACH_SEAT = {
   objective:
     "Draft one letter per row the owner supplied. Never invent emails. Never send twice. Wait for Approve.",
   tools: ["draft_email"],
-} as const;
+};
 
 export const OUTREACH_LIMIT = 50;
