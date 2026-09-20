@@ -1,6 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
 import "@/workforce/teams.css";
+
+const WALLET_URL = "https://apixis-wallet.vercel.app";
+
 type RequestRow = {
   id: string;
   merchant: string;
@@ -50,7 +53,7 @@ export function PaymentDesk() {
         setStripe(d.stripe);
         setNotice(
           d.requestsError ??
-            "Payment requests require your decision. Approval does not charge a card.",
+            "Ixis lives in Apixis Wallet. Stripe is dollars in. Approval here does not charge a card.",
         );
       })
       .catch((e) => {
@@ -81,8 +84,8 @@ export function PaymentDesk() {
       <header>
         <div>
           <small>CIXY / FINANCE OFFICE</small>
-          <h1>PAYMENTS & WALLET</h1>
-          <p>Your decisions. Your money. Verified account data.</p>
+          <h1>PAYMENTS & IXIS</h1>
+          <p>One register. Dollars in Stripe. Tickets in Wallet.</p>
         </div>
         <button disabled={busy} onClick={() => setRefresh((n) => n + 1)}>
           Refresh
@@ -90,20 +93,21 @@ export function PaymentDesk() {
       </header>
       <p role="status">{notice}</p>
       <div className="team-connections">
-        <h2>Payment method & spending access</h2>
+        <h2>Ixis register</h2>
         <p>
-          Mode: payment requests you approve. No card or spendable wallet is
-          connected to Cixy. Use the merchant’s secure checkout after reviewing
-          a request; card details are never stored in this app.
+          Native unit everywhere: Ixis. 100 Ixis = $1. Buy packs only on Wallet.
+          Sister sites redeem. Chain flip is later.
         </p>
         <p>
-          Ask Cixy: “Request approval for $25 at [merchant] for [purpose].” She
-          will save it here. Approval is recorded here; payment happens
-          separately.
+          Spark $10 · Starter $100 · Studio $500 · Empire $1,500. Checkout
+          worked 19 Sep. Ledger credit on webhook is the next code slice.
         </p>
+        <a href={WALLET_URL} target="_blank" rel="noopener noreferrer">
+          Open Apixis Wallet ↗
+        </a>
       </div>
       <div className="team-brief">
-        <h2>Stripe · today in Chicago</h2>
+        <h2>Stripe · dollars</h2>
         <p>{stripe?.notice ?? "Checking Stripe…"}</p>
         {stripe?.connected && (
           <>
@@ -134,7 +138,7 @@ export function PaymentDesk() {
             {stripe.pending?.map((b) => (
               <p key={b.currency}>Pending: {amount(b.amount, b.currency)}</p>
             ))}
-            <p>Stripe balances are not a wallet Cixy can spend.</p>
+            <p>Stripe is the cash drawer. Ixis is the ticket. Cixy cannot spend either.</p>
           </>
         )}
         <a
