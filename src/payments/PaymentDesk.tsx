@@ -1,8 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useWalletDeepLink } from "@/ui/useWalletDeepLink";
 import "@/workforce/teams.css";
-
-const WALLET_URL = "https://apixis-wallet.vercel.app";
 
 type RequestRow = {
   id: string;
@@ -38,6 +37,7 @@ const amount = (value: number, currency = "usd") =>
         : 100),
   );
 export function PaymentDesk() {
+  const walletHref = useWalletDeepLink();
   const [rows, setRows] = useState<RequestRow[]>([]),
     [stripe, setStripe] = useState<StripeView | null>(null),
     [notice, setNotice] = useState("Loading private payments…"),
@@ -99,11 +99,15 @@ export function PaymentDesk() {
           Sister sites redeem. Chain flip is later.
         </p>
         <p>
-          Spark $10 · Starter $100 · Studio $500 · Empire $1,500. Checkout
-          worked 19 Sep. Ledger credit on webhook is the next code slice.
+          Spark $10 · Starter $100 · Studio $500 · Empire $1,500. Cash credit
+          lands on Wallet from its Stripe webhook.
         </p>
-        <a href={WALLET_URL} target="_blank" rel="noopener noreferrer">
-          Open Apixis Wallet ↗
+        <a href={walletHref} target="_blank" rel="noopener noreferrer">
+          Buy Ixis
+        </a>
+        {" · "}
+        <a href={walletHref} target="_blank" rel="noopener noreferrer">
+          Open Wallet
         </a>
       </div>
       <div className="team-brief">
