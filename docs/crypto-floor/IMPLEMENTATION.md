@@ -16,7 +16,7 @@ The user's later instruction narrowed the immediate work to drawing/showing the 
 
 ## Integration boundary
 
-No exchange API, database, secret, trading worker, account allocation, live risk setting, or real kill switch is changed. No new live-money capability is added. The floor deliberately reports unknown engine status until runtime data is connected. The app's existing mission-control health does not establish trading-engine health.
+The visual preview is unchanged and still uses `sample.ts`. Connection status can mirror the shared AwadBot Alpaca **paper** book (`https://paper-api.alpaca.markets` only). COMMAND does not submit orders and does not open a second book. `sim=true` journal rows stay labeled as curriculum fills, not broker cash. The kill switch stays disabled. Live trading stays off. The app's mission-control health does not establish trading-engine health. See `.env.example` for `ALPACA_API_KEY`, `ALPACA_SECRET_KEY`, `TRADE_MODE=paper`, and optional `AWADBOT_JOURNAL_DIR` / `AWADBOT_STATUS_URL`.
 
 The disabled kill-switch UI explicitly says it cannot halt an external engine. Before enabling it, implement authenticated, persisted engine halt/reset with reconciliation and all tests listed in the user's specification. Do not substitute a local browser flag.
 
