@@ -1,15 +1,11 @@
 /**
- * Apixis Wallet API client stubs for Command.
- * 
- * Real endpoints live in 313aidaroos/ApixisWallet and are managed by @apixiswallet.
- * Command redeems Ixis for features (skins, seats, agent hires) via this contract:
+ * Redeem client for Command. Cash checkout and the Ixis ledger stay on Apixis Wallet.
+ * Buy Ixis is a deep link — docs/WALLET_EMBED.md. Do not add Stripe here.
+ *
+ * Sister contract: 313aidaroos/ApixisWallet docs/INTEGRATION.md
  *   POST /api/v1/quotes → /reservations → capture/release → entitlement
- * 
- * Wallet docs/INTEGRATION.md is not live yet. Until then:
- * - walletConnected() returns false and shows "Wallet connecting…" everywhere.
- * - getLedger() returns unavailable.
- * 
- * TODO(integration): wire real Wallet base URL + API key when docs land.
+ *
+ * Until NEXT_PUBLIC_WALLET_API_URL and WALLET_API_KEY are set, calls return unavailable.
  */
 
 export type WalletAvailability<T> = { available: true } & T | { available: false; reason: string };

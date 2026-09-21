@@ -140,6 +140,14 @@ The Computer panel is honest: **coming online** until a worker heartbeats with `
 
 Still needed for a live screen: a VM or Railway service with `WORKER_CAPABILITIES=computer` talking to this hub. The 3D universe is unchanged aside from a Contraxis Screen node that opens the same panel.
 
+## Apixis Wallet
+
+COMMAND does not run a second Stripe or Ixis ledger. **Buy Ixis** and **Wallet** open Apixis Wallet (`NEXT_PUBLIC_WALLET_URL`, default `https://apixis-wallet.vercel.app`) with `origin=command` and an allowlisted `return_url` back to `/wallet`. Cash is credited only on Wallet, from its Stripe webhook.
+
+If the COMMAND session can be forwarded, `/wallet` shows the numeric `available` balance from Wallet `GET /api/v1/wallet`. Otherwise it shows **Open Wallet** and no balance. Redeem calls stay in `src/lib/walletClient.ts`.
+
+Details: [docs/WALLET_EMBED.md](docs/WALLET_EMBED.md).
+
 ## Vercel
 
 1. Import this repo.
@@ -157,6 +165,7 @@ Still needed for a live screen: a VM or Railway service with `WORKER_CAPABILITIE
    - `LEAD_INBOUND_WEBHOOK_SECRET` (optional; defaults to the outbound secret)
    - `GROK_BOT_API_KEY` (optional alias for the webhook secret)
    - `NEXT_PUBLIC_SITE_URL` (production URL for magic-link redirects)
+   - `NEXT_PUBLIC_WALLET_URL` (optional; defaults to `https://apixis-wallet.vercel.app`)
 4. Set `ALLOWED_EMAIL` last — the deck stays public demo until URL + anon + email are all present.
 
 ## Hard rules

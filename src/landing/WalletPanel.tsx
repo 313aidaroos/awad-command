@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { formatIxis } from '@/lib/ixis';
+import { useWalletDeepLink } from '@/ui/useWalletDeepLink';
 
 export function WalletPanel() {
+  const href = useWalletDeepLink();
   const [data, setData] = useState<{ sold: number; redeemed: number; balance: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -77,6 +79,11 @@ export function WalletPanel() {
           </p>
         </>
       ) : null}
+      <p className="hq-note">
+        <a href={href} target="_blank" rel="noopener noreferrer">Buy Ixis</a>
+        {' · '}
+        <a href={href} target="_blank" rel="noopener noreferrer">Open Wallet</a>
+      </p>
     </section>
   );
 }
