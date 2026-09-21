@@ -7,6 +7,7 @@ import { fifoPnl, openCountsFromState, parseTradesCsv } from "./journal";
 import { alpacaPaperOrderBody, submitDeskPaperOrder, type PaperBroker } from "./order";
 import { describeFloorStatus, loadPaperBook, type PaperEnv } from "./load";
 import { buildPaperSnapshot, type PaperBook } from "./snapshot";
+import { paperTradablePairs } from "./universe";
 import { GET as floorStatus } from "@/app/api/floor-status/route";
 import { GET as floorSnapshot } from "@/app/api/floor-snapshot/route";
 
@@ -230,6 +231,91 @@ describe("deterministic paper order path", () => {
     ).rejects.toThrow(/Refusing/);
     expect(fifoPnl(parseTradesCsv(csv).trades, new Map([["BTC", 64000]])).realized).toBeCloseTo(5);
   });
+
+  it("trades XRP/USD on paper and never sends an XLM order", async () => {
+    expect(paperTradablePairs).toContain("XRP/USD");
+    expect(paperTradablePairs).not.toContain("XLM/USD");
+    const calls: string[] = [];
+    const broker: PaperBroker = {
+      baseUrl: ALPACA_PAPER_ORIGIN,
+      async submit(order) {
+        calls.push(`${order.side}:${order.symbol}`);
+        return {
+          id: `ack-${order.side}`,
+          status: "accepted",
+          symbol: order.symbol,
+          side: order.side,
+        };
+      },
+    };
+    await submitDeskPaperOrder(
+      { deskId: "samurai", side: "buy", symbol: "XRP/USD", notional: 25 },
+      broker,
+      { mode: "paper", execution: "submit" },
+    );
+    await submitDeskPaperOrder(
+      { deskId: "phantom", side: "sell", symbol: "xrp-usd", notional: 25 },
+      broker,
+      { mode: "paper", execution: "submit" },
+    );
+    expect(calls).toEqual(["buy:XRP/USD", "sell:XRP/USD"]);
+    await expect(
+      submitDeskPaperOrder(
+        { deskId: "neon", side: "buy", symbol: "XLM/USD", notional: 25 },
+        broker,
+        { mode: "paper", execution: "submit" },
+      ),
+    ).rejects.toThrow(/not Alpaca-listed/);
+    expect(calls).toEqual(["buy:XRP/USD", "sell:XRP/USD"]);
+    const snap = buildPaperSnapshot(
+      book({
+        trades: [
+          {
+            timestamp: now,
+            mode: "paper",
+            action: "buy",
+            symbol: "XLM/USD",
+            qty: 10,
+            price: 0.2,
+            notional: 2,
+            reason: "coil",
+            method: "scalp_momentum",
+            sim: false,
+          },
+          {
+            timestamp: now,
+            mode: "paper",
+            action: "buy",
+            symbol: "XRP/USD",
+            qty: 20,
+            price: 1.48,
+            notional: 29.6,
+            reason: "decision zone",
+            method: "trend_ema",
+            sim: false,
+          },
+        ],
+        quotes: [
+          {
+            symbol: "XRP/USD",
+            price: 1.48,
+            changePct: 0.4,
+            timestamp: now,
+          },
+          {
+            symbol: "XLM/USD",
+            price: 0.2,
+            changePct: 0,
+            timestamp: now,
+          },
+        ],
+      }),
+    );
+    expect(snap.events.some((event) => event.symbol === "XLM")).toBe(false);
+    expect(snap.events.some((event) => event.symbol === "XRP" && event.eventType === "ORDER_FILLED")).toBe(true);
+    expect(snap.markets.map((market) => market.symbol)).toEqual(["XRP"]);
+    expect(snap.markets.some((market) => market.symbol === "XLM")).toBe(false);
+  });
 });
 
 describe("floor status", () => {
@@ -259,8 +345,10 @@ describe("floor status", () => {
   });
 
   it("reads Alpaca paper JSON and stays offline without paper mode", async () => {
+    const urls: string[] = [];
     const fetcher = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
+      urls.push(url);
       expect(url.startsWith(ALPACA_PAPER_ORIGIN) || url.startsWith("https://data.alpaca.markets")).toBe(
         true,
       );
@@ -290,6 +378,9 @@ describe("floor status", () => {
     expect(snap.portfolio.paperPnl).toBe(1000);
     expect(snap.markets[0]?.symbol).toBe("BTC");
     expect(snap.events).toEqual([]);
+    const quoteUrl = urls.find((url) => url.includes("snapshots")) ?? "";
+    expect(quoteUrl).toContain("XRP");
+    expect(quoteUrl).not.toContain("XLM");
     const refused = await loadPaperBook(env({ mode: "live" }), { fetch: fetcher, now });
     expect(refused.sources.alpaca).toBe(false);
     expect(

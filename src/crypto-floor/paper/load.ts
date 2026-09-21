@@ -25,6 +25,7 @@ import {
   type PaperPosition,
   type PaperQuote,
 } from "./snapshot";
+import { isResearchOnlySymbol, paperTradablePairs } from "./universe";
 
 export type PaperEnv = {
   mode: string;
@@ -273,7 +274,7 @@ export async function loadPaperBook(
         book.alpacaError = "Alpaca paper account response had no equity.";
       }
       try {
-        const symbols = ["BTC/USD", "ETH/USD", "SOL/USD", "XRP/USD", "DOGE/USD"].join(",");
+        const symbols = paperTradablePairs.join(",");
         const quotes = await alpacaJson(
           fetcher,
           ALPACA_DATA_ORIGIN,
@@ -407,16 +408,19 @@ export type FloorStatus = {
 };
 
 export function describeFloorStatus(env: PaperEnv, book: PaperBook): FloorStatus {
-  const lastJournalAt = book.trades
+  const journalTrades = book.trades.filter((trade) => !isResearchOnlySymbol(trade.symbol));
+  const lastJournalAt = journalTrades
     .map((trade) => trade.timestamp)
     .sort()
     .at(-1) ?? null;
   const recentJournal =
     lastJournalAt !== null && Date.parse(book.now) - Date.parse(lastJournalAt) <= RECENT_MS;
-  const openOrders = book.orders.some((order) =>
-    ["new", "accepted", "pending_new", "partially_filled", "held"].includes(
-      order.status.toLowerCase(),
-    ),
+  const openOrders = book.orders.some(
+    (order) =>
+      !isResearchOnlySymbol(order.symbol) &&
+      ["new", "accepted", "pending_new", "partially_filled", "held"].includes(
+        order.status.toLowerCase(),
+      ),
   );
   const trading = Boolean(
     book.halt.halted === false &&
@@ -431,8 +435,8 @@ export function describeFloorStatus(env: PaperEnv, book: PaperBook): FloorStatus
   } else if (env.mode === "paper" && (keys === "present" || env.statusUrl || env.journalDir)) {
     engine = "DEGRADED";
   }
-  const simJournalFills = book.trades.filter((trade) => trade.sim).length;
-  const brokerJournalFills = book.trades.filter((trade) => !trade.sim).length;
+  const simJournalFills = journalTrades.filter((trade) => trade.sim).length;
+  const brokerJournalFills = journalTrades.filter((trade) => !trade.sim).length;
   const cryptoMv = book.sources.alpaca || book.sources.dashboard
     ? brokerCryptoMarketValue(book.positions)
     : null;

@@ -13,6 +13,7 @@ import {
   type JournalSignal,
   type JournalTrade,
 } from "./journal";
+import { isResearchOnlySymbol } from "./universe";
 
 export type PaperAccount = {
   equity: number | null;
@@ -235,12 +236,16 @@ export function brokerCryptoMarketValue(positions: PaperPosition[]) {
 export function buildPaperSnapshot(book: PaperBook): Snapshot {
   const base = disconnectedSnapshot();
   const connected = Boolean(book.account) || book.sources.journal;
-  const marks = marksOf(book.quotes);
+  const trades = book.trades.filter((trade) => !isResearchOnlySymbol(trade.symbol));
+  const signals = book.signals.filter((signal) => !isResearchOnlySymbol(signal.symbol));
+  const orders = book.orders.filter((order) => !isResearchOnlySymbol(order.symbol));
+  const quotes = book.quotes.filter((quote) => !isResearchOnlySymbol(quote.symbol));
+  const marks = marksOf(quotes);
   const events: FloorEvent[] = [
-    ...book.signals.map(signalEvent),
-    ...book.trades.map(tradeEvent),
-    ...book.orders
-      .filter((order) => !journalCovers(order, book.trades))
+    ...signals.map(signalEvent),
+    ...trades.map(tradeEvent),
+    ...orders
+      .filter((order) => !journalCovers(order, trades))
       .map(orderEvent)
       .filter((event): event is FloorEvent => event !== null),
   ];
@@ -268,7 +273,10 @@ export function buildPaperSnapshot(book: PaperBook): Snapshot {
 
   const teamPnl = new Map<DeskId, { pnl: number | null; openTrades: number; tradeCount: number }>();
   for (const desk of deskIds) {
-    const trades = book.trades.filter((trade) => deskForMethod(trade.method) === desk);
+    const trades = book.trades.filter(
+      (trade) =>
+        deskForMethod(trade.method) === desk && !isResearchOnlySymbol(trade.symbol),
+    );
     const fifo = fifoPnl(trades, marks);
     const pnl = trades.length
       ? Math.round((fifo.realized + fifo.unrealized) * 100) / 100
@@ -286,11 +294,11 @@ export function buildPaperSnapshot(book: PaperBook): Snapshot {
     equity !== null && lastEquity !== null
       ? Math.round((equity - lastEquity) * 100) / 100
       : null;
-  const openOrders = book.orders.filter((order) =>
+  const openOrders = orders.filter((order) =>
     OPEN_STATUSES.has(order.status.toLowerCase()),
   ).length;
-  const simFills = book.trades.filter((trade) => trade.sim).length;
-  const brokerJournalFills = book.trades.filter((trade) => !trade.sim).length;
+  const simFills = trades.filter((trade) => trade.sim).length;
+  const brokerJournalFills = trades.filter((trade) => !trade.sim).length;
 
   const snapshot: Snapshot = {
     ...base,
@@ -321,8 +329,8 @@ export function buildPaperSnapshot(book: PaperBook): Snapshot {
       },
       {
         name: "Market data",
-        status: book.quotes.length ? "ONLINE" : "OFFLINE",
-        detail: book.quotes.length
+        status: quotes.length ? "ONLINE" : "OFFLINE",
+        detail: quotes.length
           ? "Alpaca crypto snapshots."
           : "No Alpaca crypto quotes loaded.",
       },
@@ -357,7 +365,7 @@ export function buildPaperSnapshot(book: PaperBook): Snapshot {
       };
     }),
     events: recent,
-    markets: book.quotes
+    markets: quotes
       .filter((q) => q.price > 0 && baseAsset(q.symbol))
       .map((q) => ({
         symbol: baseAsset(q.symbol),

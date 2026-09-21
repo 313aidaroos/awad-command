@@ -38,6 +38,7 @@ import {
 } from "./model";
 import { sampleSnapshot } from "./sample";
 import { primaryMethod } from "./paper/desks";
+import { paperTradablePairs, xlmXrpNotes } from "./paper/universe";
 import { awadScore, defaultScoreConfig, type ScoreConfig } from "./scoring";
 import { agentRoleForEvent, filterEvents, type ReplayFilter } from "./replay";
 import "./floor.css";
@@ -507,7 +508,7 @@ export default function CryptoFloor() {
             onChange={(e) => changeFilter("symbol", e.target.value)}
           >
             <option value="">All coins</option>
-            {["BTC", "ETH", "SOL"].map((c) => (
+            {paperTradablePairs.map((pair) => pair.slice(0, pair.indexOf("/"))).map((c) => (
               <option key={c}>{c}</option>
             ))}
           </select>
@@ -696,7 +697,7 @@ export default function CryptoFloor() {
             </Link>
           </div>
           <div className="cf-ticker">
-            {["BTC", "ETH", "SOL", "XRP", "BNB", "DOGE"].map((symbol, i) => {
+            {paperTradablePairs.map((pair) => pair.slice(0, pair.indexOf("/"))).map((symbol, i) => {
               const m = snapshot.markets.find((x) => x.symbol === symbol);
               return (
                 <div key={symbol}>
@@ -1434,7 +1435,48 @@ export default function CryptoFloor() {
               </div>
             )}
             {tab === "NEWS" && (
-              <Panel title="News intelligence" tag="NO LIVE NEWS PROVIDER">
+              <>
+                <Panel title="XRP / XLM notes" tag="PAPER HOST">
+                  <p>
+                    {xlmXrpNotes.xrp.pair} is on the Alpaca paper watchlist.{" "}
+                    {xlmXrpNotes.xlm.pair} is not Alpaca-listed. Research only.
+                    No XLM paper order.
+                  </p>
+                  <div className="cf-detail-grid">
+                    <div>
+                      <small>XRP headline</small>
+                      <b>{xlmXrpNotes.xrp.headline}</b>
+                    </div>
+                    <div>
+                      <small>XRP confirm</small>
+                      <b>{xlmXrpNotes.xrp.confirm}</b>
+                    </div>
+                    <div>
+                      <small>XRP invalidate</small>
+                      <b>{xlmXrpNotes.xrp.invalidate}</b>
+                    </div>
+                    <div>
+                      <small>XLM headline</small>
+                      <b>{xlmXrpNotes.xlm.headline}</b>
+                    </div>
+                    <div>
+                      <small>XLM confirm</small>
+                      <b>{xlmXrpNotes.xlm.confirm}</b>
+                    </div>
+                    <div>
+                      <small>XLM invalidate</small>
+                      <b>{xlmXrpNotes.xlm.invalidate}</b>
+                    </div>
+                  </div>
+                  <p className="cf-footnote">
+                    Scout: {xlmXrpNotes.scout}
+                    <br />
+                    Learner: {xlmXrpNotes.learner}
+                    <br />
+                    Levels are the paper-host notes, not a floor price.
+                  </p>
+                </Panel>
+                <Panel title="News intelligence" tag="NO LIVE NEWS PROVIDER">
                 <Empty>
                   The news desk is visible. Its source is not connected yet.
                 </Empty>
@@ -1453,6 +1495,7 @@ export default function CryptoFloor() {
                   </span>
                 </button>
               </Panel>
+              </>
             )}
             {tab === "REPLAY" && (
               <div className="cf-expanded-grid">

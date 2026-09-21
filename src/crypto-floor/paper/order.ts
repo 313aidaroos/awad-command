@@ -1,6 +1,7 @@
 import { assertAlpacaPaperBase, assertPaperMode, PaperGuardError } from "./guard";
 import { primaryMethod, type DeskId } from "./desks";
 import { normalizeCryptoSymbol } from "./journal";
+import { isResearchOnlySymbol } from "./universe";
 
 export type DeskSide = "buy" | "sell";
 
@@ -40,11 +41,17 @@ export function buildDeskOrder(input: {
       `Paper notional must be greater than 0 and at most ${MAX_NOTIONAL} USD.`,
     );
   }
+  const symbol = normalizeCryptoSymbol(input.symbol);
+  if (isResearchOnlySymbol(symbol)) {
+    throw new PaperGuardError(
+      `${symbol} is not Alpaca-listed. Research notes only. No paper order.`,
+    );
+  }
   return {
     deskId: input.deskId,
     method: primaryMethod[input.deskId],
     side: input.side,
-    symbol: normalizeCryptoSymbol(input.symbol),
+    symbol,
     notional: Math.round(input.notional * 100) / 100,
     timeInForce: "gtc",
     type: "market",

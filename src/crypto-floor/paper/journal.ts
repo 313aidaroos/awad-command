@@ -1,4 +1,5 @@
 import { deskForMethod, type DeskId } from "./desks";
+import { isResearchOnlySymbol } from "./universe";
 
 export type JournalTrade = {
   timestamp: string;
@@ -249,6 +250,7 @@ function walkOpen(
   if (
     method &&
     typeof symbol === "string" &&
+    !isResearchOnlySymbol(symbol) &&
     looksLikeSymbol(symbol) &&
     qty !== null &&
     Math.abs(qty) > 0 &&
@@ -266,6 +268,7 @@ function walkOpen(
         keyMethod &&
         deskForMethod(keyMethod) &&
         looksLikeSymbol(key) &&
+        !isResearchOnlySymbol(key) &&
         nestedQty !== null &&
         Math.abs(nestedQty) > 0 &&
         child.symbol === undefined
@@ -282,7 +285,8 @@ function walkOpen(
       deskForMethod(keyMethod) &&
       size !== null &&
       Math.abs(size) > 0 &&
-      looksLikeSymbol(key)
+      looksLikeSymbol(key) &&
+      !isResearchOnlySymbol(key)
     ) {
       counts[deskForMethod(keyMethod)!] += 1;
     }
