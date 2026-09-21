@@ -32,9 +32,12 @@ import {
   lifecycle,
   metricNames,
   roles,
+  snapshotSchema,
+  type FloorEvent,
   type Snapshot,
 } from "./model";
 import { sampleSnapshot } from "./sample";
+import { primaryMethod } from "./paper/desks";
 import { awadScore, defaultScoreConfig, type ScoreConfig } from "./scoring";
 import { agentRoleForEvent, filterEvents, type ReplayFilter } from "./replay";
 import "./floor.css";
@@ -111,7 +114,26 @@ function Avatar({
 function Empty({ children }: { children: ReactNode }) {
   return <p className="cf-empty">{children}</p>;
 }
-function CandleChart({ demo }: { demo: boolean }) {
+function sleeveLabel(id: string) {
+  if (id === "phantom") return "scalp_momentum · paper_scalp";
+  if (id === "samurai" || id === "neon" || id === "orbit") return primaryMethod[id];
+  return "unmapped";
+}
+function isSim(event: FloorEvent) {
+  return event.payload.sim === true;
+}
+function CandleChart({ demo, price }: { demo: boolean; price: number | null }) {
+  if (!demo && price !== null) {
+    return (
+      <div>
+        <p className="cf-balance">{currency(price)}</p>
+        <p className="cf-footnote">
+          Last Alpaca paper BTC quote. This floor does not draw candles from
+          sample prices.
+        </p>
+      </div>
+    );
+  }
   return demo ? (
     <svg
       className="cf-chart"
@@ -160,17 +182,40 @@ function CandleChart({ demo }: { demo: boolean }) {
     </Empty>
   );
 }
-function Portfolio({ snapshot, demo }: { snapshot: Snapshot; demo: boolean }) {
+function Portfolio({
+  snapshot,
+  demo,
+  paper,
+  simFills,
+}: {
+  snapshot: Snapshot;
+  demo: boolean;
+  paper: boolean;
+  simFills: number;
+}) {
   return (
-    <Panel title="Portfolio overview" tag={demo ? "SAMPLE · PAPER" : "PAPER"}>
+    <Panel
+      title="Portfolio overview"
+      tag={demo ? "SAMPLE · PAPER" : paper ? "ALPACA PAPER" : "PAPER"}
+    >
       <div className="cf-balance">
         {currency(snapshot.portfolio.paperBalance)}
       </div>
-      <p className="cf-positive">
+      <p className={paper ? "" : "cf-positive"}>
         {demo
           ? "+$155.00 (+3.9%) · illustrative return"
-          : "Awaiting paper account"}
+          : paper && snapshot.portfolio.paperPnl !== null
+            ? `Today vs prior Alpaca equity ${currency(snapshot.portfolio.paperPnl)}`
+            : paper
+              ? "Alpaca paper equity is loaded. Today P&L is unavailable."
+              : "Awaiting paper account"}
       </p>
+      {paper && simFills > 0 && (
+        <p className="cf-footnote">
+          Broker equity omits sim=true curriculum fills. Those rows are not
+          broker cash.
+        </p>
+      )}
       {demo && (
         <svg
           className="cf-spark"
@@ -226,12 +271,46 @@ export default function CryptoFloor() {
     time: "",
     event: "",
   });
+  const [remote, setRemote] = useState<Snapshot | null>(null);
+  const [statusNote, setStatusNote] = useState<string | null>(null);
+  const [simFills, setSimFills] = useState(0);
   const dialog = useRef<HTMLDialogElement>(null),
     startX = useRef<number | null>(null);
-  const snapshot = useMemo(
-    () => (demo ? sampleSnapshot() : disconnectedSnapshot()),
-    [demo],
-  );
+  const preview = useMemo(() => sampleSnapshot(), []);
+  useEffect(() => {
+    if (demo) return;
+    let stop = false;
+    async function pull() {
+      try {
+        const res = await fetch("/api/floor-snapshot", { cache: "no-store" });
+        const body = (await res.json()) as {
+          snapshot?: unknown;
+          status?: { note?: unknown; simJournalFills?: unknown };
+        };
+        if (stop) return;
+        const parsed = snapshotSchema.safeParse(body.snapshot);
+        setRemote(parsed.success ? parsed.data : disconnectedSnapshot());
+        setStatusNote(typeof body.status?.note === "string" ? body.status.note : null);
+        setSimFills(
+          typeof body.status?.simJournalFills === "number" ? body.status.simJournalFills : 0,
+        );
+      } catch {
+        if (!stop) {
+          setRemote(disconnectedSnapshot());
+          setStatusNote("Paper book status could not be loaded.");
+        }
+      }
+    }
+    void pull();
+    const id = setInterval(() => void pull(), 20000);
+    return () => {
+      stop = true;
+      clearInterval(id);
+    };
+  }, [demo]);
+  const snapshot = demo ? preview : (remote ?? disconnectedSnapshot());
+  const paper =
+    !demo && (snapshot.engine === "ONLINE" || snapshot.engine === "HALTED");
   const events = useMemo(
     () => filterEvents(snapshot.events, filter),
     [snapshot, filter],
@@ -251,6 +330,14 @@ export default function CryptoFloor() {
         .sort((a, b) => (b.score ?? -1) - (a.score ?? -1)),
     [snapshot, scoreConfig],
   );
+  const sleeveNotes = paper
+    ? snapshot.events
+        .map((event) =>
+          typeof event.payload.reason === "string" ? event.payload.reason : "",
+        )
+        .filter((reason, index, all) => reason && all.indexOf(reason) === index)
+        .slice(0, 4)
+    : [];
   useEffect(() => {
     if (agentOpen) dialog.current?.showModal();
     else dialog.current?.close();
@@ -360,18 +447,23 @@ export default function CryptoFloor() {
     </div>
   );
   const health = (
-    <Panel title="System health" tag="ENGINE NOT CONNECTED">
+    <Panel
+      title="System health"
+      tag={paper ? snapshot.engine : "ENGINE NOT CONNECTED"}
+    >
       <div className="cf-health">
         {snapshot.health.map((h) => (
           <div key={h.name}>
-            <i className="unknown" />
+            <i className={paper ? h.status.toLowerCase() : "unknown"} />
             <span>{h.name}</span>
-            <small>Not connected</small>
+            <small>{paper ? h.detail : "Not connected"}</small>
           </div>
         ))}
       </div>
       <p className="cf-footnote">
-        App connectivity is separate from trading-engine health.
+        {paper
+          ? statusNote ?? "App connectivity is separate from trading-engine health."
+          : "App connectivity is separate from trading-engine health."}
       </p>
     </Panel>
   );
@@ -515,19 +607,22 @@ export default function CryptoFloor() {
       </div>
     </Panel>
   );
+  const timelineEvents = demo
+    ? snapshot.events.filter((e) => e.tradeId === "SAMPLE-SAM-BTC-001")
+    : snapshot.events.filter((e) => /ORDER|SIGNAL|TARGET/.test(e.eventType));
   const tradeTimeline = (
     <Panel
       title="Trade timeline"
-      tag={demo ? "PAPER · SAMPLE" : "NO TRADE HISTORY"}
+      tag={demo ? "PAPER · SAMPLE" : paper ? "SHARED PAPER BOOK" : "NO TRADE HISTORY"}
     >
       <p className="cf-footnote">
         {demo
           ? "SAMPLE-SAM-BTC-001 · Illustrative sequence; no real execution"
-          : "Connect stored trade events to view a timeline."}
+          : paper
+            ? "Events from the shared AwadBot paper book. sim=true rows are curriculum fills, not broker cash."
+            : "Connect stored trade events to view a timeline."}
       </p>
-      {snapshot.events
-        .filter((e) => e.tradeId === "SAMPLE-SAM-BTC-001")
-        .map((e) => (
+      {timelineEvents.map((e) => (
           <button
             className="cf-event-line"
             key={e.id}
@@ -547,11 +642,20 @@ export default function CryptoFloor() {
             }}
           >
             <time>{e.timestamp.slice(11, 19)}</time>
-            <span>{e.title}</span>
+            <span>
+              {e.title}
+              {isSim(e) ? " · SIM" : ""}
+            </span>
             <ArrowUpRight size={12} />
           </button>
         ))}
-      {!demo && <Empty>No stored trades connected.</Empty>}
+      {!timelineEvents.length && (
+        <Empty>
+          {paper
+            ? "No paper orders in the journal yet."
+            : "No stored trades connected."}
+        </Empty>
+      )}
     </Panel>
   );
   return (
@@ -583,7 +687,9 @@ export default function CryptoFloor() {
             <span>
               {demo
                 ? "VISUAL PREVIEW · Illustrated agent roster and sample paper data. No trading engine or live money is connected."
-                : "CONNECTION STATUS · No Crypto Floor engine is linked. Characters remain visible; trading data is unavailable."}
+                : paper
+                  ? "ALPACA PAPER · Shared AwadBot book. Observe only — COMMAND does not send orders. Live trading is off."
+                  : "CONNECTION STATUS · No Crypto Floor engine is linked. Characters remain visible; trading data is unavailable."}
             </span>
             <Link href="/agents">
               Existing app agents <ArrowUpRight size={13} />
@@ -601,12 +707,16 @@ export default function CryptoFloor() {
                     <b>{symbol}</b>
                     <strong>{m ? currency(m.price) : "—"}</strong>
                   </span>
-                  <em>{m ? `+${m.change}%` : "NO FEED"}</em>
+                  <em>
+                    {m
+                      ? `${m.change > 0 ? "+" : ""}${m.change.toFixed(1)}%`
+                      : "NO FEED"}
+                  </em>
                 </div>
               );
             })}
             <div className="cf-ticker-label">
-              {demo ? "SAMPLE PRICES" : "MARKET FEED OFFLINE"}
+              {demo ? "SAMPLE PRICES" : paper ? "ALPACA PAPER" : "MARKET FEED OFFLINE"}
               <small>LIVE CAPITAL LOCKED</small>
             </div>
           </div>
@@ -651,7 +761,11 @@ export default function CryptoFloor() {
               <>
                 <div className="cf-mobile-safety">
                   <Shield size={16} />
-                  <span>Engine disconnected · no order controls</span>
+                  <span>
+                    {paper
+                      ? "Observe only · orders stay on the AwadBot paper process"
+                      : "Engine disconnected · no order controls"}
+                  </span>
                   <button onClick={() => setTab("SYSTEM")}>SYSTEM →</button>
                 </div>
                 <div className="cf-wall">
@@ -674,21 +788,37 @@ export default function CryptoFloor() {
                             <time>{e.timestamp.slice(11, 19)}</time>
                             <span>{e.teamId}</span>
                             <b>{e.symbol}</b>
-                            <em>{e.eventType.replace("ORDER_", "")}</em>
+                            <em>
+                              {e.eventType.replace("ORDER_", "")}
+                              {isSim(e) ? " · SIM" : ""}
+                            </em>
                           </button>
                         ))}
-                      {!demo && <Empty>No exchange orders connected.</Empty>}
+                      {!snapshot.events.some((e) => /ORDER|TARGET/.test(e.eventType)) && (
+                        <Empty>
+                          {paper
+                            ? "No paper orders in the shared book yet."
+                            : "No exchange orders connected."}
+                        </Empty>
+                      )}
                     </div>
                   </Panel>
                   <Panel
                     title="BTC / USDT"
-                    tag={demo ? "1H · SAMPLE CHART" : "OFFLINE"}
+                    tag={demo ? "1H · SAMPLE CHART" : paper ? "ALPACA PAPER" : "OFFLINE"}
                   >
-                    <CandleChart demo={demo} />
+                    <CandleChart
+                      demo={demo}
+                      price={
+                        paper
+                          ? snapshot.markets.find((m) => m.symbol === "BTC")?.price ?? null
+                          : null
+                      }
+                    />
                   </Panel>
                   <Panel
                     title="News intelligence"
-                    tag={demo ? "SCENARIO" : "NO FEED"}
+                    tag={demo ? "SCENARIO" : paper ? "NO NEWS FEED" : "NO FEED"}
                   >
                     {demo ? (
                       <div className="cf-news">
@@ -707,12 +837,16 @@ export default function CryptoFloor() {
                         <small>Illustrative headlines, not current news</small>
                       </div>
                     ) : (
-                      <Empty>No news provider connected.</Empty>
+                      <Empty>
+                        {paper
+                          ? "Phantom mirrors scalp_momentum on the shared book. No news provider is connected."
+                          : "No news provider connected."}
+                      </Empty>
                     )}
                   </Panel>
                   <Panel
                     title="Detected patterns"
-                    tag={demo ? "SAMPLE" : "OFFLINE"}
+                    tag={demo ? "SAMPLE" : paper ? "SLEEVE NOTES" : "OFFLINE"}
                   >
                     {(demo
                       ? [
@@ -720,7 +854,7 @@ export default function CryptoFloor() {
                           "ETH trend continuation",
                           "SOL volatility spike",
                         ]
-                      : []
+                      : sleeveNotes
                     ).map((p, i) => (
                       <button
                         className="cf-pattern"
@@ -729,10 +863,16 @@ export default function CryptoFloor() {
                       >
                         <Crosshair size={14} />
                         {p}
-                        <small>{i === 2 ? "WATCH" : "REVIEW"}</small>
+                        <small>{demo && i === 2 ? "WATCH" : "JOURNAL"}</small>
                       </button>
                     ))}
-                    {!demo && <Empty>No detected patterns.</Empty>}
+                    {!demo && sleeveNotes.length === 0 && (
+                      <Empty>
+                        {paper
+                          ? "No sleeve notes in the journal yet."
+                          : "No detected patterns."}
+                      </Empty>
+                    )}
                   </Panel>
                 </div>
                 <section
@@ -811,16 +951,18 @@ export default function CryptoFloor() {
                               P&L{" "}
                               <b
                                 className={
-                                  (state.pnl ?? 0) < 0
-                                    ? "cf-negative"
-                                    : "cf-positive"
+                                  (state.pnl ?? 0) < 0 ? "cf-negative" : "cf-positive"
                                 }
                               >
-                                {pct(state.metrics.netReturn)}
+                                {state.metrics.netReturn !== null
+                                  ? pct(state.metrics.netReturn)
+                                  : state.pnl !== null
+                                    ? currency(state.pnl)
+                                    : "—"}
                               </b>
                             </span>
                             <span>
-                              Trades <b>{demo ? state.openTrades : "—"}</b>
+                              Trades <b>{demo || paper ? state.openTrades : "—"}</b>
                             </span>
                             <span>
                               AWAD{" "}
@@ -832,10 +974,12 @@ export default function CryptoFloor() {
                           <p className="cf-desk-status">
                             {current?.teamId === desk.id
                               ? current.title
-                              : "PAPER LEAGUE · " +
-                                (demo
-                                  ? "ILLUSTRATED ROSTER"
-                                  : "AWAITING ENGINE")}
+                              : paper
+                                ? `PAPER · ${sleeveLabel(desk.id)}`
+                                : "PAPER LEAGUE · " +
+                                  (demo
+                                    ? "ILLUSTRATED ROSTER"
+                                    : "AWAITING ENGINE")}
                           </p>
                         </section>
                       );
@@ -843,10 +987,21 @@ export default function CryptoFloor() {
                   </div>
                 </section>
                 <div className="cf-bottom">
-                  <Portfolio snapshot={snapshot} demo={demo} />
+                  <Portfolio
+                    snapshot={snapshot}
+                    demo={demo}
+                    paper={paper}
+                    simFills={simFills}
+                  />
                   <Panel
                     title="Team performance"
-                    tag={demo ? "SAMPLE · RISK ADJUSTED" : "NO TELEMETRY"}
+                    tag={
+                      demo
+                        ? "SAMPLE · RISK ADJUSTED"
+                        : paper
+                          ? "JOURNAL P&L · SCORE INCOMPLETE"
+                          : "NO TELEMETRY"
+                    }
                   >
                     {teamBoard}
                     <button
@@ -864,10 +1019,10 @@ export default function CryptoFloor() {
                     <button
                       className="cf-kill"
                       disabled
-                      title="No trading engine is connected. A browser-only switch cannot halt an exchange."
+                      title="This button cannot halt AwadBot. Live trading stays off."
                     >
                       <Shield size={18} /> KILL SWITCH
-                      <small>ENGINE NOT CONNECTED</small>
+                      <small>{paper ? "DISABLED · DOES NOT HALT AWADBOT" : "ENGINE NOT CONNECTED"}</small>
                     </button>
                     <div className="cf-control-row">
                       Live capital <b>LOCKED</b>
@@ -893,7 +1048,7 @@ export default function CryptoFloor() {
                 <div className="cf-lower">
                   <Panel
                     title="Recent events"
-                    tag={demo ? "FIXED SAMPLE" : "NO EVENTS"}
+                    tag={demo ? "FIXED SAMPLE" : paper ? "SHARED BOOK" : "NO EVENTS"}
                   >
                     <div className="cf-event-list">
                       {snapshot.events
@@ -923,11 +1078,18 @@ export default function CryptoFloor() {
                               className={e.severity === "warning" ? "warn" : ""}
                             />
                             <time>{e.timestamp.slice(11, 19)}</time>
-                            <span>{e.title}</span>
+                            <span>
+                              {e.title}
+                              {isSim(e) ? " · SIM" : ""}
+                            </span>
                           </button>
                         ))}
-                      {!demo && (
-                        <Empty>No immutable event source connected.</Empty>
+                      {snapshot.events.length === 0 && (
+                        <Empty>
+                          {paper
+                            ? "No journal events yet."
+                            : "No immutable event source connected."}
+                        </Empty>
                       )}
                     </div>
                   </Panel>
@@ -953,7 +1115,12 @@ export default function CryptoFloor() {
             )}
             {tab === "PORTFOLIO" && (
               <div className="cf-expanded-grid">
-                <Portfolio snapshot={snapshot} demo={demo} />
+                <Portfolio
+                  snapshot={snapshot}
+                  demo={demo}
+                  paper={paper}
+                  simFills={simFills}
+                />
                 <Panel title="Capital separation" tag="LIVE LOCKED">
                   <h3>Paper and live stay separate.</h3>
                   <p>
@@ -983,7 +1150,13 @@ export default function CryptoFloor() {
               <>
                 <Panel
                   title="AWAD Score leaderboard"
-                  tag={demo ? "ILLUSTRATIVE PAPER METRICS" : "AWAITING METRICS"}
+                  tag={
+                    demo
+                      ? "ILLUSTRATIVE PAPER METRICS"
+                      : paper
+                        ? "JOURNAL COUNTS ONLY"
+                        : "AWAITING METRICS"
+                  }
                 >
                   {teamBoard}
                   <button
@@ -1075,9 +1248,8 @@ export default function CryptoFloor() {
                             ))}
                           </div>
                           <p className="cf-footnote">
-                            Illustrated roles, awaiting connection to runtime
-                            agent identities. No live qualification inferred
-                            from sample metrics.
+                            Illustrated roles. Runtime sleeve: {sleeveLabel(d.id)}.
+                            Sample metrics are not the shared book.
                           </p>
                         </Panel>
                       ),
@@ -1101,7 +1273,7 @@ export default function CryptoFloor() {
               <div className="cf-expanded-grid">
                 <Panel
                   title="Trade journal"
-                  tag={demo ? "PAPER SAMPLE" : "NO ENGINE"}
+                  tag={demo ? "PAPER SAMPLE" : paper ? "SHARED BOOK" : "NO ENGINE"}
                 >
                   {demo ? (
                     <button
@@ -1121,11 +1293,38 @@ export default function CryptoFloor() {
                         {tradeOpen ? "Hide details" : "View full timeline"}
                       </strong>
                     </button>
+                  ) : paper ? (
+                    snapshot.events
+                      .filter((e) => e.eventType.startsWith("ORDER_"))
+                      .slice(-8)
+                      .reverse()
+                      .map((e) => (
+                        <button
+                          className="cf-trade-card"
+                          key={e.id}
+                          onClick={() => setTradeOpen(true)}
+                        >
+                          <span className="cf-paper">
+                            {isSim(e) ? "PAPER · SIM CURRICULUM" : "PAPER · BROKER"}
+                          </span>
+                          <h3>
+                            {e.symbol ?? "—"} <ArrowUpRight size={16} />
+                          </h3>
+                          <p>
+                            {(e.teamId ?? "unassigned").toUpperCase()} · {e.title}
+                          </p>
+                          <p>{e.description}</p>
+                        </button>
+                      ))
                   ) : (
                     <Empty>No trading history connected.</Empty>
                   )}
+                  {paper &&
+                    !snapshot.events.some((e) => e.eventType.startsWith("ORDER_")) && (
+                      <Empty>No paper orders have been journaled yet.</Empty>
+                    )}
                 </Panel>
-                {demo && tradeTimeline}
+                {(demo || (paper && tradeOpen)) && tradeTimeline}
                 {tradeOpen && demo && (
                   <Panel title="Trade evidence" tag="ILLUSTRATIVE">
                     <p>
@@ -1165,7 +1364,7 @@ export default function CryptoFloor() {
               <div className="cf-expanded-grid">
                 <Panel
                   title="Pattern board"
-                  tag={demo ? "SAMPLE" : "UNAVAILABLE"}
+                  tag={demo ? "SAMPLE" : paper ? "SLEEVE NOTES" : "UNAVAILABLE"}
                 >
                   {demo ? (
                     [
@@ -1190,13 +1389,25 @@ export default function CryptoFloor() {
                         </button>
                       </div>
                     ))
+                  ) : sleeveNotes.length ? (
+                    sleeveNotes.map((p) => (
+                      <div className="cf-pattern-card" key={p}>
+                        <Crosshair />
+                        <h3>{p}</h3>
+                        <p>Reason text from the shared AwadBot journal. Not a detector score.</p>
+                      </div>
+                    ))
                   ) : (
-                    <Empty>No detector connected.</Empty>
+                    <Empty>
+                      {paper
+                        ? "No sleeve notes in the journal yet."
+                        : "No detector connected."}
+                    </Empty>
                   )}
                 </Panel>
                 <Panel
                   title="Market regime"
-                  tag={demo ? "SAMPLE CLASSIFICATION" : "UNAVAILABLE"}
+                  tag={demo ? "SAMPLE CLASSIFICATION" : paper ? "NOT CALCULATED" : "UNAVAILABLE"}
                 >
                   <h3>
                     {snapshot.regime ?? "Awaiting deterministic calculations"}
@@ -1251,7 +1462,9 @@ export default function CryptoFloor() {
                   <p>
                     {demo
                       ? "This replay uses a fixed, bundled sample event sequence. It does not represent your historical trading."
-                      : "Connect stored events and timestamped market snapshots before replaying actual trades."}
+                      : paper
+                        ? "Replay reads the shared paper journal for this session. sim=true rows are curriculum fills, not broker cash."
+                        : "Connect stored events and timestamped market snapshots before replaying actual trades."}
                   </p>
                   <p>
                     Character reactions follow event type and team. History is
@@ -1267,14 +1480,14 @@ export default function CryptoFloor() {
             {tab === "SYSTEM" && (
               <div className="cf-expanded-grid">
                 {health}
-                <Panel title="Master kill switch" tag="UNAVAILABLE">
+                <Panel title="Master kill switch" tag="DISABLED">
                   <button disabled className="cf-kill">
-                    <Shield /> ENGINE NOT CONNECTED
+                    <Shield /> {paper ? "DOES NOT HALT AWADBOT" : "ENGINE NOT CONNECTED"}
                   </button>
                   <p>
-                    A real kill switch must block orders in the execution
-                    service, persist the halt and require an authenticated
-                    reset. This preview cannot stop an external engine.
+                    {snapshot.killSwitch.halted
+                      ? `AwadBot risk_state reports a halt: ${snapshot.killSwitch.reason ?? "no reason given"}. This button did not trigger it and cannot reset it.`
+                      : "This control cannot halt the AwadBot paper process. A browser switch is not an execution halt."}
                   </p>
                   <p>
                     No live-order or risk-policy changes can be made from this
@@ -1300,16 +1513,25 @@ export default function CryptoFloor() {
                 <Panel title="Engine telemetry">
                   <div className="cf-detail-grid">
                     {[
-                      "Last heartbeat",
-                      "Last trade cycle",
-                      "Queue depth",
-                      "Open orders",
-                      "API latency",
-                      "System uptime",
-                    ].map((k) => (
-                      <div key={k}>
+                      ["Last heartbeat", snapshot.lastCycle],
+                      ["Open orders", snapshot.openOrders],
+                      ["Queue depth", snapshot.queueDepth],
+                      [
+                        "API latency",
+                        snapshot.latencyMs !== null
+                          ? `${Math.round(snapshot.latencyMs)} ms`
+                          : null,
+                      ],
+                      ["Paper equity", snapshot.portfolio.paperBalance],
+                      ["Broker positions", snapshot.portfolio.openPositions],
+                    ].map(([k, v]) => (
+                      <div key={String(k)}>
                         <small>{k}</small>
-                        <b>Unavailable</b>
+                        <b>
+                          {paper && v !== null && v !== undefined
+                            ? String(v)
+                            : "Unavailable"}
+                        </b>
                       </div>
                     ))}
                   </div>
@@ -1319,7 +1541,8 @@ export default function CryptoFloor() {
           </div>
           <footer className="cf-footer">
             <span>
-              <Radio size={12} /> {demo ? "PAPER PREVIEW" : "CONNECTION STATUS"}{" "}
+              <Radio size={12} />{" "}
+              {demo ? "PAPER PREVIEW" : paper ? "ALPACA PAPER · OBSERVE ONLY" : "CONNECTION STATUS"}{" "}
               · LIVE EXECUTION DISABLED
             </span>
             <span>CAPITAL SAFETY → EXECUTION CORRECTNESS → DATA INTEGRITY</span>
@@ -1369,14 +1592,26 @@ export default function CryptoFloor() {
               <>
                 <h3>Decision summary</h3>
                 <p>
-                  {demo && agentEvent
+                  {paper && agentEvent
+                    ? agentEvent.description
+                    : demo && agentEvent
                     ? agentEvent.description
                     : "Awaiting a connected agent decision. This character is an illustrated role, not a running process."}
                 </p>
                 <div className="cf-detail-grid">
                   <div>
                     <small>Activity</small>
-                    <b>{demo ? "Sample scenario" : "Awaiting engine"}</b>
+                    <b>
+                      {paper
+                        ? agentEvent && isSim(agentEvent)
+                          ? "Sim curriculum"
+                          : agentEvent
+                            ? "Shared paper book"
+                            : "Awaiting journal"
+                        : demo
+                          ? "Sample scenario"
+                          : "Awaiting engine"}
+                    </b>
                   </div>
                   <div>
                     <small>Confidence</small>
@@ -1389,7 +1624,13 @@ export default function CryptoFloor() {
                   <div>
                     <small>Latest action</small>
                     <b>
-                      {demo && agentEvent ? agentEvent.title : "None recorded"}
+                    <b>
+                      {paper && agentEvent
+                        ? agentEvent.title
+                        : demo && agentEvent
+                          ? agentEvent.title
+                          : "None recorded"}
+                    </b>
                     </b>
                   </div>
                 </div>
@@ -1429,7 +1670,11 @@ export default function CryptoFloor() {
                 </h3>
                 <p>
                   PAPER LEAGUE ·{" "}
-                  {demo ? "Sample metrics" : "Awaiting telemetry"}
+                  {paper
+                    ? `${sleeveLabel(selectedDesk.id)} on the shared book`
+                    : demo
+                      ? "Sample metrics"
+                      : "Awaiting telemetry"}
                 </p>
                 <button
                   onClick={() => {
@@ -1459,6 +1704,14 @@ export default function CryptoFloor() {
                     >
                       View trade timeline →
                     </button>
+                  </>
+                ) : paper && agentEvent ? (
+                  <>
+                    <p>
+                      {agentEvent.title}
+                      {isSim(agentEvent) ? " · not a broker cash fill" : ""}
+                    </p>
+                    <p>{agentEvent.description}</p>
                   </>
                 ) : (
                   <Empty>No active trade connected.</Empty>

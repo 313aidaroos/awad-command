@@ -7,7 +7,7 @@ Done this pass:
 - Cixy culture lock (adab, not a speech).
 
 Waiting on you:
-- Coinbase account active → sandbox key → Vercel TRADE_*.
+- Crypto floor uses Alpaca paper keys (`ALPACA_API_KEY`, `ALPACA_SECRET_KEY`, `TRADE_MODE=paper`), not Coinbase `TRADE_*`.
 - Anthropic key if Cixy HQ still says LIMITED.
 - Deployment Protection off if /preview still hits SSO.
 

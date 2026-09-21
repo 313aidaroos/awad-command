@@ -585,8 +585,16 @@
   background: #27daaa;
   box-shadow: 0 0 5px #28deaf66;
 }
-.cf-health i.unknown {
+.cf-health i.unknown,
+.cf-health i.offline {
   background: #ad9257;
+  box-shadow: none;
+}
+.cf-health i.offline {
+  background: #ff5470;
+}
+.cf-health i.stale {
+  background: #e7b955;
   box-shadow: none;
 }
 .cf-event-line i.warn {
