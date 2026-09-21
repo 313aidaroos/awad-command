@@ -34,7 +34,6 @@ export type PaperEnv = {
   statusUrl: string | null;
   dashboardPassword: string | null;
   journalDir: string | null;
-  coinbaseConfigured: boolean;
 };
 
 type FetchLike = typeof fetch;
@@ -57,9 +56,6 @@ export function readPaperEnv(env: NodeJS.ProcessEnv = process.env): PaperEnv {
     statusUrl: first(env, ["AWADBOT_STATUS_URL"]),
     dashboardPassword: first(env, ["DASHBOARD_PASSWORD", "AWADBOT_DASHBOARD_PASSWORD"]),
     journalDir: first(env, ["AWADBOT_JOURNAL_DIR"]),
-    coinbaseConfigured: Boolean(
-      env.TRADE_API_KEY?.trim() || env.TRADE_API_SECRET?.trim() || env.TRADE_VENUE?.trim(),
-    ),
   };
 }
 
@@ -405,6 +401,7 @@ export type FloorStatus = {
   brokerJournalFills: number;
   desks: Record<DeskId, string>;
   ordersSubmittedByCommand: false;
+  coinbaseVenue: "deferred";
   killSwitch: "disabled" | "reported-by-awadbot";
   note: string;
 };
@@ -458,9 +455,9 @@ export function describeFloorStatus(env: PaperEnv, book: PaperBook): FloorStatus
       `${simJournalFills} journal row(s) are sim=true curriculum fills. Broker crypto market value can stay near zero while those rows exist.`,
     );
   }
-  if (env.coinbaseConfigured) {
-    parts.push("Coinbase TRADE_* is ignored on this path.");
-  }
+  parts.push(
+    "Coinbase is deferred. TRADE_* Coinbase keys are not read and are not required to leave sample mode.",
+  );
   if (book.alpacaError && !book.sources.alpaca) parts.push(book.alpacaError);
   if (book.dashboardError) parts.push(book.dashboardError);
   if (book.journalError) parts.push(book.journalError);
@@ -485,6 +482,7 @@ export function describeFloorStatus(env: PaperEnv, book: PaperBook): FloorStatus
       phantom: "scalp_momentum",
     },
     ordersSubmittedByCommand: false,
+    coinbaseVenue: "deferred",
     killSwitch: book.halt.halted ? "reported-by-awadbot" : "disabled",
     note: parts.join(" "),
   };

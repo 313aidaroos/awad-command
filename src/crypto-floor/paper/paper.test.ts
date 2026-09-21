@@ -21,7 +21,6 @@ function env(partial: Partial<PaperEnv> = {}): PaperEnv {
     statusUrl: null,
     dashboardPassword: null,
     journalDir: null,
-    coinbaseConfigured: false,
     ...partial,
   };
 }
@@ -237,7 +236,7 @@ describe("floor status", () => {
   it("reports trading from the shared book without claiming command orders", () => {
     const parsed = parseTradesCsv(csv);
     const status = describeFloorStatus(
-      env({ coinbaseConfigured: true }),
+      env(),
       book({ trades: parsed.trades, ignoredLiveRows: parsed.ignoredLiveRows }),
     );
     expect(status.engine).toBe("TRADING");
@@ -247,7 +246,9 @@ describe("floor status", () => {
     expect(status.killSwitch).toBe("disabled");
     expect(status.simJournalFills).toBeGreaterThan(0);
     expect(status.heartbeat).toBe(now);
-    expect(status.note).toMatch(/Coinbase TRADE_\*/);
+    expect(status.coinbaseVenue).toBe("deferred");
+    expect(status.note).toMatch(/Coinbase is deferred/);
+    expect(status.note).toMatch(/not required to leave sample mode/);
     expect(status.note).toMatch(/sim=true/);
     expect(status.desks).toEqual({
       samurai: "trend_ema",
