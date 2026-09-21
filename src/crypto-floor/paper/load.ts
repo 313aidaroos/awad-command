@@ -160,6 +160,31 @@ export function mapQuotes(raw: unknown, now: string): PaperQuote[] {
   return quotes;
 }
 
+export const ALPACA_FETCH_TIMEOUT_MS = 20_000;
+
+class AlpacaHttpError extends Error {
+  readonly status: number;
+  constructor(status: number) {
+    super(`HTTP ${status}`);
+    this.name = "AlpacaHttpError";
+    this.status = status;
+  }
+}
+
+/** Name and message only. Key material is stripped. No response body. */
+export function describeFetchFailure(error: unknown, secrets: string[] = []) {
+  const name = error instanceof Error && error.name ? error.name : "Error";
+  const raw = error instanceof Error ? error.message : "Unknown failure";
+  let message = raw.replace(/\s+/g, " ").trim();
+  for (const secret of secrets) {
+    const value = secret.trim();
+    if (value.length >= 4) message = message.split(value).join("[redacted]");
+  }
+  message = message.replace(/APCA-API-[A-Z-]+:\s*\S+/gi, "APCA-API: [redacted]");
+  if (message.length > 180) message = `${message.slice(0, 177)}...`;
+  return `${name}: ${message || "no message"}`;
+}
+
 async function alpacaJson(
   fetcher: FetchLike,
   origin: string,
@@ -178,11 +203,9 @@ async function alpacaJson(
     },
     cache: "no-store",
     redirect: "error",
-    signal: AbortSignal.timeout(8000),
+    signal: AbortSignal.timeout(ALPACA_FETCH_TIMEOUT_MS),
   });
-  if (!response.ok) {
-    throw new PaperGuardError(`Alpaca paper read failed (${response.status}).`);
-  }
+  if (!response.ok) throw new AlpacaHttpError(response.status);
   return response.json() as Promise<unknown>;
 }
 
@@ -242,8 +265,13 @@ export async function loadPaperBook(
   if (!paperBaseOk) {
     // Guard already recorded the refusal. Do not send a request.
   } else if (env.key && env.secret) {
+    const secrets = [env.key, env.secret];
+    const failures: string[] = [];
+    const record = (label: string, error: unknown) => {
+      failures.push(`${label}: ${describeFetchFailure(error, secrets)}`);
+    };
     try {
-      const [account, positions, orders, clock] = await Promise.all([
+      const settled = await Promise.allSettled([
         alpacaJson(fetcher, env.paperBase, "/v2/account", env.key, env.secret),
         alpacaJson(fetcher, env.paperBase, "/v2/positions", env.key, env.secret),
         alpacaJson(
@@ -255,7 +283,18 @@ export async function loadPaperBook(
         ),
         alpacaJson(fetcher, env.paperBase, "/v2/clock", env.key, env.secret),
       ]);
-      book.account = mapAccount(account);
+      const labels = ["/v2/account", "/v2/positions", "/v2/orders", "/v2/clock"];
+      const valueAt = (index: number) => {
+        const result = settled[index];
+        if (result?.status === "fulfilled") return result.value;
+        if (result?.status === "rejected") record(labels[index] ?? "alpaca", result.reason);
+        return undefined;
+      };
+      const account = valueAt(0);
+      const positions = valueAt(1);
+      const orders = valueAt(2);
+      const clock = valueAt(3);
+      book.account = account === undefined ? null : mapAccount(account);
       book.positions = Array.isArray(positions)
         ? positions.map(mapPosition).filter((row): row is PaperPosition => row !== null)
         : [];
@@ -269,9 +308,11 @@ export async function loadPaperBook(
       if (book.account) {
         book.sources.alpaca = true;
         book.heartbeat = clockTime ?? now;
-        book.heartbeatSource = "Alpaca paper clock";
+        book.heartbeatSource = clockTime ? "Alpaca paper clock" : "Alpaca paper account";
+      } else if (account === undefined) {
+        // Account read failed. Other endpoints may still have landed above.
       } else {
-        book.alpacaError = "Alpaca paper account response had no equity.";
+        failures.unshift("/v2/account: AlpacaHttpError: account response had no equity");
       }
       try {
         const symbols = paperTradablePairs.join(",");
@@ -283,14 +324,18 @@ export async function loadPaperBook(
           env.secret,
         );
         book.quotes = mapQuotes(quotes, now);
-      } catch {
+      } catch (error) {
         book.quotes = [];
+        record("quotes", error);
+      }
+      if (failures.length) {
+        book.alpacaError = `Alpaca paper read failed: ${failures.join("; ")}`;
       }
     } catch (error) {
-      book.alpacaError =
-        error instanceof PaperGuardError
-          ? error.message
-          : "Alpaca paper read failed.";
+      const detail = describeFetchFailure(error, secrets);
+      book.alpacaError = book.alpacaError
+        ? `${book.alpacaError}; ${detail}`
+        : `Alpaca paper read failed: ${detail}`;
     }
   } else {
     book.alpacaError = "ALPACA_API_KEY and ALPACA_SECRET_KEY are missing.";
@@ -403,6 +448,7 @@ export type FloorStatus = {
   desks: Record<DeskId, string>;
   ordersSubmittedByCommand: false;
   coinbaseVenue: "deferred";
+  alpacaError: string | null;
   killSwitch: "disabled" | "reported-by-awadbot";
   note: string;
 };
@@ -462,7 +508,7 @@ export function describeFloorStatus(env: PaperEnv, book: PaperBook): FloorStatus
   parts.push(
     "Coinbase is deferred. TRADE_* Coinbase keys are not read and are not required to leave sample mode.",
   );
-  if (book.alpacaError && !book.sources.alpaca) parts.push(book.alpacaError);
+  if (book.alpacaError) parts.push(book.alpacaError);
   if (book.dashboardError) parts.push(book.dashboardError);
   if (book.journalError) parts.push(book.journalError);
   return {
@@ -487,6 +533,7 @@ export function describeFloorStatus(env: PaperEnv, book: PaperBook): FloorStatus
     },
     ordersSubmittedByCommand: false,
     coinbaseVenue: "deferred",
+    alpacaError: book.alpacaError,
     killSwitch: book.halt.halted ? "reported-by-awadbot" : "disabled",
     note: parts.join(" "),
   };

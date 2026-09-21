@@ -5,7 +5,7 @@ import { ALPACA_PAPER_ORIGIN, assertAlpacaPaperBase, assertPaperMode } from "./g
 import { deskForMethod } from "./desks";
 import { fifoPnl, openCountsFromState, parseTradesCsv } from "./journal";
 import { alpacaPaperOrderBody, submitDeskPaperOrder, type PaperBroker } from "./order";
-import { describeFloorStatus, loadPaperBook, type PaperEnv } from "./load";
+import { ALPACA_FETCH_TIMEOUT_MS, describeFetchFailure, describeFloorStatus, loadPaperBook, type PaperEnv } from "./load";
 import { buildPaperSnapshot, type PaperBook } from "./snapshot";
 import { paperTradablePairs } from "./universe";
 import { GET as floorStatus } from "@/app/api/floor-status/route";
@@ -105,6 +105,72 @@ describe("Alpaca paper guard", () => {
     expect(status.liveTrading).toBe(false);
     expect(status.ordersSubmittedByCommand).toBe(false);
     expect(status.engine).not.toBe("TRADING");
+  });
+
+  it("names a timeout instead of a generic Alpaca failure", async () => {
+    expect(ALPACA_FETCH_TIMEOUT_MS).toBe(20_000);
+    const fetcher = vi.fn(async () => {
+      const error = new Error("The operation was aborted due to timeout");
+      error.name = "TimeoutError";
+      throw error;
+    });
+    const loaded = await loadPaperBook(env({ key: "paper-key-123", secret: "paper-secret-456" }), {
+      fetch: fetcher,
+      now,
+    });
+    expect(loaded.sources.alpaca).toBe(false);
+    expect(loaded.alpacaError).toMatch(
+      /^Alpaca paper read failed: \/v2\/account: TimeoutError: The operation was aborted due to timeout/,
+    );
+    expect(loaded.alpacaError).not.toBe("Alpaca paper read failed.");
+    expect(loaded.alpacaError).not.toMatch(/paper-key-123|paper-secret-456/);
+  });
+
+  it("stays connected when only a non-account Alpaca read fails", async () => {
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/v2/account")) {
+        return Response.json({
+          equity: "100000",
+          last_equity: "99000",
+          status: "ACTIVE",
+          crypto_status: "ACTIVE",
+        });
+      }
+      if (url.includes("/v2/positions")) {
+        const error = new Error("The operation was aborted due to timeout paper-key-123");
+        error.name = "AbortError";
+        throw error;
+      }
+      if (url.includes("/v2/orders")) return new Response("denied", { status: 503 });
+      if (url.includes("/v2/clock")) return Response.json({ timestamp: now, is_open: false });
+      if (url.includes("snapshots")) return Response.json({ snapshots: {} });
+      return new Response("no", { status: 404 });
+    });
+    const loaded = await loadPaperBook(env({ key: "paper-key-123", secret: "paper-secret-456" }), {
+      fetch: fetcher,
+      now,
+    });
+    expect(loaded.sources.alpaca).toBe(true);
+    expect(loaded.account?.equity).toBe(100000);
+    expect(loaded.positions).toEqual([]);
+    expect(loaded.orders).toEqual([]);
+    expect(loaded.heartbeatSource).toBe("Alpaca paper clock");
+    expect(loaded.alpacaError).toMatch(/\/v2\/positions: AbortError:/);
+    expect(loaded.alpacaError).toMatch(/\[redacted\]/);
+    expect(loaded.alpacaError).toMatch(/\/v2\/orders: AlpacaHttpError: HTTP 503/);
+    expect(loaded.alpacaError).not.toMatch(/paper-key-123|paper-secret-456/);
+    const status = describeFloorStatus(
+      env({ key: "paper-key-123", secret: "paper-secret-456" }),
+      loaded,
+    );
+    expect(status.engine).toBe("CONNECTED");
+    expect(status.alpacaError).toBe(loaded.alpacaError);
+    expect(status.note).toMatch(/AbortError/);
+    expect(status.liveTrading).toBe(false);
+    expect(describeFetchFailure(Object.assign(new Error("paper-secret-456"), { name: "AbortError" }), [
+      "paper-secret-456",
+    ])).toBe("AbortError: [redacted]");
   });
 });
 
