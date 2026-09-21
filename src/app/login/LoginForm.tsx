@@ -61,6 +61,10 @@ export function LoginForm() {
         disabled={busy}
         className="rounded border border-slate-600 p-3 text-slate-200"
         onClick={async () => {
+          if (!email.trim()) {
+            setStatus("Enter your email address first.");
+            return;
+          }
           setBusy(true);
           try {
             const result = await sendMagicLink(email);
