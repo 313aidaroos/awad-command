@@ -63,9 +63,14 @@ async function call<T>(method: "GET" | "POST", path: string, body?: unknown): Pr
     cache: "no-store",
   });
   const text = await res.text();
-  let json: any = {};
+  let json: unknown = {};
   try { json = text ? JSON.parse(text) : {}; } catch { /* non-JSON error page */ }
-  if (!res.ok) throw new WalletError(res.status, json?.error ?? `Wallet ${res.status}`, json);
+  if (!res.ok) {
+    const msg = typeof json === "object" && json !== null && typeof (json as { error?: unknown }).error === "string"
+      ? (json as { error: string }).error
+      : `Wallet ${res.status}`;
+    throw new WalletError(res.status, msg, json);
+  }
   return json as T;
 }
 
