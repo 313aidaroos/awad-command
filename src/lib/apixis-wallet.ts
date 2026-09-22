@@ -57,7 +57,7 @@ async function call<T>(method: "GET" | "POST", path: string, body?: unknown): Pr
     cache: "no-store",
   });
   const text = await res.text();
-  let json: any = {};
+  let json: { error?: string } = {};
   try { json = text ? JSON.parse(text) : {}; } catch { /* non-JSON error page */ }
   if (!res.ok) throw new WalletError(res.status, json?.error ?? `Wallet ${res.status}`, json);
   return json as T;
