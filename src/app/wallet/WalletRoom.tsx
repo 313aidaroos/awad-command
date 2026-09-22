@@ -1,44 +1,11 @@
 "use client";
-import { useEffect, useState } from "react";
 import { AppShell } from "@/landing/AppShell";
-import { formatIxis } from "@/lib/ixis";
-import { Metric } from "@/ui/Metric";
-import { useWalletDeepLink } from "@/ui/useWalletDeepLink";
+import { buyIxisUrl } from "@/lib/apixis-wallet";
 import { Coins } from "lucide-react";
 
-type Balance = { available: true; ixis: number } | { available: false };
-
 export function WalletRoom({ commandOrigin }: { commandOrigin: string }) {
-  const href = useWalletDeepLink(commandOrigin);
-  const [balance, setBalance] = useState<Balance | null>(null);
-
-  useEffect(() => {
-    let live = true;
-    fetch("/api/wallet/balance", { cache: "no-store" })
-      .then(async (res) => {
-        const body = (await res.json().catch(() => null)) as {
-          available?: unknown;
-          ixis?: unknown;
-        } | null;
-        if (!live) return;
-        if (
-          res.ok &&
-          body?.available === true &&
-          typeof body.ixis === "number" &&
-          Number.isFinite(body.ixis)
-        ) {
-          setBalance({ available: true, ixis: body.ixis });
-        } else {
-          setBalance({ available: false });
-        }
-      })
-      .catch(() => {
-        if (live) setBalance({ available: false });
-      });
-    return () => {
-      live = false;
-    };
-  }, []);
+  const buyUrl = buyIxisUrl("command", `${commandOrigin}/wallet`);
+  const walletUrl = process.env.NEXT_PUBLIC_WALLET_URL ?? "https://apixis-wallet.vercel.app";
 
   return (
     <AppShell headquarters>
@@ -67,14 +34,9 @@ export function WalletRoom({ commandOrigin }: { commandOrigin: string }) {
               <dd>Files / skins / site packs = 1,000 Ixis ($10)</dd>
             </div>
           </dl>
-          {balance?.available ? (
-            <p className="mt-8 text-sm text-slate-300">
-              Available <Metric value={formatIxis(balance.ixis)} />
-            </p>
-          ) : null}
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <a
-              href={href}
+              href={buyUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-full bg-amber-200 px-5 py-3 text-sm font-medium text-slate-950"
@@ -82,17 +44,16 @@ export function WalletRoom({ commandOrigin }: { commandOrigin: string }) {
               <Coins size={16} /> Buy Ixis
             </a>
             <a
-              href={href}
+              href={walletUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-full border border-white/15 px-5 py-3 text-sm text-amber-100"
             >
-              {balance?.available ? "Wallet" : "Open Wallet"}
+              Open Wallet
             </a>
           </div>
           <p className="mt-4 text-xs text-slate-500">
-            Stripe keys still live only on the Wallet project. Command does not
-            take cards.
+            Your balance and purchase history live in Apixis Wallet. Redeem Ixis inside Command for features.
           </p>
         </section>
       )}

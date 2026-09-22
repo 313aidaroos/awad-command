@@ -14,6 +14,8 @@ export function isPublicEntry(path: string, method: string) {
     path === "/auth/callback" ||
     path === "/preview" ||
     path.startsWith("/preview/") ||
+    path === "/api/fleet" ||
+    path === "/api/mission-control" ||
     (path === "/api/lead-inbound" && method === "POST")
   );
 }
