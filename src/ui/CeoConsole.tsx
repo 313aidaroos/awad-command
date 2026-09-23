@@ -407,7 +407,7 @@ export function CeoConsole({
             {[
               [
                 "Brief me",
-                "Give me a concise headquarters briefing using verified live information. Do not take any actions.",
+                "Give me a concise headquarters briefing using verified live information: site health, Apixis Wallet sales (wallet_summary), my inboxes (inbox_overview: what needs a reply), and the paper trading floor. Do not take any actions.",
               ],
               [
                 "Plan my day",

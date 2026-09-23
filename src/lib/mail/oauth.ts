@@ -9,12 +9,12 @@ export function isMailProvider(value: string): value is MailProvider {
   return value === "google" || value === "microsoft";
 }
 
-export function providerConfigured(provider: MailProvider, env = process.env) {
+export function providerConfigured(provider: MailProvider, env: Record<string, string | undefined> = process.env) {
   return provider === "google" ? googleConfigured(env) : microsoftConfigured(env);
 }
 
 /** Must match the redirect URI registered with Google / Microsoft exactly. */
-export function mailRedirectUri(provider: MailProvider, requestUrl: string, env = process.env) {
+export function mailRedirectUri(provider: MailProvider, requestUrl: string, env: Record<string, string | undefined> = process.env) {
   const site = env.NEXT_PUBLIC_SITE_URL?.trim();
   let origin = new URL(requestUrl).origin;
   if (site) {

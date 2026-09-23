@@ -2,7 +2,11 @@
 
 COMMAND does not take cards and does not keep a second Ixis ledger. Customers buy Ixis on Apixis Wallet. Cash is credited there when the Wallet Stripe webhook writes the ledger. Sister sites, including COMMAND, redeem.
 
-`src/lib/walletClient.ts` stays the redeem client (quote → reserve → capture / release). It is not checkout.
+`src/lib/apixis-wallet.ts` is the redeem client (quote → reserve → capture / release), synced from the Wallet repo's `sdk/apixis-wallet.ts` (v2). It is server only and not checkout. Browser code uses `src/lib/walletEmbed.ts` (`walletDeepLink`, `walletBuyUrl`).
+
+## Business summary (owner graph)
+
+`/wallet`, the home finance chart and Cixy read `GET /api/v1/admin/summary?days=N` on the Wallet with `Authorization: Bearer $WALLET_STATS_KEY`, proxied by COMMAND's owner-only `GET /api/wallet/summary`. The key is read-only and must be identical on both Vercel projects.
 
 ## Deep link
 
@@ -33,10 +37,8 @@ https://apixis-wallet.vercel.app/?origin=command&return_url=https%3A%2F%2Fawad-c
 
 Local COMMAND (`http://localhost:43180/wallet`) sends `return_url=http://localhost:43180/wallet`.
 
-ApixisWallet `main` has no `docs/WALLET_EMBED.md` yet (checked 2026-09-21). This file is COMMAND’s side of the embed. When Wallet publishes a buy-view parameter, match it in `src/lib/walletEmbed.ts`.
+**Buy Ixis** goes to Wallet `/buy?product=command&return_url=…`. The Wallet allowlists `awad-command.vercel.app` as a return host.
 
-## Balance
+## Personal balance
 
-`GET /api/wallet/balance` sends the signed-in COMMAND session as `Authorization: Bearer` to Wallet `GET /api/v1/wallet` (see ApixisWallet `docs/INTEGRATION.md`).
-
-The UI shows that `available` number only when it is a finite count of Ixis. No session, HTTP error, or `available: null` shows **Open Wallet** and no balance. COMMAND does not substitute a ledger total or a demo figure.
+COMMAND does not show a per-user Ixis balance. That needs a Wallet user token, which a separate Supabase project can't forward until Apixis ID (one shared login) ships. `readWalletBalance` in `walletEmbed.ts` is ready for that.

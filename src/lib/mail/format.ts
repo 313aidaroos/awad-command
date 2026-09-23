@@ -32,7 +32,6 @@ export function clip(text: string, max = MAX_BODY_CHARS) {
 /** RFC 2047 encode a header value when it has non-ASCII characters. */
 export function encodeHeader(value: string): string {
   const clean = value.replace(/[\r\n]+/g, " ").trim();
-  // eslint-disable-next-line no-control-regex
   if (/^[\x00-\x7F]*$/.test(clean)) return clean;
   return `=?UTF-8?B?${Buffer.from(clean, "utf8").toString("base64")}?=`;
 }

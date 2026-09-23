@@ -64,7 +64,7 @@ async function graph<T>(accessToken: string, path: string, init: RequestInit = {
   return (await res.json()) as T;
 }
 
-export async function microsoftExchangeCode(code: string, redirectUri: string, f: Fetch = fetch, env = process.env) {
+export async function microsoftExchangeCode(code: string, redirectUri: string, f: Fetch = fetch, env: Record<string, string | undefined> = process.env) {
   const json = await token({ code, redirect_uri: redirectUri, grant_type: "authorization_code" }, f, env);
   const accessToken = String(json.access_token ?? "");
   const refreshToken = String(json.refresh_token ?? "");
@@ -76,7 +76,7 @@ export async function microsoftExchangeCode(code: string, redirectUri: string, f
 }
 
 /** Microsoft rotates refresh tokens: the caller must store the new one. */
-export async function microsoftRefresh(refreshToken: string, f: Fetch = fetch, env = process.env) {
+export async function microsoftRefresh(refreshToken: string, f: Fetch = fetch, env: Record<string, string | undefined> = process.env) {
   const json = await token({ refresh_token: refreshToken, grant_type: "refresh_token" }, f, env);
   return {
     accessToken: String(json.access_token ?? ""),

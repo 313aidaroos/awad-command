@@ -1,16 +1,15 @@
-# Command — what is moving without Coinbase
+# Command: where things stand (2026-09-23)
 
-Done this pass:
-- Fleet includes Apixis Wallet.
-- GET /api/floor-status reports the Alpaca paper book. Coinbase TRADE_* is deferred and does not gate the floor.
-- /preview rooms stay the look door.
-- Cixy culture lock (adab, not a speech).
+Done:
+- **Security:** `/api/mission-control` is owner-only again. It reads revenue, leads and admin status.
+- **Apixis Wallet:** live graph at `/wallet`. The home finance chart uses Wallet daily cash, and Cixy has a `wallet_summary` tool. The Wallet side is the read-only `/api/v1/admin/summary` endpoint.
+- **Email:** connect any number of Gmail / Outlook inboxes in the Mailroom. Cixy has overview, search, read and reply-draft tools. Only your Send tap sends.
+- **Crypto Floor:** refreshes every 5 s. Cixy has a `trading_floor` tool (paper account).
+- **Stripe:** `stripe_summary` is re-enabled (the `stripe` package installs fine).
+- **Agents:** duplicate Outreach agents fixed. Each business has 12 agents plus one Outreach seat.
 
-Waiting on you:
-- Alpaca paper keys for the floor (`ALPACA_API_KEY`, `ALPACA_SECRET_KEY`, `TRADE_MODE=paper`) plus `AWADBOT_JOURNAL_DIR` if sleeve fills should show.
-- Anthropic key if Cixy HQ still says LIMITED.
-- Deployment Protection off if /preview still hits SSO.
+Waiting on you: every key in [KEYS_TOMORROW.md](KEYS_TOMORROW.md).
 
 Not started:
 - 15-minute decision cap
-- Live venue
+- Live-money trading venue (paper only by decision)

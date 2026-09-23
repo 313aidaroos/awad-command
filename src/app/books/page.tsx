@@ -7,7 +7,7 @@ import { RetroPanel } from '@/landing/primitives';
 export default function Page() {
   return (
     <AppShell>
-      {(d) => (
+      {() => (
         <div className="space-y-4">
           <h1 className="font-display text-[14px]">BOOKS & MEDIA</h1>
           <p className="text-[12px] text-[var(--muted)]">KDP and publishing operations.</p>

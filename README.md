@@ -24,6 +24,10 @@ pnpm lint
 
 The demo deck stays **open** until `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `ALLOWED_EMAIL` are all set. Then magic-link login gates the site to that email.
 
+**Going live? Follow [docs/KEYS_TOMORROW.md](docs/KEYS_TOMORROW.md): every key, in order, plus a smoke test.**
+
+Public routes: `/login`, `/auth/callback`, `/preview/*`, `GET /api/fleet` (up/down only) and `POST /api/lead-inbound` (Bearer). Everything else, including `/api/mission-control`, requires the owner session.
+
 The universe HUD **Fleet** panel is live: `GET /api/fleet` probes public company URLs (no keys). Metrics elsewhere stay tagged DEMO until their sources connect.
 
 ## Lead bots on the orbs
@@ -97,6 +101,11 @@ The CEO is an orchestrator, not text-only advice. It can call:
 | `open_panel` | Client | Open a HUD panel (including Message lead). |
 | `propose_approval` | Client | Record-only approval card. Never spend / publish / delete / live trade. |
 | `create_task` | Server | Inserts `awad_command.agent_tasks` (queued) or `approvals.pending` + `waiting_approval`. |
+| `wallet_summary` | Server | Read-only Apixis Wallet sales, redemptions, unspent Ixis owed. |
+| `trading_floor` | Server | Read-only Alpaca **paper** book: equity, positions, latest orders. |
+| `inbox_overview` / `search_inbox` / `read_inbox_email` | Server | Every connected Gmail / Outlook inbox. Bodies are untrusted data. |
+| `draft_reply` / `draft_email` | Server | Saves a draft in the real mailbox and shows a Send card. **Cixy cannot send.** Only the owner's tap on Send (`POST /api/mail/send`) sends. |
+| `stripe_summary` / `request_payment` | Server | Read-only Stripe totals; payment requests wait in `/payments`. |
 
 Ask something like “tell Contraxis Lead to ping me” and the CEO actually sends. The reply is honest: **delivered**, **queued (DEMO)**, or **failed**. Unknown slugs are errors — never fake success.
 
@@ -142,17 +151,27 @@ Still needed for a live screen: a VM or Railway service with `WORKER_CAPABILITIE
 
 ## Apixis Wallet
 
-COMMAND does not run a second Stripe or Ixis ledger. **Buy Ixis** and **Wallet** open Apixis Wallet (`NEXT_PUBLIC_WALLET_URL`, default `https://apixis-wallet.vercel.app`) with `origin=command` and an allowlisted `return_url` back to `/wallet`. Cash is credited only on Wallet, from its Stripe webhook.
+COMMAND does not run a second Stripe or Ixis ledger. **Buy Ixis** opens Wallet `/buy` and **Open Wallet** opens the Wallet app (`NEXT_PUBLIC_WALLET_URL`, default `https://apixis-wallet.vercel.app`). Cash is credited only on Wallet, from its Stripe webhook.
 
-If the COMMAND session can be forwarded, `/wallet` shows the numeric `available` balance from Wallet `GET /api/v1/wallet`. Otherwise it shows **Open Wallet** and no balance. Redeem calls stay in `src/lib/walletClient.ts`.
+`/wallet` is the live business view: cash in, net after refunds, Ixis sold vs redeemed, redemptions by site, unspent Ixis owed, active subscriptions and a live activity feed. It uses 7D/30D/90D/1Y ranges and refreshes every 20 s. Data path:
 
-Details: [docs/WALLET_EMBED.md](docs/WALLET_EMBED.md).
+```
+browser → GET /api/wallet/summary (owner) → Wallet GET /api/v1/admin/summary (Bearer WALLET_STATS_KEY, read-only)
+```
+
+The same summary feeds the home finance chart (Mission Control `wallet`) and Cixy's `wallet_summary` tool. Without the key everything says "not connected"; no number is invented. The redeem SDK (`src/lib/apixis-wallet.ts`, SDK v2, server only) is synced from the Wallet repo's `sdk/`. Details: [docs/WALLET_EMBED.md](docs/WALLET_EMBED.md).
+
+## Email (Mailroom + Cixy)
+
+`/email` connects any number of **Gmail** (personal or Workspace) and **Outlook / Microsoft 365** inboxes over OAuth (`/api/mail/connect/<google|microsoft>`). Refresh tokens are AES-256-GCM encrypted with `MAIL_TOKEN_KEY` in `awad_command.mail_accounts` (service role only).
+
+The Mailroom has one inbox across all accounts, with search, an unread filter, a reader, and reply-draft → Send. Cixy reads the same inboxes and drafts replies in the right thread. Drafts appear in the mailbox's own Drafts and as a Send card in chat. Scopes are Gmail `readonly` + `compose`, and Graph `Mail.ReadWrite` + `Mail.Send`. Nothing is deleted or moved. The older Resend alias drafts stay below the inbox.
 
 ## Vercel
 
 1. Import this repo.
 2. Framework: Next.js. Install: `pnpm install`. Build: `pnpm build`.
-3. Copy this env list into the Vercel project (Production + Preview):
+3. Copy this env list into the Vercel project (Production + Preview). The full ordered list with setup steps is [docs/KEYS_TOMORROW.md](docs/KEYS_TOMORROW.md):
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - `SUPABASE_SERVICE_ROLE_KEY`
@@ -166,6 +185,9 @@ Details: [docs/WALLET_EMBED.md](docs/WALLET_EMBED.md).
    - `GROK_BOT_API_KEY` (optional alias for the webhook secret)
    - `NEXT_PUBLIC_SITE_URL` (production URL for magic-link redirects)
    - `NEXT_PUBLIC_WALLET_URL` (optional; defaults to `https://apixis-wallet.vercel.app`)
+   - `WALLET_STATS_KEY` (same value on the Wallet project)
+   - `MAIL_TOKEN_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET`
+   - `TRADE_MODE=paper`, `ALPACA_API_KEY`, `ALPACA_SECRET_KEY`
 4. Set `ALLOWED_EMAIL` last — the deck stays public demo until URL + anon + email are all present.
 
 ## Hard rules

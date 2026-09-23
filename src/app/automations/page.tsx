@@ -2,7 +2,6 @@
 
 import { AppShell } from '@/landing/AppShell';
 import { SystemHealthPanel, RecentActivity } from '@/landing/Panels';
-import { RetroPanel } from '@/landing/primitives';
 
 export default function Page() {
   return (

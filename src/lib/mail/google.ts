@@ -47,7 +47,7 @@ async function token(body: Record<string, string>, f: Fetch) {
   return json;
 }
 
-export async function googleExchangeCode(code: string, redirectUri: string, f: Fetch = fetch, env = process.env) {
+export async function googleExchangeCode(code: string, redirectUri: string, f: Fetch = fetch, env: Record<string, string | undefined> = process.env) {
   const json = await token(
     {
       code,
@@ -67,7 +67,7 @@ export async function googleExchangeCode(code: string, redirectUri: string, f: F
   return { email: profile.emailAddress.toLowerCase(), refreshToken, scopes: String(json.scope ?? "") };
 }
 
-export async function googleRefresh(refreshToken: string, f: Fetch = fetch, env = process.env) {
+export async function googleRefresh(refreshToken: string, f: Fetch = fetch, env: Record<string, string | undefined> = process.env) {
   const json = await token(
     {
       refresh_token: refreshToken,
