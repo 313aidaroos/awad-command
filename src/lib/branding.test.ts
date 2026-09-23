@@ -15,16 +15,15 @@ import {
 } from '@/lib/branding';
 
 describe('branding lock', () => {
-  it('names Cixy as the assistant and Anthropic as the provider, with Muslim identity', () => {
+  it('names Cixy as the assistant and Anthropic as the provider, with Muslim culture', () => {
     expect(ASSISTANT_NAME).toBe('Cixy');
     expect(ASSISTANT_PROVIDER).toBe('Anthropic');
     expect(PRODUCT_NAME).toBe('AWAD COMMAND');
     expect(poweredByProvider()).toBe('Powered by Anthropic');
     const identity = assistantSystemIdentity();
-    expect(identity).toContain('Muslim AI operator');
-    expect(identity).toContain('Assalamu alaykum');
-    expect(identity).toContain('not a scholar');
-    expect(identity).toContain('halal-conscious');
+    expect(identity).toContain('Muslim adab');
+    expect(identity).toContain('Answer salaam in kind');
+    expect(identity).toContain('Not a scholar');
     expect(identity).toContain('powered by Anthropic');
   });
 
@@ -60,15 +59,12 @@ describe('branding lock', () => {
     expect(composeLeadOutboundMessage('ping me')).not.toMatch(/AWAD CEO/);
   });
 
-  it('includes Cixy Muslim identity: salaam greeting, not a scholar disclaimer, halal-conscious values', () => {
-    const identity = assistantSystemIdentity();
-    // Cixy is Muslim and greets with salaam (assalamu alaykum)
-    expect(identity.toLowerCase()).toContain('muslim');
-    expect(identity.toLowerCase()).toMatch(/assalamu|salaam/);
-    // She is not a scholar on religious matters
-    expect(identity.toLowerCase()).toContain('not a scholar');
-    // Halal-conscious principles
-    expect(identity.toLowerCase()).toContain('halal');
+  it('keeps Cixy Muslim-cultured conduct (ec35d9e): adab not announced, salaam in kind, not a scholar, no haram recommendations', () => {
+    const identity = assistantSystemIdentity().toLowerCase();
+    expect(identity).toContain('muslim adab without announcing faith');
+    expect(identity).toContain('do not open every chat with salaam');
+    expect(identity).toContain('not a scholar');
+    for (const word of ['alcohol', 'pork', 'gambling', 'riba']) expect(identity).toContain(word);
   });
 
   it('Mission Control context appears in CEO system prompt', () => {

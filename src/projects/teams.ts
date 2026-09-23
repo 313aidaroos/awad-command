@@ -1,4 +1,5 @@
 import { makeAgents } from "@/projects/factory";
+import { OUTREACH_SEAT } from "@/projects/outreach";
 import type { ProjectDefinition } from "@/types/project";
 
 export const BUSINESS_TEAM_SIZE = 12;
@@ -93,10 +94,13 @@ export function completeBusinessTeam(
     if (agents.some((a) => a.role.toLowerCase() === member.role.toLowerCase()))
       continue;
     if (
-      agents.length >= BUSINESS_TEAM_SIZE &&
+      agents.filter((a) => a.name !== OUTREACH_SEAT.name).length >=
+        BUSINESS_TEAM_SIZE &&
       !CORE_TEAM.some((r) => r.role === member.role)
     )
       break;
+    // makeAgents appends the Outreach seat to every roster; keep exactly one per business.
+    const hasOutreach = agents.some((a) => a.name === OUTREACH_SEAT.name);
     agents.push(
       ...makeAgents(project.slug, [
         {
@@ -104,7 +108,7 @@ export function completeBusinessTeam(
           objective: `${project.name}: ${member.objective}`,
           tools: ["supabase.query", "http.fetch"],
         },
-      ]),
+      ]).filter((agent) => !hasOutreach || agent.name !== OUTREACH_SEAT.name),
     );
   }
   // Cover all business functions even when specialist titles differ by industry.

@@ -4,8 +4,9 @@ import { CORE_TEAM } from "./teams";
 import { expertiseBrief } from "./expertise";
 import { contraxis } from "./contraxis";
 import { MODULES } from "@/config/modules";
+import { OUTREACH_SEAT } from "./outreach";
 describe("equal business teams", () => {
-  it("covers every campus business with twelve agents and all six execution specialties", () => {
+  it("covers every campus business with twelve agents plus one Outreach seat and all six execution specialties", () => {
     for (const m of MODULES.filter(
       (m) => m.category === "company" || m.category === "studio",
     )) {
@@ -13,7 +14,12 @@ describe("equal business teams", () => {
         (p) => p.slug === (m.slug === "books" ? "publishing" : m.slug),
       );
       expect(p, m.slug).toBeDefined();
-      expect(p!.agents, m.slug).toHaveLength(12);
+      const team = p!.agents.filter((a) => a.name !== OUTREACH_SEAT.name);
+      expect(team, m.slug).toHaveLength(12);
+      expect(
+        p!.agents.filter((a) => a.name === OUTREACH_SEAT.name),
+        `${m.slug}: outreach seat`,
+      ).toHaveLength(1);
       for (const core of CORE_TEAM)
         expect(
           p!.agents.some((a) => a.role === core.role),
