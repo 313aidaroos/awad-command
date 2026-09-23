@@ -195,10 +195,13 @@ function FinancialChart({
   series: number[];
   range: string;
 }) {
+  // Series is Apixis Wallet daily net cash for the last 30 days; longer ranges show all of it.
+  const span = range === "1D" ? 2 : range === "7D" ? 7 : series.length;
+  series = series.slice(-span);
   if (series.length < 2) {
     return (
       <div className="mt-3 grid h-28 place-items-center border border-dashed border-[var(--line)] text-[10px] tracking-[0.14em] text-[var(--muted)]">
-        {range} · CHART UNAVAILABLE UNTIL LEDGER AGGREGATION IS CONNECTED
+        {range} · CHART APPEARS WHEN APIXIS WALLET IS CONNECTED (WALLET_STATS_KEY)
       </div>
     );
   }

@@ -184,7 +184,7 @@ export async function runAnthropicCeoTurn(
   for (let round = 0; round < MAX_TOOL_ROUNDS; round += 1) {
     const completion = await client.messages.create({
       model,
-      max_tokens: 800,
+      max_tokens: 1500,
       system: CEO_SYSTEM_PROMPT,
       tools: CEO_ANTHROPIC_TOOLS,
       messages,

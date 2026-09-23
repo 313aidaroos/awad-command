@@ -72,25 +72,35 @@ const unavailable = (reason: string) => ({ available: false as const, reason });
 
 export function buildGlobalFinancialSummary(mission: MissionControlSnapshot | null): GlobalFinancialSummary {
   const noAgg = 'Aggregation not connected';
-  const today: Money = mission?.financial.revenueToday.available
-    ? { available: true, amount: mission.financial.revenueToday.amount }
-    : unavailable(mission?.financial.revenueToday.available === false ? mission.financial.revenueToday.reason : noAgg);
+  const wallet = mission?.wallet;
+  const walletReason = wallet && !wallet.available ? `Apixis Wallet: ${wallet.reason}` : noAgg;
+  const today: Money = wallet?.available
+    ? { available: true, amount: wallet.todayCashInUsd }
+    : mission?.financial.revenueToday.available
+      ? { available: true, amount: mission.financial.revenueToday.amount }
+      : unavailable(mission?.financial.revenueToday.available === false ? mission.financial.revenueToday.reason : noAgg);
+  const month: Money = wallet?.available
+    ? { available: true, amount: wallet.netCashUsd }
+    : unavailable(walletReason);
   return {
-    source: today.available ? 'partial' : 'unavailable',
+    source: wallet?.available ? 'partial' : today.available ? 'partial' : 'unavailable',
     totalCash: unavailable(noAgg),
-    totalRevenue: unavailable(noAgg),
+    // Wallet is the one cash register: 30-day net cash in after refunds.
+    totalRevenue: month,
     totalExpenses: unavailable(noAgg),
     totalProfit: unavailable(noAgg),
     totalInvestments: unavailable(noAgg),
     receivables: unavailable(noAgg),
-    payables: unavailable(noAgg),
+    payables: wallet?.available
+      ? { available: true, amount: wallet.unspentIxisUsd }
+      : unavailable(walletReason),
     todayRevenue: today,
-    monthRevenue: unavailable(noAgg),
+    monthRevenue: month,
     yearRevenue: unavailable(noAgg),
     profitMargin: unavailable(noAgg),
     momChange: unavailable(noAgg),
     ytdChange: unavailable(noAgg),
-    series: [],
+    series: wallet?.available ? wallet.dailyNetUsd : [],
   };
 }
 

@@ -3,6 +3,7 @@ import { buildMissionControlSnapshot } from '@/lib/missionControl';
 import { readComputerStatus } from '@/lib/computerControl';
 import { isAnthropicCeoEnabled, FLEET_BOT_MODEL } from '@/lib/env';
 import { probeFleetSites, type FleetSnapshot } from '@/lib/fleetProbe';
+import { fetchWalletSummary } from '@/lib/walletStats';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,10 +12,15 @@ async function liveFleet(): Promise<FleetSnapshot> {
 }
 
 export async function GET() {
-  const [fleet, computer] = await Promise.all([liveFleet(), readComputerStatus()]);
+  const [fleet, computer, wallet] = await Promise.all([
+    liveFleet(),
+    readComputerStatus(),
+    fetchWalletSummary(30),
+  ]);
   const body = await buildMissionControlSnapshot({
     fleet,
     computer,
+    wallet,
     cixy: {
       provider: isAnthropicCeoEnabled() ? 'anthropic' : 'demo',
       enabled: isAnthropicCeoEnabled(),

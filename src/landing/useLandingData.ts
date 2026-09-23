@@ -11,7 +11,7 @@ export interface LandingData {
   error: string | null;
 }
 
-export function useLandingData(pollMs = 60_000): LandingData {
+export function useLandingData(pollMs = 30_000): LandingData {
   const [fleet, setFleet] = useState<FleetSnapshot | null>(null);
   const [mission, setMission] = useState<MissionControlSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
@@ -20,6 +20,7 @@ export function useLandingData(pollMs = 60_000): LandingData {
   useEffect(() => {
     let live = true;
     async function pull() {
+      if (document.visibilityState === 'hidden') return;
       try {
         const [f, m] = await Promise.all([
           fetch('/api/fleet', { cache: 'no-store' }),
@@ -38,9 +39,14 @@ export function useLandingData(pollMs = 60_000): LandingData {
     }
     void pull();
     const t = window.setInterval(() => void pull(), pollMs);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void pull();
+    };
+    document.addEventListener('visibilitychange', onVisible);
     return () => {
       live = false;
       window.clearInterval(t);
+      document.removeEventListener('visibilitychange', onVisible);
     };
   }, [pollMs]);
 

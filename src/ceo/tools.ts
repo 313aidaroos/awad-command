@@ -1,4 +1,6 @@
 import { requestPayment, stripeSummary } from "@/lib/payments";
+import { fetchWalletSummary, walletFactsForCixy } from "@/lib/walletStats";
+import { loadFloor } from "@/crypto-floor/paper/load";
 import {
   createEmailDraft,
   listReceivedEmails,
@@ -52,6 +54,8 @@ Mail: Awad's main mailbox is awad@apixis.dev. Business aliases such as socixis@a
 You can draft and save emails for review, read mail actually available through the email tool, and delegate business research. You cannot currently launch Meta/Google campaigns; campaign approval cards do not execute ads. Never claim a campaign launched or an email sent from drafting or task creation alone.
 
 Tools:
+- wallet_summary — real Apixis Wallet sales: cash in, refunds, Ixis sold/redeemed, top sites, unspent Ixis owed. Use for "how are sales", "what did we make today/this week". Unspent Ixis are owed service, not profit.
+- trading_floor — live AwadBot PAPER trading (not real money): positions, P/L, latest orders. Always say it is paper.
 - request_payment — save a payment request for Awad to approve in /payments. Never charges a card. Use integer cents and USD.
 - stripe_summary — read verified income and balances from the connected Stripe account. Never confuse Stripe balances with permission to spend or net profit.
 - list_business_agents — find the correct company-specific agent ID before assigning work. Never pick a same-named agent from another business.
@@ -72,6 +76,26 @@ Hard rules:
 - You can name which Lead bot owns a company from the lead map.`;
 
 export const CEO_ANTHROPIC_TOOLS: Tool[] = [
+  {
+    name: "wallet_summary",
+    description:
+      "Read Apixis Wallet business numbers: cash in, refunds, Ixis sold and redeemed, redemptions by site, unspent Ixis owed, active subscriptions. Read-only.",
+    input_schema: {
+      type: "object",
+      properties: {
+        days: {
+          type: "integer",
+          description: "Window in days (1-365). Default 30. Use 1 for today, 7 for this week.",
+        },
+      },
+    },
+  },
+  {
+    name: "trading_floor",
+    description:
+      "Read the Crypto Floor: AwadBot's Alpaca PAPER account (fake money) — engine state, equity, open positions and the latest orders. Read-only; COMMAND never places orders.",
+    input_schema: { type: "object", properties: {} },
+  },
   {
     name: "request_payment",
     description:
@@ -307,6 +331,53 @@ export async function executeCeoTool(
           error:
             "Email action unavailable or rejected. Nothing is confirmed sent. Open /email to check the connection and draft.",
         },
+        clientActions: [],
+      };
+    }
+  }
+
+  if (call.name === "wallet_summary") {
+    const raw = Number(call.input.days ?? 30);
+    const days = Number.isFinite(raw) ? raw : 30;
+    return {
+      forModel: walletFactsForCixy(await fetchWalletSummary(days)),
+      clientActions: [],
+    };
+  }
+
+  if (call.name === "trading_floor") {
+    try {
+      const { status, book } = await loadFloor();
+      return {
+        forModel: {
+          paperOnly: true,
+          engine: status.engine,
+          trading: status.trading,
+          heartbeat: status.heartbeat,
+          equity: book.account?.equity ?? null,
+          lastEquity: book.account?.lastEquity ?? null,
+          cash: book.account?.cash ?? null,
+          positions: book.positions.map((p) => ({
+            symbol: p.symbol,
+            qty: p.qty,
+            marketValue: p.marketValue,
+            unrealizedPl: p.unrealizedPl,
+          })),
+          latestOrders: book.orders.slice(0, 10).map((o) => ({
+            symbol: o.symbol,
+            side: o.side,
+            status: o.status,
+            filledQty: o.filledQty,
+            filledAvgPrice: o.filledAvgPrice,
+            at: o.filledAt ?? o.submittedAt,
+          })),
+          note: status.note,
+        },
+        clientActions: [],
+      };
+    } catch {
+      return {
+        forModel: { error: "Crypto Floor unavailable. Open /crypto-floor to check keys." },
         clientActions: [],
       };
     }

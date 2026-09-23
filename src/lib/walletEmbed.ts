@@ -119,3 +119,14 @@ export async function readWalletBalance(
     clearTimeout(timer);
   }
 }
+
+/** Buy Ixis page on Wallet. Browser-safe: no keys. Wallet allowlists the return host. */
+export function walletBuyUrl(commandOrigin: string): string {
+  const url = new URL(walletAppOrigin());
+  url.pathname = "/buy";
+  url.search = new URLSearchParams({
+    product: "command",
+    return_url: commandWalletReturnUrl(commandOrigin),
+  }).toString();
+  return url.toString();
+}
