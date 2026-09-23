@@ -44,6 +44,7 @@ import { agentRoleForEvent, filterEvents, type ReplayFilter } from "./replay";
 import "./floor.css";
 import { ArtLoop } from "@/art-motion/ArtLoop";
 
+const FLOOR_POLL_MS = 5000;
 const tabs = [
   "FLOOR",
   "PORTFOLIO",
@@ -282,6 +283,7 @@ export default function CryptoFloor() {
     if (demo) return;
     let stop = false;
     async function pull() {
+      if (document.visibilityState === "hidden") return;
       try {
         const res = await fetch("/api/floor-snapshot", { cache: "no-store" });
         const body = (await res.json()) as {
@@ -303,10 +305,16 @@ export default function CryptoFloor() {
       }
     }
     void pull();
-    const id = setInterval(() => void pull(), 20000);
+    // ~5 Alpaca paper reads per pull; 5s stays far under the 200/min limit for one viewer.
+    const id = setInterval(() => void pull(), FLOOR_POLL_MS);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void pull();
+    };
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       stop = true;
       clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, [demo]);
   const snapshot = demo ? preview : (remote ?? disconnectedSnapshot());

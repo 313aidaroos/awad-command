@@ -23,6 +23,10 @@ export function applyCeoClientActions(actions: CeoClientAction[], store: Store):
       if (action.mode) s.setMode(action.mode);
       continue;
     }
+    if (action.name === 'email_draft') {
+      notes.push(`Draft saved in ${action.account} · not sent`);
+      continue;
+    }
     if (action.name === 'open_panel') {
       s.openPanel(action.kind);
       notes.push(`Opened ${action.kind}`);

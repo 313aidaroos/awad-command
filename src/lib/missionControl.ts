@@ -3,6 +3,39 @@ import type { ComputerStatus } from '@/lib/computerControl';
 import { anthropicModel, isAnthropicCeoEnabled, FLEET_BOT_MODEL, CRON_PAUSED } from '@/lib/env';
 import type { FleetSnapshot, FleetSiteStatus } from '@/lib/fleetProbe';
 import { createServiceSupabase } from '@/lib/supabase/service';
+import type { WalletSummaryResult } from '@/lib/walletStats';
+
+/** Apixis Wallet cash, from the read-only stats endpoint. Dollars. */
+export type WalletMissionView =
+  | {
+      available: true;
+      days: number;
+      todayCashInUsd: number;
+      netCashUsd: number;
+      cashInUsd: number;
+      dailyNetUsd: number[];
+      unspentIxisUsd: number;
+      customers: number;
+      activeSubscriptions: number | null;
+    }
+  | { available: false; reason: string };
+
+export function walletMissionView(result: WalletSummaryResult | undefined): WalletMissionView {
+  if (!result) return { available: false, reason: 'Wallet not queried' };
+  if (!result.available) return { available: false, reason: result.reason };
+  const s = result.summary;
+  return {
+    available: true,
+    days: s.days,
+    todayCashInUsd: (s.series.at(-1)?.cashInCents ?? 0) / 100,
+    netCashUsd: s.totals.netCashCents / 100,
+    cashInUsd: s.totals.cashInCents / 100,
+    dailyNetUsd: s.series.map((d) => (d.cashInCents - d.refundCents) / 100),
+    unspentIxisUsd: s.holdings.liabilityUsd,
+    customers: s.holdings.customers,
+    activeSubscriptions: s.activeEntitlements,
+  };
+}
 
 export type Availability<T> = { available: true } & T | { available: false; reason: string };
 
@@ -46,6 +79,7 @@ export interface MissionControlSnapshot {
     computer: { workerConnected: boolean; halted: boolean; capabilities: string[]; demo: boolean; cronPaused: boolean };
   };
   cixy: ReturnType<typeof summarizeCixyReadiness> & { provider: string; model: string; fleetBotModel: string; cronPaused: boolean };
+  wallet?: WalletMissionView;
 }
 
 export function summarizeCixyReadiness(input: {
@@ -165,6 +199,7 @@ export async function buildMissionControlSnapshot(input: {
   computer: ComputerStatus;
   cixy?: { provider: string; enabled: boolean; model: string };
   liveOps?: LiveOpsSnapshot;
+  wallet?: WalletSummaryResult;
   now?: () => number;
 }): Promise<MissionControlSnapshot> {
   const now = input.now ?? Date.now;
@@ -221,5 +256,6 @@ export async function buildMissionControlSnapshot(input: {
       },
     },
     cixy: { ...readiness, provider: cixyInput.provider, model: FLEET_BOT_MODEL, fleetBotModel: FLEET_BOT_MODEL, cronPaused: CRON_PAUSED },
+    ...(input.wallet ? { wallet: walletMissionView(input.wallet) } : {}),
   };
 }

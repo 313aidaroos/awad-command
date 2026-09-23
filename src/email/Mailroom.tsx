@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { projects } from "@/projects/registry";
 import "@/workforce/teams.css";
+import { Inboxes } from "@/email/Inboxes";
 type Draft = {
   id: string;
   recipient: string;
@@ -100,7 +101,7 @@ export function Mailroom() {
         <div>
           <small>CIXY / MAILROOM</small>
           <h1>YOUR EMAIL DESK</h1>
-          <p>Awad and business aliases · @apixis.dev</p>
+          <p>Every connected inbox · Cixy reads, drafts and summarizes · you press Send</p>
         </div>
         <button disabled={busy} onClick={() => setRefresh((n) => n + 1)}>
           Refresh drafts
@@ -108,15 +109,8 @@ export function Mailroom() {
       </header>
       <p role="status">{notice}</p>
       <p role="status">{resultNotice}</p>
-      <div className="team-connections">
-        <strong>Inbox connection</strong>
-        <p>
-          Your business aliases continue forwarding to awad@apixis.dev. The
-          received-mail view below only reads messages routed through Resend.
-          Your full Gmail inbox is not connected here yet.
-        </p>
-      </div>
       <div className="team-grid">
+        <Inboxes />
         <form
           className="team-agent team-controls"
           onSubmit={async (e) => {
@@ -136,7 +130,7 @@ export function Mailroom() {
             }
           }}
         >
-          <h2>Compose a draft</h2>
+          <h2>Compose from an @apixis.dev alias (Resend)</h2>
           <p>
             Ask Cixy to draft an email, or write it here. Saved drafts appear
             alongside this form.

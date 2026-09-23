@@ -41,6 +41,7 @@ export function buildContext(state: CeoContextState) {
       `Revenue/leads today: revenue=${mission.financial.revenueToday.available ? mission.financial.revenueToday.amount : `unavailable (${mission.financial.revenueToday.reason})`} leads=${mission.financial.leadsToday.available ? mission.financial.leadsToday.count : `unavailable (${mission.financial.leadsToday.reason})`}`,
     );
     lines.push(
+      `Apixis Wallet (30d): ${mission.wallet?.available ? `cashIn=$${mission.wallet.cashInUsd} net=$${mission.wallet.netCashUsd} today=$${mission.wallet.todayCashInUsd} unspentIxisOwed=$${mission.wallet.unspentIxisUsd} customers=${mission.wallet.customers} activeSubscriptions=${mission.wallet.activeSubscriptions ?? "unavailable"}` : `unavailable (${mission.wallet?.reason ?? "not queried"})`}`,
       `Costs: ${mission.financial.costs.available ? `$${mission.financial.costs.monthlyUsd}/mo paused=${mission.financial.costs.paused}` : `unavailable (${mission.financial.costs.reason})`}`,
     );
     lines.push(

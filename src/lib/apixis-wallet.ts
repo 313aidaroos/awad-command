@@ -6,8 +6,11 @@
  * client component: it reads WALLET_API_KEY, which must never reach a browser.
  *
  * Env (already set on every family Vercel project):
- *   WALLET_API_KEY          service bearer for money routes
+ *   WALLET_API_KEY          this site's own Wallet API key (`apx_live_…`, scoped to your app).
+ *                           Legacy: the Wallet service key still works until the Wallet turns it off.
  *   APIXIS_WALLET_API_URL   https://apixis-wallet.vercel.app
+ *
+ * SDK version: 2 (2026-09-23). Replace older copies with this file.
  *
  * Rules this client enforces so you don't have to remember them:
  *   - Wallet is the single source of truth for what a user owns. Read entitlements
@@ -24,7 +27,18 @@ const BASE = (process.env.APIXIS_WALLET_API_URL ?? "https://apixis-wallet.vercel
 const KEY = process.env.WALLET_API_KEY ?? process.env.APIXIS_WALLET_API_KEY ?? "";
 
 export type Quote = { quoteId: string; productKey: string; app: string; name: string; xp: number; usdEquivalent: number; expiresAt: string };
-export type Reservation = { reservationId: string; status: "held"; productKey: string; ixis: number };
+export type Reservation = { reservationId: string; status: "held"; productKey: string; app?: string; ixis: number };
+export type ReservationStatus = {
+  reservationId: string;
+  /** held = open · expired = open past its hold time (will be released) · captured = charged · released = not charged */
+  status: "held" | "expired" | "captured" | "released";
+  app: string | null;
+  productKey: string | null;
+  ixis: number;
+  holdExpiresAt: string | null;
+  settledAt: string | null;
+  receiptId: string | null;
+};
 export type Entitlement = {
   id: string;
   owner_id: string;
@@ -39,12 +53,16 @@ export type Entitlement = {
 export class WalletError extends Error {
   status: number;
   body?: unknown;
+  /** Machine code from the Wallet, e.g. "insufficient_balance", "already_captured", "already_released", "conflict". */
+  code?: string;
   // No parameter properties: sister sites run tests with node --experimental-strip-types,
   // which rejects that shorthand. Keep this file erasable-syntax only.
   constructor(status: number, message: string, body?: unknown) {
     super(message);
     this.status = status;
     this.body = body;
+    const maybe = typeof body === "object" && body !== null ? (body as { code?: unknown }).code : undefined;
+    this.code = typeof maybe === "string" ? maybe : undefined;
   }
   /** Customer has fewer Ixis than the product costs. Show "Buy Ixis". */
   get insufficient() { return this.status === 402; }
@@ -100,8 +118,17 @@ export async function capture(reservationId: string) {
   return call<{ reservationId: string; status: "captured"; receiptId: string }>("POST", `/api/v1/reservations/${reservationId}/capture`);
 }
 
+/**
+ * Give the held Ixis back. Throws WalletError 409 with code "already_captured" if the hold was
+ * captured — the customer WAS charged, so keep their access.
+ */
 export async function release(reservationId: string) {
   return call<{ reservationId: string; status: "released" }>("POST", `/api/v1/reservations/${reservationId}/release`);
+}
+
+/** Where a hold stands. Use it to reconcile after a timeout or crash. */
+export async function reservationStatus(reservationId: string): Promise<ReservationStatus> {
+  return call<ReservationStatus>("GET", `/api/v1/reservations/${reservationId}`);
 }
 
 /** What this user owns on your app. Wallet writes these on capture; you only read. */
@@ -117,18 +144,28 @@ export async function hasEntitlement(ownerEmail: string, app: string, productKey
 
 /**
  * The whole redeem, done right:
- *   reserve → provision() → capture; if provision() throws or capture fails → release, rethrow.
+ *   reserve → provision() → capture (retried once).
+ *   provision() throws           → release, rethrow (nothing granted, nothing charged).
+ *   capture fails after retry    → release: if the Wallet says "already_captured" the customer WAS
+ *                                  charged → keep access, return ok. If the release succeeds the
+ *                                  customer was NOT charged → unprovision(), rethrow.
+ *                                  If even that is unknown (Wallet down) → rethrow WITHOUT
+ *                                  unprovisioning; reconcile later with reservationStatus().
  * `provision` is YOUR side effect (create the subscription row, unlock the file, start the job).
- * It runs while the Ixis are held, so a crash never charges without delivering.
  *
  * Returns { ok:true, receiptId } or { ok:false, insufficient:true } for the 402 case.
  */
 export async function redeem<T>(opts: {
-  /** user.email from YOUR Supabase session — the family-wide identity. */
+  /** user.email from YOUR Supabase session — the family-wide identity. Must be a verified email. */
   ownerEmail: string;
   productKey: string;
   idempotencyKey: string;
   provision: (reservation: Reservation) => Promise<T>;
+  /**
+   * Undo what provision() did. Called only when the Wallet confirms the customer was NOT charged
+   * (capture failed and the hold was released). Every site that writes access in provision() should pass it.
+   */
+  unprovision?: (reservation: Reservation, result: T) => Promise<void>;
 }): Promise<{ ok: true; receiptId: string; result: T } | { ok: false; insufficient: true; needed: number; message: string }> {
   let held: Reservation;
   try {
@@ -140,14 +177,45 @@ export async function redeem<T>(opts: {
     }
     throw e;
   }
+
+  let result: T;
   try {
-    const result = await opts.provision(held);
-    const cap = await capture(held.reservationId);
-    return { ok: true, receiptId: cap.receiptId, result };
+    result = await opts.provision(held);
   } catch (e) {
-    await release(held.reservationId).catch(() => { /* already settled or wallet down; ledger stays consistent */ });
+    await release(held.reservationId).catch(() => { /* already settled or wallet down; the hold expires on its own */ });
     throw e;
   }
+
+  let captureError: unknown;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const cap = await capture(held.reservationId);
+      return { ok: true, receiptId: cap.receiptId, result };
+    } catch (e) {
+      captureError = e;
+      // A definite answer (4xx) will not change on retry.
+      if (e instanceof WalletError && e.status >= 400 && e.status < 500) break;
+    }
+  }
+
+  try {
+    await release(held.reservationId);
+  } catch (e) {
+    if (e instanceof WalletError && e.code === "already_captured") {
+      // The capture went through; only its response was lost. Charged → keep access.
+      const status = await reservationStatus(held.reservationId).catch(() => null);
+      return { ok: true, receiptId: status?.receiptId ?? "", result };
+    }
+    console.error("wallet: capture and release both failed; access kept, reconcile with reservationStatus()", {
+      reservationId: held.reservationId,
+    });
+    throw captureError;
+  }
+  // Released → the customer was not charged → take the access back.
+  if (opts.unprovision) {
+    await opts.unprovision(held, result).catch((u) => console.error("wallet unprovision failed", u));
+  }
+  throw captureError;
 }
 
 /** Where to send someone who needs more Ixis. Returns them to `returnUrl` after purchase. */

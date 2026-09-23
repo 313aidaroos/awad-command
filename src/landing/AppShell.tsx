@@ -116,8 +116,8 @@ export function AppShell({
 
 export function useDashboard() {
   const { fleet, mission, loading, error } = useLandingData();
-  const sites = fleet?.sites ?? [];
   return useMemo(() => {
+    const sites = fleet?.sites ?? [];
     const rows = buildProjectRows(sites, mission);
     return {
       fleet,
@@ -130,5 +130,5 @@ export function useDashboard() {
       health: buildSystemHealth(sites, mission),
       activity: buildActivity(sites, mission),
     };
-  }, [fleet, mission, loading, error, sites]);
+  }, [fleet, mission, loading, error]);
 }

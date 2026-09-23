@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { companyOps } from '@/config/companyOps';
 import { buildMissionControlSnapshot } from '@/lib/missionControl';
 import type { FleetSnapshot } from '@/lib/fleetProbe';
 import type { ComputerStatus } from '@/lib/computerControl';
