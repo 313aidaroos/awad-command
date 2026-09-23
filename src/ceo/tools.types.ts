@@ -40,4 +40,14 @@ export type CeoClientAction =
       demo?: boolean;
       error?: string;
       record?: LeadMessage;
+    }
+  | {
+      name: 'email_draft';
+      accountId: string;
+      account: string;
+      provider: 'google' | 'microsoft';
+      draftId: string;
+      to: string;
+      subject: string;
+      body: string;
     };

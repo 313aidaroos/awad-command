@@ -5,7 +5,7 @@ import { applyCeoClientActions } from "@/ceo/applyClientActions";
 import { parseIntents } from "@/ceo/intents";
 import type { CeoClientAction } from "@/ceo/tools.types";
 import { HUD_COPY } from "@/lib/branding";
-import { CEO_OPEN_EVENT } from "@/lib/ceoBridge";
+import { CEO_OPEN_EVENT, CEO_PROMPT_EVENT } from "@/lib/ceoBridge";
 import { useVoice } from "@/lib/voice";
 import { Glass } from "@/ui/Glass";
 import Image from "next/image";
@@ -15,11 +15,13 @@ import { useRouter } from "next/navigation";
 import { Mic, MicOff, Keyboard, Send, Volume2, VolumeX } from "lucide-react";
 import { useCommandStore } from "@/store/useCommandStore";
 import { CixyCustomizer } from "@/ui/CixyCustomizer";
+import { EmailDraftCard, type EmailDraftView } from "@/ui/EmailDraftCard";
 
 interface ChatTurn {
   role: "user" | "ceo";
   text: string;
   note?: string;
+  drafts?: EmailDraftView[];
 }
 
 export function CeoConsole({
@@ -197,9 +199,24 @@ export function CeoConsole({
         }
         const combinedNote =
           [note, ...actionNotes].filter(Boolean).join(" · ") || undefined;
+        const drafts = (body.actions ?? []).flatMap((action) =>
+          action.name === "email_draft"
+            ? [
+                {
+                  accountId: action.accountId,
+                  account: action.account,
+                  provider: action.provider,
+                  draftId: action.draftId,
+                  to: action.to,
+                  subject: action.subject,
+                  body: action.body,
+                },
+              ]
+            : [],
+        );
         setTurns((prev) => [
           ...prev,
-          { role: "ceo", text: reply, note: combinedNote },
+          { role: "ceo", text: reply, note: combinedNote, drafts },
         ]);
         if (!voiceMutedRef.current && reply) speak(reply);
       } catch {
@@ -213,6 +230,15 @@ export function CeoConsole({
     },
     [prime, runIntents, speak, store, embedded, dashboardContext, router],
   );
+
+  useEffect(() => {
+    const onPrompt = (event: Event) => {
+      const prompt = (event as CustomEvent<unknown>).detail;
+      if (typeof prompt === "string" && prompt.trim()) void ask(prompt);
+    };
+    window.addEventListener(CEO_PROMPT_EVENT, onPrompt);
+    return () => window.removeEventListener(CEO_PROMPT_EVENT, onPrompt);
+  }, [ask]);
 
   const toggleMic = useCallback(() => {
     if (voice.listening) {
@@ -413,6 +439,9 @@ export function CeoConsole({
                     <strong>{turn.role === "user" ? "YOU" : "CIXY"}</strong>
                     <p>{turn.text}</p>
                     {turn.note && <small>{turn.note}</small>}
+                    {turn.drafts?.map((d) => (
+                      <EmailDraftCard key={d.draftId} draft={d} />
+                    ))}
                   </div>
                 ))}
                 {busy && <p className="hq-thinking">Cixy is responding…</p>}
@@ -496,6 +525,9 @@ export function CeoConsole({
                   {turn.note}
                 </div>
               ) : null}
+              {turn.drafts?.map((d) => (
+                <EmailDraftCard key={d.draftId} draft={d} />
+              ))}
             </div>
           ))}
           {busy ? (

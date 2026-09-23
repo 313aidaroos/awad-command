@@ -65,7 +65,7 @@ export type WalletSummaryResult =
 
 export const WALLET_RANGES = [7, 30, 90, 365] as const;
 
-export function walletApiBase(env: NodeJS.ProcessEnv = process.env): string {
+export function walletApiBase(env: Record<string, string | undefined> = process.env): string {
   const raw = (env.APIXIS_WALLET_API_URL ?? env.NEXT_PUBLIC_WALLET_URL ?? "").trim();
   try {
     const url = new URL(raw || DEFAULT_WALLET_APP_URL);
@@ -76,14 +76,14 @@ export function walletApiBase(env: NodeJS.ProcessEnv = process.env): string {
   return DEFAULT_WALLET_APP_URL;
 }
 
-export function walletStatsKey(env: NodeJS.ProcessEnv = process.env): string | null {
+export function walletStatsKey(env: Record<string, string | undefined> = process.env): string | null {
   const key = (env.WALLET_STATS_KEY ?? "").trim();
   return key.length >= 32 ? key : null;
 }
 
 export async function fetchWalletSummary(
   days = 30,
-  deps: { fetch?: typeof fetch; env?: NodeJS.ProcessEnv } = {},
+  deps: { fetch?: typeof fetch; env?: Record<string, string | undefined> } = {},
 ): Promise<WalletSummaryResult> {
   const env = deps.env ?? process.env;
   const key = walletStatsKey(env);
