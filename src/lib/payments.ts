@@ -1,3 +1,4 @@
+// Change note (Claude, Sep 2026): Stripe summary re-enabled with a read-only key. See docs/LAUNCH_NOTES.md.
 import Stripe from "stripe";
 import { z } from "zod";
 import { isLeadOwner } from "@/lib/leadOwner";

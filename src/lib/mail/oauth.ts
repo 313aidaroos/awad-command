@@ -1,3 +1,4 @@
+// Change note (Claude, Sep 2026): New. Signed OAuth state and redirect URIs. See docs/LAUNCH_NOTES.md.
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import { googleAuthUrl, googleConfigured, googleExchangeCode } from "@/lib/mail/google";
 import { microsoftAuthUrl, microsoftConfigured, microsoftExchangeCode } from "@/lib/mail/microsoft";

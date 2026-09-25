@@ -1,3 +1,4 @@
+// Change note (Claude, Sep 2026): New. Mailbox rows in awad_command.mail_accounts; token refresh. See docs/LAUNCH_NOTES.md.
 import { z } from "zod";
 import { isLeadOwner } from "@/lib/leadOwner";
 import { createServiceSupabase } from "@/lib/supabase/service";

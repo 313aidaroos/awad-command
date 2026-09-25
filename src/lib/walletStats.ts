@@ -1,3 +1,4 @@
+// Change note (Claude, Sep 2026): New. Reads the Wallet summary; refuses non-HTTPS/foreign hosts. See docs/LAUNCH_NOTES.md.
 import { z } from "zod";
 import { DEFAULT_WALLET_APP_URL } from "@/lib/walletEmbed";
 

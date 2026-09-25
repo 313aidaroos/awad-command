@@ -1,3 +1,4 @@
+// Change note (Claude, Sep 2026): New. Shared mail types. See docs/LAUNCH_NOTES.md.
 export type MailProvider = "google" | "microsoft";
 
 export const MAIL_PROVIDERS: MailProvider[] = ["google", "microsoft"];

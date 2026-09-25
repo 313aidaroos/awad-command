@@ -1,3 +1,4 @@
+// Change note (Claude, Sep 2026): New. Sends a draft only on your tap (owner only). Cixy has no send tool. See docs/LAUNCH_NOTES.md.
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isLeadOwner } from "@/lib/leadOwner";

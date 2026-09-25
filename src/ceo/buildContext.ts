@@ -1,3 +1,4 @@
+// Change note (Claude, Sep 2026): Adds Wallet and trading-floor context to Cixy's turn. See docs/LAUNCH_NOTES.md.
 import { describeLeadOwnership } from "@/config/orbLeads";
 import { projects } from "@/projects/registry";
 import type { MissionControlSnapshot } from "@/lib/missionControl";

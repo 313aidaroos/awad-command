@@ -1,3 +1,4 @@
+-- Change note (Claude, Sep 2026): New table awad_command.mail_accounts (applied live 2026-09-23). See docs/LAUNCH_NOTES.md.
 -- Connected mailboxes (Gmail / Outlook) for Cixy. Owner only, through server routes.
 -- refresh_token_enc is AES-256-GCM ciphertext (MAIL_TOKEN_KEY); the database never sees a usable token.
 create table if not exists awad_command.mail_accounts (

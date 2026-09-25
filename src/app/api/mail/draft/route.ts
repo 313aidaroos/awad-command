@@ -1,3 +1,4 @@
+// Change note (Claude, Sep 2026): New. Creates a reply draft in your real Drafts folder. Never sends. See docs/LAUNCH_NOTES.md.
 import { NextResponse } from "next/server";
 import { isLeadOwner } from "@/lib/leadOwner";
 import { createNewDraft, createReplyDraft } from "@/lib/mail/accounts";

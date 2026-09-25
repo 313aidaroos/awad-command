@@ -1,3 +1,4 @@
+// Change note (Claude, Sep 2026): New. Microsoft Graph: list, read, draft, send draft. See docs/LAUNCH_NOTES.md.
 import { clip, htmlToText } from "@/lib/mail/format";
 import type { ListInboxOptions, MailMessage, MailSummary, ProviderSession } from "@/lib/mail/types";
 

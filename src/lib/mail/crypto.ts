@@ -1,3 +1,4 @@
+// Change note (Claude, Sep 2026): New. AES-256-GCM sealing of mailbox tokens with MAIL_TOKEN_KEY. See docs/LAUNCH_NOTES.md.
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
 
 /**

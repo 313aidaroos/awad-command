@@ -1,3 +1,4 @@
+// Change note (Claude, Sep 2026): New Cixy tools: wallet_summary, trading_floor, inbox_overview, search_inbox, read_inbox_email, draft_reply (no send). See docs/LAUNCH_NOTES.md.
 import { requestPayment, stripeSummary } from "@/lib/payments";
 import { fetchWalletSummary, walletFactsForCixy } from "@/lib/walletStats";
 import { loadFloor } from "@/crypto-floor/paper/load";

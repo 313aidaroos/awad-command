@@ -1,3 +1,4 @@
+// Change note (Claude, Sep 2026): New. Unified inbox across every connected mailbox. See docs/LAUNCH_NOTES.md.
 import { NextResponse } from "next/server";
 import { isLeadOwner } from "@/lib/leadOwner";
 import { listUnifiedInbox, readMailMessage } from "@/lib/mail/accounts";

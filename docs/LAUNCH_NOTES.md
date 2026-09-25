@@ -32,6 +32,8 @@ Reads the Wallet through `WALLET_STATS_KEY` (read-only). Does not sell anything,
 
 ## What changed, file by file
 
+Each changed backend code file also starts with a one-line `Change note (Claude, Sep 2026)` comment saying the same thing.
+
 | File | Change |
 |---|---|
 | `.env.example` | Added 7 key(s) the code reads that were missing: `CIXY_VOICE_ID`, `ELEVENLABS_API_KEY`, `SUPABASE_URL`, `APIXIS_WALLET_API_KEY`, `STRIPE_SECRET_KEY`, `TWITTER_BEARER_TOKEN`, `X_API_BEARER_TOKEN`. |

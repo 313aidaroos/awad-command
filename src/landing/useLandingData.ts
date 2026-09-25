@@ -1,4 +1,5 @@
 'use client';
+// Change note (Claude, Sep 2026): Home finances read Wallet daily cash. See docs/LAUNCH_NOTES.md.
 
 import { useEffect, useState } from 'react';
 import type { FleetSnapshot } from '@/lib/fleetProbe';

@@ -1,3 +1,4 @@
+// Change note (Claude, Sep 2026): New. OAuth return for Gmail/Outlook; stores the refresh token encrypted. See docs/LAUNCH_NOTES.md.
 import { NextResponse, type NextRequest } from "next/server";
 import { isLeadOwner } from "@/lib/leadOwner";
 import { saveMailAccount } from "@/lib/mail/accounts";
