@@ -1,3 +1,4 @@
+// Change note (Claude, Sep 2026): Removed /api/mission-control from the public list. See docs/LAUNCH_NOTES.md.
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import {

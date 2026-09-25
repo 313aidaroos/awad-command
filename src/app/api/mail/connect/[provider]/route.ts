@@ -1,3 +1,4 @@
+// Change note (Claude, Sep 2026): New. Starts Gmail/Outlook OAuth with a signed state. See docs/LAUNCH_NOTES.md.
 import { NextResponse } from "next/server";
 import { isLeadOwner } from "@/lib/leadOwner";
 import { hasMailTokenKey } from "@/lib/mail/crypto";

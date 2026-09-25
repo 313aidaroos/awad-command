@@ -1,3 +1,4 @@
+// Change note (Claude, Sep 2026): Types for the new tools. See docs/LAUNCH_NOTES.md.
 import type { ContextPanel, ModeName } from '@/store/types';
 import type { LeadMessage } from '@/types/approval';
 

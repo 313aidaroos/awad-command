@@ -1,3 +1,4 @@
+// Change note (Claude, Sep 2026): New. Proxies the Wallet's read-only summary with WALLET_STATS_KEY. See docs/LAUNCH_NOTES.md.
 import { NextResponse } from "next/server";
 import { isLeadOwner } from "@/lib/leadOwner";
 import { fetchWalletSummary } from "@/lib/walletStats";

@@ -1,3 +1,4 @@
+// Change note (Claude, Sep 2026): Handles the email-draft card action. See docs/LAUNCH_NOTES.md.
 import type { CeoClientAction } from '@/ceo/tools.types';
 import type { CommandActions, CommandState } from '@/store/types';
 import type { EventType } from '@/types/events';

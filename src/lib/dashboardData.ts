@@ -1,3 +1,4 @@
+// Change note (Claude, Sep 2026): Dashboard reads Wallet totals. See docs/LAUNCH_NOTES.md.
 import { companyModules } from '@/config/modules';
 import type { Availability, MissionControlSnapshot } from '@/lib/missionControl';
 import type { FleetSiteStatus } from '@/lib/fleetProbe';

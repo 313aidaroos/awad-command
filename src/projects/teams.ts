@@ -1,3 +1,4 @@
+// Change note (Claude, Sep 2026): One Outreach seat per business (duplicates removed). See docs/LAUNCH_NOTES.md.
 import { makeAgents } from "@/projects/factory";
 import { OUTREACH_SEAT } from "@/projects/outreach";
 import type { ProjectDefinition } from "@/types/project";

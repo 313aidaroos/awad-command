@@ -1,3 +1,4 @@
+// Change note (Claude, Sep 2026): Wallet embed URL helper. See docs/LAUNCH_NOTES.md.
 /**
  * COMMAND → Apixis Wallet deep link.
  * Cash checkout and the Ixis ledger stay on Wallet. See docs/WALLET_EMBED.md.

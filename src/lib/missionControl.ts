@@ -1,3 +1,4 @@
+// Change note (Claude, Sep 2026): walletMissionView(): Wallet numbers for Mission Control. See docs/LAUNCH_NOTES.md.
 import { companyOps, ownerAdminEmail } from '@/config/companyOps';
 import type { ComputerStatus } from '@/lib/computerControl';
 import { anthropicModel, isAnthropicCeoEnabled, FLEET_BOT_MODEL, CRON_PAUSED } from '@/lib/env';

@@ -1,3 +1,4 @@
+// Change note (Claude, Sep 2026): New. Email text helpers (HTML→text, reply subject, RFC 2047 headers). See docs/LAUNCH_NOTES.md.
 /** Shared text helpers for mail providers. Pure, unit-tested. */
 
 export const MAX_BODY_CHARS = 20_000;

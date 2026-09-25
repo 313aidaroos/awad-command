@@ -1,3 +1,4 @@
+// Change note (Claude, Sep 2026): Owner-only again (it reads revenue, leads and admin status). See docs/LAUNCH_NOTES.md.
 import { NextResponse } from 'next/server';
 import { buildMissionControlSnapshot } from '@/lib/missionControl';
 import { readComputerStatus } from '@/lib/computerControl';

@@ -1,3 +1,4 @@
+// Change note (Claude, Sep 2026): Wallet client (server only). See docs/LAUNCH_NOTES.md.
 /**
  * Apixis Wallet — shared server-side client for sister sites.
  *

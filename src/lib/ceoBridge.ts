@@ -1,3 +1,4 @@
+// Change note (Claude, Sep 2026): requestCeoPrompt(): lets pages hand Cixy a prompt. See docs/LAUNCH_NOTES.md.
 export const CEO_OPEN_EVENT = 'awad-open-ceo';
 
 export function requestCeoOpen() {

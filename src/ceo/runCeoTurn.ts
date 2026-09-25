@@ -1,3 +1,4 @@
+// Change note (Claude, Sep 2026): Wires the new Wallet/floor/mail tools into Cixy's turn. See docs/LAUNCH_NOTES.md.
 import { buildContext } from "@/ceo/buildContext";
 import { demoResponder } from "@/ceo/demoResponder";
 import {

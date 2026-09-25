@@ -1,3 +1,4 @@
+// Change note (Claude, Sep 2026): New. Lists and disconnects your connected mailboxes (owner only). See docs/LAUNCH_NOTES.md.
 import { NextResponse } from "next/server";
 import { isLeadOwner } from "@/lib/leadOwner";
 import { disconnectMailAccount, listMailAccounts } from "@/lib/mail/accounts";
