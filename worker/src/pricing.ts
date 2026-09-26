@@ -1,3 +1,4 @@
+// Change note (Claude, Sep 2026): Current Claude prices (Sonnet 5 is $2/$10); retired models removed. See docs/LAUNCH_NOTES.md.
 export interface ModelPrice {
   inputPerMTok: number;
   outputPerMTok: number;
@@ -5,14 +6,13 @@ export interface ModelPrice {
 
 /** Keep prices in one place so they can be updated without touching the agent loop. */
 export const MODEL_PRICES: Record<string, ModelPrice> = {
+  // Unknown models are priced conservatively: this feeds the worker's spending cap.
   default: { inputPerMTok: 3, outputPerMTok: 15 },
-  'claude-sonnet-5': { inputPerMTok: 3, outputPerMTok: 15 },
+  'claude-opus-5': { inputPerMTok: 5, outputPerMTok: 25 },
+  'claude-sonnet-5': { inputPerMTok: 2, outputPerMTok: 10 },
   'claude-sonnet-4-6': { inputPerMTok: 3, outputPerMTok: 15 },
   'claude-sonnet-4-5': { inputPerMTok: 3, outputPerMTok: 15 },
-  'claude-3-5-sonnet-latest': { inputPerMTok: 3, outputPerMTok: 15 },
-  'claude-3-5-sonnet-20241022': { inputPerMTok: 3, outputPerMTok: 15 },
-  'claude-3-haiku-20240307': { inputPerMTok: 0.25, outputPerMTok: 1.25 },
-  'claude-3-5-haiku-latest': { inputPerMTok: 0.8, outputPerMTok: 4 },
+  'claude-haiku-4-5': { inputPerMTok: 1, outputPerMTok: 5 },
 };
 
 export function priceForModel(model: string): ModelPrice {
