@@ -94,5 +94,7 @@ Each changed backend code file also starts with a one-line `Change note (Claude,
 | `src/ui/CeoConsole.tsx` | Part of: Go-live docs, re-enable Stripe summary, lint cleanup. |
 | `src/ui/EmailDraftCard.tsx` | Part of: Connect every mailbox: Gmail + Outlook for Cixy, unified inbox, reply drafts, owner-only Send. |
 | `supabase/migrations/20260923080000_mail_accounts.sql` | Part of: Change notes inside each changed backend file. |
+| `worker/src/pricing.test.ts` | Test added or updated to match. |
+| `worker/src/pricing.ts` | Part of: Replace the retired Claude model so Cixy doesn't fail. |
 
 _Changes are backend and plumbing only. Pages, design and UI are not changed except where noted as a build or lint fix with no visual change._
