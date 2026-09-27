@@ -334,8 +334,15 @@ export default function CryptoFloor() {
         // If live data available, use it; otherwise fall back to disconnected state
         if (body.live && body.snapshot) {
           const parsed = snapshotSchema.safeParse(body.snapshot);
-          setRemote(parsed.success ? parsed.data : disconnectedSnapshot());
-          setStatusNote("🟢 LIVE PAPER DATA — Alpaca Account");
+          if (parsed.success) {
+            setRemote(parsed.data);
+            setStatusNote("🟢 LIVE PAPER DATA — Alpaca Account");
+          } else {
+            // Log schema mismatch for debugging
+            console.error("Snapshot schema mismatch:", parsed.error);
+            setRemote(disconnectedSnapshot());
+            setStatusNote("Snapshot schema mismatch - check console");
+          }
         } else {
           setRemote(disconnectedSnapshot());
           setStatusNote(body.error || "Alpaca API not connected. Configure ALPACA_API_KEY in Vercel.");

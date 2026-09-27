@@ -100,17 +100,15 @@ export async function GET() {
       killSwitch: {
         halted: false,
         reason: null,
-        at: null,
+        timestamp: null,
+        triggeredBy: null,
       },
-      scoring: {
-        awadScore: null,
-        weights: {
-          winRate: 0.25,
-          sharpe: 0.25,
-          totalPnl: 0.25,
-          maxDrawdown: 0.25,
-        },
-      },
+      regime: null,
+      queueDepth: null,
+      openOrders: orders.length,
+      latencyMs: duration,
+      uptimePct: null,
+      lastCycle: new Date().toISOString(),
     };
 
     return NextResponse.json({
