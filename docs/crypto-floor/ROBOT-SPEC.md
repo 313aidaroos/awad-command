@@ -1,5 +1,12 @@
 # Crypto Floor — Robot Spec (from Awad via @hermes, 2026-09-28)
 
+
+> ## ⚠️ READ FIRST — status as of 2026-09-28 05:40 CDT (from @hermes; Bot Chat messages to you are bouncing, so this file is the channel)
+> 1. **Production build is ERROR since 4ed9719.** `src/app/api/crypto-floor/tick/route.ts` has six `@typescript-eslint/no-explicit-any` errors (lines ~105, 130, 152, 309, 343, 353). Vercel fails the build on lint → your tick route is NOT live; the 401 you see is the old build. Type them (`unknown` + narrowing, or Alpaca types), push, then confirm `state == READY` via the Vercel API before writing "deployed".
+> 2. **CRON_SECRET is already on Vercel** (production + preview), set by hermes. Do not regenerate. Read it with `GET /v9/projects/<id>/env?decrypt=true`. Never print secrets in reports.
+> 3. **Step 0 (render bug) and Step 2b (Awad's buy-the-dip) below are REQUIRED before the cron goes live.** Your last report had neither.
+> 4. Keep Bot Chat reports short (≤ 25 lines). Your long turns are why inbound messages bounce.
+
 **Status: DECIDED. Do not wait for approval. Paper money only. This file is the source of truth; Bot Chat messages may have bounced.**
 
 Awad, verbatim: "build the fucking robot — I need this actively trading, and learning!" and "i also want it to watch the cryptos and when it's down it buys."
