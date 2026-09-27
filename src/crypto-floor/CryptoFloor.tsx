@@ -285,19 +285,30 @@ export default function CryptoFloor() {
     async function pull() {
       if (document.visibilityState === "hidden") return;
       try {
-        const res = await fetch("/api/floor-snapshot", { cache: "no-store" });
+        // TIER 1: fetch real Alpaca paper account snapshot
+        const res = await fetch("/api/crypto-floor/snapshot", { cache: "no-store" });
         const body = (await res.json()) as {
           snapshot?: unknown;
+          live?: boolean;
+          error?: string;
           status?: { note?: unknown; simJournalFills?: unknown };
         };
         if (stop) return;
-        const parsed = snapshotSchema.safeParse(body.snapshot);
-        setRemote(parsed.success ? parsed.data : disconnectedSnapshot());
-        setStatusNote(typeof body.status?.note === "string" ? body.status.note : null);
+        
+        // If live data available, use it; otherwise fall back to disconnected state
+        if (body.live && body.snapshot) {
+          const parsed = snapshotSchema.safeParse(body.snapshot);
+          setRemote(parsed.success ? parsed.data : disconnectedSnapshot());
+          setStatusNote("🟢 LIVE PAPER DATA — Alpaca Account");
+        } else {
+          setRemote(disconnectedSnapshot());
+          setStatusNote(body.error || "Alpaca API not connected. Configure ALPACA_API_KEY in Vercel.");
+        }
+        
         setSimFills(
           typeof body.status?.simJournalFills === "number" ? body.status.simJournalFills : 0,
         );
-      } catch {
+      } catch (err) {
         if (!stop) {
           setRemote(disconnectedSnapshot());
           setStatusNote("Paper book status could not be loaded.");
