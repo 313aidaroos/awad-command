@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import {
   runStrategy,
-  calculateReturn,
   type MomentumConfig,
   type Bar,
   type Position,
