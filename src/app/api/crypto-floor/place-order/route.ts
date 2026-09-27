@@ -85,6 +85,37 @@ export async function POST(request: Request) {
 
     const order = await orderRes.json();
 
+    // Log ORDER_PLACED event
+    try {
+      await fetch(`${request.url.replace("/place-order", "/events")}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-internal-key": process.env.INTERNAL_API_KEY || "",
+        },
+        body: JSON.stringify({
+          event_type: "ORDER_PLACED",
+          severity: "info",
+          title: `${side.toUpperCase()} ${parsedQty} ${symbol.toUpperCase()}`,
+          description: `Manual order placed via UI`,
+          symbol: symbol.toUpperCase().trim(),
+          order_id: order.id,
+          structured_payload: {
+            side,
+            qty: parsedQty,
+            type: "market",
+            time_in_force: "day",
+            alpaca_order: order,
+          },
+          paper_or_live: "paper",
+          source: "ui_manual",
+        }),
+      });
+    } catch (eventErr) {
+      // Don't fail the order if event logging fails
+      console.error("Failed to log ORDER_PLACED event:", eventErr);
+    }
+
     return NextResponse.json({
       success: true,
       order,
