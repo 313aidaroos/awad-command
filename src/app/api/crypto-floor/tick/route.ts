@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createServerSupabase } from "@/lib/supabase/server";
+import { createCryptoFloorDb } from "@/lib/crypto-floor/db";
 import {
   runStrategy,
   type MomentumConfig,
@@ -30,7 +30,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const supabase = await createServerSupabase();
+  const supabase = createCryptoFloorDb();
+  if (!supabase) {
+    return NextResponse.json({ error: "Crypto Floor database is not configured (SUPABASE_SERVICE_ROLE_KEY)." }, { status: 503 });
+  }
   if (!supabase) {
     await logEvent("system", "error", "Database unavailable", {});
     return NextResponse.json({ error: "Database unavailable" }, { status: 503 });

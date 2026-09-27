@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { isLeadOwner } from "@/lib/leadOwner";
-import { createServerSupabase } from "@/lib/supabase/server";
+import { createCryptoFloorDb } from "@/lib/crypto-floor/db";
 
 const ALPACA_PAPER_URL = process.env.ALPACA_PAPER_BASE_URL || "https://paper-api.alpaca.markets";
 
@@ -14,7 +14,7 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const supabase = await createServerSupabase();
+  const supabase = createCryptoFloorDb();
   if (!supabase) {
     return NextResponse.json({ error: "Database unavailable" }, { status: 503 });
   }

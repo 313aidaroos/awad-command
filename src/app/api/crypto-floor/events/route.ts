@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createServerSupabase } from "@/lib/supabase/server";
+import { createCryptoFloorDb } from "@/lib/crypto-floor/db";
 
 /**
  * Write immutable event to crypto_floor_events table
@@ -17,7 +17,10 @@ export async function POST(request: Request) {
     );
   }
 
-  const supabase = await createServerSupabase();
+  const supabase = createCryptoFloorDb();
+  if (!supabase) {
+    return NextResponse.json({ error: "Crypto Floor database is not configured (SUPABASE_SERVICE_ROLE_KEY)." }, { status: 503 });
+  }
   if (!supabase) {
     return NextResponse.json(
       { error: "Database unavailable" },
