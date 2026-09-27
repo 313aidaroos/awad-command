@@ -365,34 +365,31 @@ async function logEvent(
   side?: string | null,
   qty?: number | null,
   price?: number | null,
-  orderId?: string | null
+  orderId?: string | null,
+  strategy: string | null = "momentum-v1"
 ) {
+  // Service-role insert through PostgREST. The previous version POSTed hand-built SQL to the
+  // Supabase *Management* API with the service-role key — wrong API, wrong credential — so every
+  // write 401'd and was swallowed: the first live tick submitted an order and left no record.
   try {
-    const TOKEN = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-    const PROJECT_ID = process.env.SUPABASE_PROJECT_ID || "myfclypikkcvfurkbzmj";
-
-    const event = {
+    const db = createCryptoFloorDb();
+    if (!db) {
+      console.error("logEvent: Crypto Floor DB not configured");
+      return;
+    }
+    const { error } = await db.from("crypto_floor_events").insert({
       ts: new Date().toISOString(),
       agent_role: agentRole,
       type,
-      symbol: symbol || null,
-      side: side || null,
-      qty: qty || null,
-      price: price || null,
-      payload,
-      order_id: orderId || null,
-    };
-
-    const query = `INSERT INTO crypto_floor_events (ts, agent_role, type, symbol, side, qty, price, payload, order_id) VALUES ('${event.ts}', '${event.agent_role}', '${event.type}', ${event.symbol ? `'${event.symbol}'` : "NULL"}, ${event.side ? `'${event.side}'` : "NULL"}, ${event.qty || "NULL"}, ${event.price || "NULL"}, '${JSON.stringify(event.payload).replace(/'/g, "''")}'::jsonb, ${event.order_id ? `'${event.order_id}'` : "NULL"})`;
-
-    await fetch(`https://api.supabase.com/v1/projects/${PROJECT_ID}/database/query`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ query }),
+      symbol: symbol ?? null,
+      side: side ?? null,
+      qty: qty ?? null,
+      price: price ?? null,
+      payload: { title, ...payload },
+      order_id: orderId ?? null,
+      strategy,
     });
+    if (error) console.error("logEvent insert failed:", error.message, { type, symbol });
   } catch (err) {
     console.error("Failed to log event:", err);
   }
