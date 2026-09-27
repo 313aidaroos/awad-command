@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import {
+
+// Wire shapes from Alpaca / Supabase, typed narrowly so lint passes and mistakes surface at compile time.
+type AlpacaPositionWire = { symbol: string; qty: string; avg_entry_price: string; current_price: string; unrealized_pl: string; unrealized_plpc: string };
+type AlpacaBarWire = { t: string; o: number; h: number; l: number; c: number; v: number };
+type RecentEventWire = { symbol: string; ts: string };
   runStrategy,
   type MomentumConfig,
   type Bar,
@@ -101,7 +106,7 @@ export async function POST(request: Request) {
     const startOfDayEquity = daySnapshot ? parseFloat(daySnapshot.equity) : equity;
 
     // Transform Alpaca positions
-    const positions: Position[] = alpacaPositions.map((p: any) => ({
+    const positions: Position[] = (alpacaPositions as AlpacaPositionWire[]).map((p) => ({
       symbol: p.symbol.replace("USD", "/USD"), // BTCUSD → BTC/USD
       qty: parseFloat(p.qty),
       avgEntryPrice: parseFloat(p.avg_entry_price),
@@ -126,7 +131,7 @@ export async function POST(request: Request) {
         
         barsMap.set(
           symbol,
-          bars.map((b: any) => ({
+          (bars as AlpacaBarWire[]).map((b) => ({
             symbol,
             timestamp: b.t,
             open: b.o,
@@ -148,7 +153,7 @@ export async function POST(request: Request) {
       .eq("side", "buy")
       .gte("ts", fourHoursAgo.toISOString());
 
-    const recentEntries: RecentEntry[] = (recentEvents || []).map((e: any) => ({
+    const recentEntries: RecentEntry[] = ((recentEvents || []) as RecentEventWire[]).map((e) => ({
       symbol: e.symbol,
       timestamp: e.ts,
     }));
@@ -305,7 +310,8 @@ export async function POST(request: Request) {
             );
           }
         }
-      } catch (err: any) {
+      } catch (errUnknown: unknown) {
+      const err = errUnknown instanceof Error ? errUnknown : new Error(String(errUnknown));
         await logEvent(
           "trader",
           "order_rejected",
@@ -339,7 +345,8 @@ export async function POST(request: Request) {
       equity,
       dayPnlPct: state.dayPnlPct,
     });
-  } catch (err: any) {
+  } catch (errUnknown: unknown) {
+      const err = errUnknown instanceof Error ? errUnknown : new Error(String(errUnknown));
     await logEvent("system", "error", err.message, { stack: err.stack });
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
@@ -349,7 +356,7 @@ async function logEvent(
   agentRole: string,
   type: string,
   title: string,
-  payload: any,
+  payload: Record<string, unknown>,
   symbol?: string | null,
   side?: string | null,
   qty?: number | null,
