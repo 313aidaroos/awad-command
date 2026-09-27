@@ -1,17 +1,18 @@
 import { NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import {
-
-// Wire shapes from Alpaca / Supabase, typed narrowly so lint passes and mistakes surface at compile time.
-type AlpacaPositionWire = { symbol: string; qty: string; avg_entry_price: string; current_price: string; unrealized_pl: string; unrealized_plpc: string };
-type AlpacaBarWire = { t: string; o: number; h: number; l: number; c: number; v: number };
-type RecentEventWire = { symbol: string; ts: string };
   runStrategy,
   type MomentumConfig,
   type Bar,
   type Position,
   type RecentEntry,
 } from "@/lib/crypto-floor/strategy/momentum-v1";
+
+
+// Wire shapes from Alpaca / Supabase, typed narrowly so lint passes and mistakes surface at compile time.
+type AlpacaPositionWire = { symbol: string; qty: string; avg_entry_price: string; current_price: string; unrealized_pl: string; unrealized_plpc: string };
+type AlpacaBarWire = { t: string; o: number; h: number; l: number; c: number; v: number };
+type RecentEventWire = { symbol: string; ts: string };
 
 const ALPACA_PAPER_URL =
   process.env.ALPACA_PAPER_BASE_URL || "https://paper-api.alpaca.markets";
