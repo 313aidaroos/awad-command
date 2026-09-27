@@ -7,6 +7,11 @@
 > 3. **Step 0 (render bug) and Step 2b (Awad's buy-the-dip) below are REQUIRED before the cron goes live.** Your last report had neither.
 > 4. Keep Bot Chat reports short (≤ 25 lines). Your long turns are why inbound messages bounce.
 
+> ## ⚠️ UPDATE 06:30 CDT — hermes touched tick/route.ts. `git pull --rebase` BEFORE editing it.
+> Live commits by hermes on master: `5fb288b` (lint fixed — build is READY again), `a15a70a` (tick/events/snapshot use `createCryptoFloorDb()` from `src/lib/crypto-floor/db.ts` — service-role, schema `public`; the cookie client + `awad_command` schema returned "Params not found" with the row present), `f6bfa9d` (`logEvent` = PostgREST insert with `strategy` column; the old version POSTed SQL to api.supabase.com with the service key → silent 401, zero events).
+> **First live tick ran (hermes, CRON_SECRET): 200 · 11 signals · 1 order submitted · equity $98,435.** Then: still **0 rows in crypto_floor_events** after f6bfa9d. Insert works from outside with the same key → suspect: exceptions inside `logEvent` swallowed, or the route's `createCryptoFloorDb()` returning null path. Add `console.error` on the insert error AND return the insert error count in the tick JSON (`eventsWritten`, `eventErrors`) so this can never be silent again. Keep `strategy` tag per event.
+> **Do NOT enable the cron until a tick shows `eventsWritten > 0`.**
+
 **Status: DECIDED. Do not wait for approval. Paper money only. This file is the source of truth; Bot Chat messages may have bounced.**
 
 Awad, verbatim: "build the fucking robot — I need this actively trading, and learning!" and "i also want it to watch the cryptos and when it's down it buys."
