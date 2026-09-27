@@ -247,6 +247,42 @@ function Portfolio({
           <span>Not connected</span>
         </div>
       </div>
+      {paper && !demo && (
+        <button
+          className="cf-order-button"
+          onClick={async () => {
+            const symbol = prompt("Symbol (e.g., BTC/USD, ETH/USD):");
+            if (!symbol) return;
+            
+            const sideConfirm = confirm(`${symbol.toUpperCase()}\n\nClick OK to BUY, Cancel to SELL`);
+            const side = sideConfirm ? "buy" : "sell";
+            
+            const qty = prompt(`Quantity to ${side.toUpperCase()}:`);
+            if (!qty) return;
+            
+            try {
+              const res = await fetch("/api/crypto-floor/place-order", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ symbol, side, qty }),
+              });
+              
+              const result = await res.json();
+              
+              if (res.ok && result.success) {
+                alert(`✅ ${result.message}\n\nOrder placed on Alpaca paper account.`);
+              } else {
+                alert(`❌ Order failed:\n${result.error || "Unknown error"}`);
+              }
+            } catch (err) {
+              alert(`❌ Order failed:\n${err instanceof Error ? err.message : "Network error"}`);
+            }
+          }}
+          title="Place a manual market order on Alpaca paper account"
+        >
+          Place Manual Order
+        </button>
+      )}
     </Panel>
   );
 }

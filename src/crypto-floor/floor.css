@@ -1377,3 +1377,29 @@
     transition: none !important;
   }
 }
+
+/* Manual order button (TIER 1) */
+.cf-order-button {
+  margin-top: 16px;
+  width: 100%;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #1a4d6f 0%, #0f2d42 100%);
+  border: 1px solid #2a6d8f;
+  border-radius: 6px;
+  color: #42d5ff;
+  font-weight: 600;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.cf-order-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #245f85 0%, #143849 100%);
+  border-color: #3a8db5;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(66, 213, 255, 0.15);
+}
+
+.cf-order-button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(66, 213, 255, 0.1);
+}
