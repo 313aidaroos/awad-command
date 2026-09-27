@@ -19,6 +19,8 @@ export function isPublicEntry(path: string, method: string) {
     path === "/api/fleet" ||
     // Crypto Floor health check (monitoring)
     path === "/api/crypto-floor/health" ||
+    // Crypto Floor tick (cron-only, bearer auth)
+    path === "/api/crypto-floor/tick" ||
     (path === "/api/lead-inbound" && method === "POST")
   );
 }
