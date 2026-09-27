@@ -17,6 +17,8 @@ export function isPublicEntry(path: string, method: string) {
     path.startsWith("/preview/") ||
     // Fleet is up/down only. Mission Control reads revenue, leads and admin status: owner only.
     path === "/api/fleet" ||
+    // Crypto Floor health check (monitoring)
+    path === "/api/crypto-floor/health" ||
     (path === "/api/lead-inbound" && method === "POST")
   );
 }
