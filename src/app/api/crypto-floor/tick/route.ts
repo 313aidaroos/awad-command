@@ -115,7 +115,10 @@ export async function POST(request: Request) {
     // sell them as "exits". Those are not ours to touch.
     const cryptoWire = (alpacaPositions as AlpacaPositionWire[]).filter((p) => {
       const norm = p.symbol.includes("/") ? p.symbol : p.symbol.replace(/USD$/, "/USD");
-      return config.universe.includes(norm);
+      // Ignore dust (leftover sub-$1 fragments from old fills) — Alpaca rejects selling them
+      // and the robot would log a fake "take profit" every tick forever.
+      const notional = Math.abs(parseFloat(p.qty) * parseFloat(p.current_price));
+      return config.universe.includes(norm) && notional >= 1;
     });
     const positions: Position[] = cryptoWire.map((p) => ({
       symbol: p.symbol.includes("/") ? p.symbol : p.symbol.replace(/USD$/, "/USD"), // BTCUSD → BTC/USD
