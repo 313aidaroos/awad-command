@@ -110,8 +110,15 @@ export async function POST(request: Request) {
     const startOfDayEquity = daySnapshot ? parseFloat(daySnapshot.equity) : equity;
 
     // Transform Alpaca positions
-    const positions: Position[] = (alpacaPositions as AlpacaPositionWire[]).map((p) => ({
-      symbol: p.symbol.replace("USD", "/USD"), // BTCUSD → BTC/USD
+    // Only manage positions in the robot's own crypto universe. The paper account also holds
+    // older hand-placed stock/options positions (AMD, AAPL calls); the first live tick tried to
+    // sell them as "exits". Those are not ours to touch.
+    const cryptoWire = (alpacaPositions as AlpacaPositionWire[]).filter((p) => {
+      const norm = p.symbol.includes("/") ? p.symbol : p.symbol.replace(/USD$/, "/USD");
+      return config.universe.includes(norm);
+    });
+    const positions: Position[] = cryptoWire.map((p) => ({
+      symbol: p.symbol.includes("/") ? p.symbol : p.symbol.replace(/USD$/, "/USD"), // BTCUSD → BTC/USD
       qty: parseFloat(p.qty),
       avgEntryPrice: parseFloat(p.avg_entry_price),
       currentPrice: parseFloat(p.current_price),
@@ -256,7 +263,9 @@ export async function POST(request: Request) {
             qty: qty.toFixed(8),
             side: signal.side,
             type: "market",
-            time_in_force: "day",
+            // Alpaca crypto accepts only gtc/ioc for time_in_force; "day" is rejected
+            // ("invalid crypto time_in_force" — seen on the first live BTC/USD order).
+            time_in_force: "gtc",
             client_order_id: clientOrderId,
           }),
         });
