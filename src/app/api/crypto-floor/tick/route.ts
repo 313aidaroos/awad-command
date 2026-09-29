@@ -23,6 +23,11 @@ const ALPACA_DATA_URL = "https://data.alpaca.markets";
  * Runs every 5 minutes via cron
  * Auth: CRON_SECRET bearer token only
  */
+// Vercel Cron invokes with GET and `Authorization: Bearer <CRON_SECRET>` — same guard, same body.
+export async function GET(request: Request) {
+  return POST(request);
+}
+
 export async function POST(request: Request) {
   // Auth: CRON_SECRET only
   const authHeader = request.headers.get("authorization");
