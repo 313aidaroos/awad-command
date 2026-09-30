@@ -15,3 +15,7 @@ Entry format:
 ## 2026-09-28 — JunoAI
 - Changed: created this file
 - Why: owner's standing rule — every AI that touches this repo must log its changes here
+
+## 2026-09-30 — Claude (branch claude/awesome-newton-3tygzi)
+- Changed: removed `src/lib/apixis-wallet.ts` (SDK v2 copy; nothing imported it). COMMAND is not a Wallet client by design.
+- Why: family backend pass per Awad's 2026-09-30 decisions (ApixisWallet/AGENTS.md §0c D11–D16; live board: ApixisWallet/docs/FAMILY_STATUS.md). One SDK, one login kit, one world kit — copied from canonical, never patched by hand.
