@@ -36,3 +36,4 @@ Asked by Awad: fix everything found in the crypto-floor audit, make it trade 24/
 - Fixed after review: positions close when less than 1% of cost is left (Alpaca takes crypto fees in the coin), stale data blocks only the stale coin (trade freshness 2h, bar freshness 3h), stale-data events at most once an hour, lease filter quoting.
 - Checks run: `pnpm typecheck` clean, `pnpm test` 244 app + 55 worker tests pass, `pnpm lint` no errors, `pnpm build` passes. UI checked in a headless browser (desktop 1440px + phone 390px) with fixture data.
 - NOT yet verified live: a real tick, a real Alpaca paper order, the Resend email and the Anthropic chat run only after the branch is merged and Vercel deploys. First things to check after deploy: `crypto_floor_events` gets a `heartbeat` every 5 min; the robot bar on /crypto-floor says RUNNING.
+- Pushed: commit 45ffdb6 on `claude/gracious-brahmagupta-2w2bcc` (Vercel preview builds it; production stays on master until merged).
