@@ -82,7 +82,7 @@ export type SignalOutcome = {
   book: string;
   desk: string;
   strategy: StrategyId;
-  mode: "paper" | "shadow";
+  mode: "paper" | "shadow" | "live";
   signal: Signal;
   action: "order" | "skipped";
   skipReason?: string;
@@ -143,7 +143,7 @@ export function shadowOrderId(experimentId: string, symbol: string, side: string
   return `sx-${experimentId.slice(0, 8)}-${symbol.replace("/", "")}-${side}-${stamp(now)}`;
 }
 
-function recentEntriesFor(book: string, orders: OrderRow[], strategy: string): RecentEntry[] {
+export function recentEntriesFor(book: string, orders: OrderRow[], strategy: string): RecentEntry[] {
   return orders
     .filter((o) => o.book === book && o.side === "buy" && o.intent === "entry" && o.status !== "rejected")
     .map((o) => ({ symbol: o.symbol, timestamp: o.created_at, strategy }));

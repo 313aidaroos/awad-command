@@ -46,6 +46,15 @@ export function reportText(s: ReviewSummary): string {
       lines.push(`- ${t.desk.toUpperCase()} ${t.symbol}: ${usd(t.entryPrice)} → ${usd(t.exitPrice)} = ${usd(t.pnl, true)} (${pct(t.pnlPct)})${t.exitReason ? ` · ${t.exitReason}` : ""}`);
     }
   }
+  const rm = s.realMoney;
+  lines.push("");
+  lines.push("REAL MONEY (COINBASE)");
+  lines.push(
+    rm.enabledDesks.length
+      ? `- ON for ${rm.enabledDesks.map((d) => d.toUpperCase()).join(", ")} · real P&L ${usd(rm.pnl, true)} · ${rm.trades24h} closed real trades in 24h · limits $${rm.limits.maxTotalUsd} total / $${rm.limits.maxTradeUsd} per buy / −$${rm.limits.dayLossUsd} per day`
+      : `- OFF for every team (all trading is Alpaca paper)${rm.connected ? ` · Coinbase connected${rm.totalUsd !== null ? `, balance ${usd(rm.totalUsd)}` : ""}` : " · Coinbase not connected"}`,
+  );
+  if (rm.note) lines.push(`- ${rm.note}`);
   if (s.experiments.length) {
     lines.push("");
     lines.push("STRATEGY TESTS (shadow books, simulated fills)");
@@ -109,6 +118,12 @@ ${s.aiNote ? `<div style="border-left:3px solid #42d5ff;padding:8px 12px;margin:
 <h2 style="font-size:15px;margin:18px 0 6px">Desks</h2>
 <table style="width:100%;border-collapse:collapse"><tr><th style="${cell}">Desk</th><th style="${cell}">Equity</th><th style="${cell}">24h</th><th style="${cell}">Trades 24h/7d</th><th style="${cell}">Win 7d</th><th style="${cell}">Open</th></tr>${deskRows}</table>
 ${trades ? `<h2 style="font-size:15px;margin:18px 0 6px">Closed trades (24h)</h2><table style="width:100%;border-collapse:collapse">${trades}</table>` : `<p style="color:#8ca8bc">No closed trades in the last 24h.</p>`}
+<h2 style="font-size:15px;margin:18px 0 6px">Real money (Coinbase)</h2>
+<p style="margin:0;color:${s.realMoney.enabledDesks.length ? "#ff9aa9" : "#8ca8bc"}">${
+    s.realMoney.enabledDesks.length
+      ? `ON for <b>${esc(s.realMoney.enabledDesks.map((d) => d.toUpperCase()).join(", "))}</b> · real P&amp;L <b style="color:${color(s.realMoney.pnl)}">${usd(s.realMoney.pnl, true)}</b> · ${s.realMoney.trades24h} closed real trades in 24h · limits $${s.realMoney.limits.maxTotalUsd} total / $${s.realMoney.limits.maxTradeUsd} per buy / −$${s.realMoney.limits.dayLossUsd} per day`
+      : `OFF for every team — all trading is Alpaca paper.${s.realMoney.connected ? ` Coinbase connected${s.realMoney.totalUsd !== null ? `, balance ${usd(s.realMoney.totalUsd)}` : ""}.` : " Coinbase not connected."}`
+  }${s.realMoney.note ? ` ${esc(s.realMoney.note)}` : ""}</p>
 ${exps ? `<h2 style="font-size:15px;margin:18px 0 6px">Strategy tests (shadow books)</h2><ul style="padding-left:18px">${exps}</ul>` : ""}
 ${issues ? `<h2 style="font-size:15px;margin:18px 0 6px;color:#ffb547">Needs attention</h2><ul style="padding-left:18px">${issues}</ul>` : ""}
 <p style="margin-top:20px"><a href="${esc(s.siteUrl)}/crypto-floor" style="background:#42d5ff;color:#03111b;padding:10px 14px;border-radius:6px;text-decoration:none;font-weight:700">Open the Crypto Floor</a></p>

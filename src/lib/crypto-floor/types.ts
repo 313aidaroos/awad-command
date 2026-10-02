@@ -69,7 +69,11 @@ export type OrderRow = {
   book: string;
   desk: string | null;
   strategy: string | null;
-  mode: "paper" | "shadow";
+  /** paper = Alpaca paper · shadow = simulated test fill · live = REAL MONEY on Coinbase */
+  mode: "paper" | "shadow" | "live";
+  venue?: "alpaca" | "coinbase" | "sim";
+  venue_order_id?: string | null;
+  fees?: number | null;
   symbol: string;
   side: "buy" | "sell";
   intent: "entry" | "scale_in" | "exit" | "manual" | null;
@@ -93,6 +97,10 @@ export type DeskRow = {
   version: number;
   paused_until: string | null;
   pause_reason: string | null;
+  /** REAL MONEY switch (Coinbase). Off by default; only the owner can turn it on. */
+  live_enabled?: boolean;
+  live_enabled_at?: string | null;
+  live_enabled_by?: string | null;
   updated_at?: string;
 };
 
@@ -126,6 +134,12 @@ export type FloorParamsRow = {
   day_pause_reason: string | null;
   max_open_positions_total: number;
   max_orders_per_tick: number;
+  /** REAL MONEY hard limits (USD). Owner-only. */
+  live_max_total_usd: number;
+  live_max_trade_usd: number;
+  live_day_loss_usd: number;
+  live_paused_until: string | null;
+  live_pause_reason: string | null;
   updated_at: string;
 };
 

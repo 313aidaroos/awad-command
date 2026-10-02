@@ -259,8 +259,8 @@ function Portfolio({
           {snapshot.portfolio.openPositions ?? "—"}
         </div>
         <div>
-          <small>Live balance</small>
-          <span>Not connected</span>
+          <small>Coinbase (real)</small>
+          <span>{snapshot.portfolio.liveBalance !== null ? currency(snapshot.portfolio.liveBalance) : "Not connected"}</span>
         </div>
       </div>
       {paper && !demo && <ManualOrderForm />}
@@ -758,7 +758,9 @@ export default function CryptoFloor() {
               {demo
                 ? "VISUAL PREVIEW · Illustrated agent roster and sample paper data. No trading engine or live money is connected."
                 : paper
-                  ? "ALPACA PAPER · The robot trades four desks 24/7 with paper money, every 5 minutes. Live trading is off."
+                  ? robot?.coinbase.enabledDesks.length
+                    ? `REAL MONEY ON for ${robot.coinbase.enabledDesks.map((d) => d.toUpperCase()).join(", ")} (Coinbase, max $${robot.coinbase.limits.maxTotalUsd}). Every desk also trades Alpaca paper 24/7, every 5 minutes.`
+                    : "ALPACA PAPER · The robot trades four desks 24/7 with paper money, every 5 minutes. Real money (Coinbase) is OFF."
                   : "CONNECTION STATUS · No Crypto Floor engine is linked. Characters remain visible; trading data is unavailable."}
             </span>
             <Link href="/agents">
@@ -787,7 +789,7 @@ export default function CryptoFloor() {
             })}
             <div className="cf-ticker-label">
               {demo ? "SAMPLE PRICES" : paper ? "ALPACA PAPER" : "MARKET FEED OFFLINE"}
-              <small>LIVE CAPITAL LOCKED</small>
+              <small>{robot?.coinbase.enabledDesks.length ? "REAL MONEY ON" : "REAL MONEY OFF"}</small>
             </div>
           </div>
           <nav className="cf-tabs" aria-label="Crypto Floor views">
@@ -1688,7 +1690,7 @@ export default function CryptoFloor() {
             <span>
               <Radio size={12} />{" "}
               {demo ? "PAPER PREVIEW" : paper ? "ALPACA PAPER · ROBOT TRADING" : "CONNECTION STATUS"}{" "}
-              · LIVE EXECUTION DISABLED
+              · {robot?.coinbase.enabledDesks.length ? "REAL MONEY ON (COINBASE)" : "REAL MONEY OFF"}
             </span>
             <span>CAPITAL SAFETY → EXECUTION CORRECTNESS → DATA INTEGRITY</span>
             <Link href="/">AWAD COMMAND ↗</Link>

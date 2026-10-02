@@ -99,6 +99,17 @@ export function RobotStatusBar({
           <b className={tone(f.dayPnl)}>{usd(f.dayPnl, true)}</b> ({pct(f.dayPnlPct)}) · <b>{f.openPositions}</b> open
         </span>
         <span className="rc-bar-watch">{robot.watchLine ? `Watching: ${robot.watchLine}` : "Watching: waiting for the first v2 tick"}</span>
+        <span className="rc-bar-watch">
+          {robot.coinbase.enabledDesks.length ? (
+            <b className="cf-negative">REAL MONEY ON (Coinbase): {robot.coinbase.enabledDesks.map((d) => d.toUpperCase()).join(", ")} · ${robot.coinbase.exposureUsd.toFixed(2)} of ${robot.coinbase.limits.maxTotalUsd} in use</b>
+          ) : robot.coinbase.ok ? (
+            <>Coinbase connected · {usd(robot.coinbase.totalUsd)} · real money OFF — all teams trade Alpaca paper</>
+          ) : robot.coinbase.configured ? (
+            <>Coinbase error: {robot.coinbase.error ?? "unknown"} · real money OFF</>
+          ) : (
+            <>Coinbase not connected · real money OFF — all teams trade Alpaca paper</>
+          )}
+        </span>
       </div>
       <div className="rc-bar-actions">
         <button className="rc-btn primary" onClick={onTalk}>
@@ -240,6 +251,7 @@ export function ManualOrderForm({ onDone }: { onDone?: () => void }) {
 // ───────────────────────────── ROBOT tab
 
 const EVENT_TONE: Record<string, string> = {
+  live_switch: "red",
   order_filled: "good",
   shadow_fill: "good",
   order_rejected: "red",
@@ -300,6 +312,7 @@ export function RobotView({
                 </div>
                 <div className="rc-badges">
                   <span className={`rc-badge ${d.enabled ? "on" : "off"}`}>{d.enabled ? "ON" : "OFF"}</span>
+                  {d.live.enabled && <span className="rc-badge red">REAL $ ON</span>}
                   {d.pausedUntil && <span className="rc-badge warn">PAUSED → {hhmm(d.pausedUntil)}</span>}
                   {robot.killSwitch.halted && <span className="rc-badge red">KILL SWITCH</span>}
                   <span className="cf-paper">PAPER</span>
@@ -400,6 +413,7 @@ export function RobotView({
       </div>
 
       <div className="cf-expanded-grid">
+        <CoinbasePanel robot={robot} onRefresh={onRefresh} />
         <Panel title="Open positions (all desks)" tag={`${positions.length} OPEN · PAPER`}>
           {positions.length ? (
             <div className="cf-table-scroll">
@@ -548,6 +562,182 @@ export function RobotView({
         </Panel>
       </div>
     </>
+  );
+}
+
+// ───────────────────────────── REAL MONEY (Coinbase)
+
+function CoinbasePanel({ robot, onRefresh }: { robot: RobotState; onRefresh: () => void }) {
+  const cb = robot.coinbase;
+  const [limits, setLimits] = useState({ maxTotalUsd: String(cb.limits.maxTotalUsd), maxTradeUsd: String(cb.limits.maxTradeUsd), dayLossUsd: String(cb.limits.dayLossUsd) });
+  const [arming, setArming] = useState<string | null>(null);
+  const [phrase, setPhrase] = useState("");
+  const [busy, setBusy] = useState<string | null>(null);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const livePositions = robot.desks.flatMap((d) => d.live.positions.map((p) => ({ ...p, desk: d })));
+
+  async function control(key: string, body: unknown, ok: string) {
+    setBusy(key);
+    setMsg(null);
+    try {
+      await postJson("/api/crypto-floor/control", body);
+      setMsg({ ok: true, text: ok });
+      setArming(null);
+      setPhrase("");
+      onRefresh();
+    } catch (e) {
+      setMsg({ ok: false, text: e instanceof Error ? e.message : "Failed" });
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <Panel title="Real money · Coinbase" tag={cb.enabledDesks.length ? "REAL MONEY ON" : "REAL MONEY OFF"}>
+      {!cb.configured ? (
+        <div className="rc-note">
+          <p>
+            <b>Not connected.</b> The teams trade Alpaca paper. To get Coinbase ready (trading stays OFF until you switch a team on):
+          </p>
+          <ol style={{ paddingLeft: 18, marginTop: 6, lineHeight: 1.8 }}>
+            <li>
+              Safest: in Coinbase make a <b>separate portfolio</b> and move in only the money the robot may ever use. Then in Coinbase Developer Platform → API keys, create a <b>Secret API key</b> for that portfolio.
+            </li>
+            <li>
+              Permissions: <b>View</b> and <b>Trade</b> only. <b>Never Transfer</b> — the robot refuses a key that can move money out. Leave the IP allowlist empty (Vercel has no fixed IP).
+            </li>
+            <li>
+              Vercel → awad-command → Environment Variables: <code>COINBASE_API_KEY_NAME</code> = the key name/id, <code>COINBASE_API_PRIVATE_KEY</code> = the private key. Production + Preview. Redeploy.
+            </li>
+            <li>Within 5 minutes this panel shows your Coinbase balances.</li>
+          </ol>
+        </div>
+      ) : (
+        <>
+          <p className="rc-note">
+            {cb.ok ? (
+              <>
+                Connected{cb.asOf ? ` (checked ${ago(cb.asOf)})` : ""} · total {usd(cb.totalUsd)} · USD available {usd(cb.usdAvailable)} · key: {cb.canTrade ? "trade ✓" : "no trade ✗"} · {cb.canTransfer ? <b className="cf-negative">CAN TRANSFER — trading refused, make a new key</b> : "no transfer ✓"}
+              </>
+            ) : (
+              <span className="rc-error">Coinbase error: {cb.error ?? "not reachable"}</span>
+            )}
+          </p>
+          {cb.holdings.length > 0 && (
+            <p className="cf-footnote">
+              {cb.holdings.map((h) => `${h.currency} ${h.available}${h.usdValue !== null ? ` (${usd(h.usdValue)})` : ""}`).join(" · ")}
+            </p>
+          )}
+        </>
+      )}
+      {cb.blocked && cb.enabledDesks.length > 0 && <p className="rc-warn red">Real-money trading blocked: {cb.blocked}</p>}
+      {cb.pausedUntil && <p className="rc-warn">Real-money buys paused until {dayHhmm(cb.pausedUntil)} (daily loss limit).</p>}
+
+      <h3 style={{ fontSize: 12, margin: "12px 0 6px" }}>Real-money switch per team</h3>
+      <div className="cf-table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Team</th>
+              <th>Real money</th>
+              <th>Open (real)</th>
+              <th>P&L (real)</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {robot.desks.map((d) => (
+              <tr key={d.id}>
+                <td style={{ color: d.color }}>{d.name}</td>
+                <td>{d.live.enabled ? <b className="cf-negative">ON</b> : "OFF · paper"}</td>
+                <td>{d.live.positions.length}</td>
+                <td className={tone(d.live.realizedPnl + d.live.unrealizedPnl)}>{usd(d.live.realizedPnl + d.live.unrealizedPnl, true)}</td>
+                <td>
+                  {d.live.enabled ? (
+                    <button className="rc-btn small" disabled={busy !== null} onClick={() => void control(`off-${d.id}`, { action: "live_off", desk: d.id }, `${d.name} real money OFF. It keeps selling coins it holds; no new real buys.`)}>
+                      Switch off
+                    </button>
+                  ) : (
+                    <button className="rc-btn danger small" disabled={busy !== null || !cb.configured} onClick={() => { setArming(d.id); setPhrase(""); setMsg(null); }}>
+                      Go live…
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {arming && (
+        <div className="rc-warn red" style={{ display: "grid", gap: 8, marginTop: 8 }}>
+          <span>
+            {arming.toUpperCase()} will trade <b>REAL MONEY</b> on Coinbase: at most {usd(cb.limits.maxTradeUsd)} per buy, {usd(cb.limits.maxTotalUsd)} in open positions across all live teams, and no new buys after −{usd(cb.limits.dayLossUsd)} in a day. Alpaca paper keeps running too. Type <b>REAL MONEY</b> to confirm.
+          </span>
+          <input className="rc-input" value={phrase} onChange={(e) => setPhrase(e.target.value)} placeholder="REAL MONEY" aria-label="Type REAL MONEY to confirm" />
+          <div className="rc-row">
+            <button className="rc-btn danger" disabled={phrase !== "REAL MONEY" || busy !== null} onClick={() => void control(`on-${arming}`, { action: "live_on", desk: arming, confirm: phrase }, `${arming.toUpperCase()} is trading real money from the next tick.`)}>
+              {busy ? "Checking Coinbase key…" : "Switch on real money"}
+            </button>
+            <button className="rc-btn" onClick={() => setArming(null)}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      <h3 style={{ fontSize: 12, margin: "12px 0 6px" }}>Real-money limits (the robot can never go past these)</h3>
+      <div className="rc-form-grid">
+        <label className="rc-field">
+          Most in open positions ($)
+          <input className="rc-input" inputMode="decimal" value={limits.maxTotalUsd} onChange={(e) => setLimits((l) => ({ ...l, maxTotalUsd: e.target.value }))} />
+        </label>
+        <label className="rc-field">
+          Most per buy ($)
+          <input className="rc-input" inputMode="decimal" value={limits.maxTradeUsd} onChange={(e) => setLimits((l) => ({ ...l, maxTradeUsd: e.target.value }))} />
+        </label>
+        <label className="rc-field">
+          Stop for the day after losing ($)
+          <input className="rc-input" inputMode="decimal" value={limits.dayLossUsd} onChange={(e) => setLimits((l) => ({ ...l, dayLossUsd: e.target.value }))} />
+        </label>
+      </div>
+      <button
+        className="rc-btn"
+        disabled={busy !== null}
+        onClick={() => void control("limits", { action: "live_limits", maxTotalUsd: Number(limits.maxTotalUsd), maxTradeUsd: Number(limits.maxTradeUsd), dayLossUsd: Number(limits.dayLossUsd) }, "Real-money limits saved.")}
+      >
+        Save limits
+      </button>
+      {msg && <p className={msg.ok ? "rc-ok" : "rc-error"} style={{ marginTop: 8 }}>{msg.text}</p>}
+      {livePositions.length > 0 && (
+        <div className="cf-table-scroll" style={{ marginTop: 10 }}>
+          <table>
+            <thead>
+              <tr>
+                <th>Team</th>
+                <th>Coin</th>
+                <th>Entry → now</th>
+                <th>P&L (real)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {livePositions.map((p) => (
+                <tr key={`${p.desk.id}-${p.symbol}`}>
+                  <td style={{ color: p.desk.color }}>{p.desk.name}</td>
+                  <td>{p.symbol}</td>
+                  <td>
+                    {usd(p.avgEntryPrice)} → {usd(p.currentPrice)}
+                  </td>
+                  <td className={tone(p.unrealizedPnl)}>
+                    {usd(p.unrealizedPnl, true)} ({pct(p.unrealizedPnlPct)})
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <p className="cf-footnote">Only you can switch real money on, change these limits or press the kill switch (which stops Coinbase too). Agents can&apos;t. Coinbase has no paper trading — anything sent there is real.</p>
+    </Panel>
   );
 }
 

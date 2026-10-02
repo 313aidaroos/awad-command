@@ -28,6 +28,8 @@ import {
   writeBaselines,
 } from "./store";
 import { DEFAULT_UNIVERSE } from "./strategies";
+import { CoinbaseClient, coinbaseConfig } from "./coinbase";
+import { runLiveStep, type LiveSummary } from "./liveRun";
 import type { Bar, OrderRow, WatchStat } from "./types";
 
 export type TickResult = {
@@ -49,12 +51,15 @@ export type TickResult = {
   floor?: TickPlan["floor"];
   watching?: string;
   dedicatedAccount?: boolean;
+  coinbase?: Pick<LiveSummary, "configured" | "ok" | "error" | "canTrade" | "canTransfer" | "enabledDesks" | "blocked" | "orders">;
   durationMs: number;
 };
 
 type TickDeps = {
   db: SupabaseClient;
   alpaca: AlpacaClient;
+  /** REAL MONEY venue. undefined → built from env; null → not connected. */
+  coinbase?: CoinbaseClient | null;
   now?: () => number;
   sleep?: (ms: number) => Promise<void>;
   tradeMode?: string;
@@ -432,6 +437,7 @@ export async function runTick(deps: TickDeps): Promise<TickResult> {
         desk: f.desk,
         strategy: f.strategy,
         mode: "shadow",
+        venue: "sim",
         symbol: f.symbol,
         side: f.side,
         intent: f.intent,
@@ -467,6 +473,39 @@ export async function runTick(deps: TickDeps): Promise<TickResult> {
       await log.log({ type: "experiment", agentRole: "analyst", title: `Strategy test ${e.id.slice(0, 8)} finished: ${e.reason}`, payload: { experimentId: e.id, status: "stopped" } });
     }
 
+    // REAL MONEY step (Coinbase). With every desk's real-money switch OFF this only reads balances/status.
+    let live: LiveSummary | null = null;
+    try {
+      let cbClient: CoinbaseClient | null = null;
+      if (deps.coinbase !== undefined) cbClient = deps.coinbase;
+      else {
+        const cfg = coinbaseConfig();
+        cbClient = cfg ? new CoinbaseClient(cfg) : null;
+      }
+      live = (
+        await runLiveStep({
+          db,
+          client: cbClient,
+          log,
+          now,
+          day,
+          params,
+          desks,
+          universe,
+          bars,
+          prices,
+          dataStale,
+          staleSymbols,
+          filledOrders,
+          recentOrders,
+          baselines,
+          sleep,
+        })
+      ).summary;
+    } catch (err) {
+      await log.log({ type: "system", agentRole: "system", title: `Real-money step failed (no real orders sent this tick): ${err instanceof Error ? err.message.slice(0, 300) : String(err)}`, payload: { live: true } });
+    }
+
     // Heartbeat: proves the robot is alive and feeds the "Watching" line + robot status in the UI.
     const line = watchLine(watching);
     await log.log({
@@ -495,6 +534,7 @@ export async function runTick(deps: TickDeps): Promise<TickResult> {
         experiments: plan.experiments.map((e) => ({ id: e.id, equity: e.marked.equity, open: e.marked.positions.length })),
         account: { cash: Number(account.cash), equity: Number(account.equity), buyingPower: Number.isFinite(bp) ? bp : null },
         dedicatedAccount: alpaca.dedicated,
+        coinbase: live,
         orders: { planned: result.ordersPlanned, submitted: result.ordersSubmitted, filled: result.ordersFilled, rejected: result.ordersRejected, shadow: result.shadowFills },
         reconciled: result.reconciled,
         eventErrorsSoFar: log.errors,
@@ -511,7 +551,15 @@ export async function runTick(deps: TickDeps): Promise<TickResult> {
       fetched_at: new Date().toISOString(),
     });
 
-    return finish({ ok: true, halted: plan.halted, dataStale, floor: plan.floor, watching: line, dedicatedAccount: alpaca.dedicated });
+    return finish({
+      ok: true,
+      halted: plan.halted,
+      dataStale,
+      floor: plan.floor,
+      watching: line,
+      dedicatedAccount: alpaca.dedicated,
+      coinbase: live ? { configured: live.configured, ok: live.ok, error: live.error, canTrade: live.canTrade, canTransfer: live.canTransfer, enabledDesks: live.enabledDesks, blocked: live.blocked, orders: live.orders } : undefined,
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     await log.log({ type: "system", agentRole: "system", title: `Tick error: ${message.slice(0, 400)}`, payload: { stack: err instanceof Error ? err.stack?.slice(0, 2000) : null } });

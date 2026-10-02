@@ -19,7 +19,8 @@ function desk(id: DeskRow["id"], over: Partial<DeskRow> = {}): DeskRow {
 
 const params: FloorParamsRow = {
   id: 1, version: 1, halted: false, halt_reason: null, halted_at: null, halted_by: null, halt_day_loss_pct: -2,
-  day_paused_until: null, day_pause_reason: null, max_open_positions_total: 8, max_orders_per_tick: 3, updated_at: "",
+  day_paused_until: null, day_pause_reason: null, max_open_positions_total: 8, max_orders_per_tick: 3,
+  live_max_total_usd: 100, live_max_trade_usd: 25, live_day_loss_usd: 10, live_paused_until: null, live_pause_reason: null, updated_at: "",
 };
 
 let seq = 0;

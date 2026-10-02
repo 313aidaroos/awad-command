@@ -44,3 +44,11 @@ Asked by Awad: fix everything found in the crypto-floor audit, make it trade 24/
 - 0 orders on the first tick is correct: no setup (last hour −0.7…−1.3%, 24h +0.3…+2.2%, ~1% under the 24h high, no EMA cross, no volume breakout).
 - Still to see live: first Alpaca paper order (when a setup appears), first daily email (13:00 UTC), first desk chat reply (needs ANTHROPIC_API_KEY on Vercel), Resend (needs RESEND_API_KEY on Vercel).
 - How to check the robot: `select ts, payload->>'title' from crypto_floor_events order by ts desc limit 20;` — a `heartbeat` every 5 minutes means it is alive.
+
+## 2026-10-02 ~07:00 UTC — Claude: Coinbase (REAL MONEY) connected-ready, OFF
+- Awad's decision: "Connected, real trading OFF"; "keep it on Alpaca for now and when it's ready I'll flip it to live".
+- DB (hub `myfclypikkcvfurkbzmj`), APPLIED: migration `crypto_floor_coinbase` = `supabase/migrations/20261002010000_crypto_floor_coinbase.sql`. Adds `crypto_floor_desks.live_enabled` (all false), `crypto_floor_params.live_max_total_usd=100 / live_max_trade_usd=25 / live_day_loss_usd=10 / live_paused_until`, `crypto_floor_orders.mode` now allows `live`, plus `venue` / `venue_order_id` / `fees`. Undo: drop the added columns and restore the mode check to ('paper','shadow') — only safe while no live orders exist.
+- Env: nothing set by Claude. To connect: `COINBASE_API_KEY_NAME` + `COINBASE_API_PRIVATE_KEY` (View + Trade, NO Transfer; ideally a dedicated Coinbase portfolio).
+- Behaviour: no key → status "not connected", nothing else happens. Key added → each tick reads permissions, balances, prices (3 Coinbase calls). Real orders only for desks Awad switches on (ROBOT → Real money · Coinbase → Go live… → type REAL MONEY).
+- Rule for every bot: do not switch real money on, raise limits, or touch Coinbase order code without Awad's explicit instruction.
+
