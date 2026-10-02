@@ -1,78 +1,30 @@
 import { NextResponse } from "next/server";
 import { createCryptoFloorDb } from "@/lib/crypto-floor/db";
+import { ownerEmail } from "@/lib/crypto-floor/owner";
+import { toEventView } from "@/lib/crypto-floor/state";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 /**
- * Write immutable event to crypto_floor_events table
- * Server-side only (service role)
- * Used by: order execution, agent decisions, system events
+ * OWNER: read the robot's event log. Filters: desk, type, before (ISO), limit (≤ 500).
+ * Writes happen only server-side inside the robot (src/lib/crypto-floor/events.ts); there is no write endpoint.
  */
-export async function POST(request: Request) {
-  // This route is INTERNAL only - called by other server routes, not by client
-  // Verify it's a server-side call by checking for internal auth header
-  const internalKey = request.headers.get("x-internal-key");
-  if (internalKey !== process.env.INTERNAL_API_KEY) {
-    return NextResponse.json(
-      { error: "Internal API only" },
-      { status: 403 }
-    );
-  }
-
-  const supabase = createCryptoFloorDb();
-  if (!supabase) {
-    return NextResponse.json({ error: "Crypto Floor database is not configured (SUPABASE_SERVICE_ROLE_KEY)." }, { status: 503 });
-  }
-  if (!supabase) {
-    return NextResponse.json(
-      { error: "Database unavailable" },
-      { status: 503 }
-    );
-  }
-
-  const event = await request.json();
-
-  // Required fields
-  if (!event.event_type || !event.title) {
-    return NextResponse.json(
-      { error: "Missing required fields: event_type, title" },
-      { status: 400 }
-    );
-  }
-
-  // Write event
-  try {
-    const { data, error } = await supabase
-      .from("crypto_floor_events")
-      .insert({
-        timestamp: event.timestamp || new Date().toISOString(),
-        team_id: event.team_id || null,
-        agent_id: event.agent_id || null,
-        event_type: event.event_type,
-        severity: event.severity || "info",
-        title: event.title,
-        description: event.description || null,
-        symbol: event.symbol || null,
-        trade_id: event.trade_id || null,
-        order_id: event.order_id || null,
-        structured_payload: event.structured_payload || {},
-        paper_or_live: event.paper_or_live || "paper",
-        correlation_id: event.correlation_id || null,
-        source: event.source || "system",
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    return NextResponse.json({
-      success: true,
-      event: data,
-    });
-  } catch (err: unknown) {
-    const errorMessage = err instanceof Error ? err.message : "Unknown error";
-    console.error("Failed to write event:", errorMessage);
-    return NextResponse.json(
-      { error: errorMessage },
-      { status: 500 }
-    );
-  }
+export async function GET(request: Request) {
+  if (!(await ownerEmail())) return NextResponse.json({ error: "Owner sign-in required." }, { status: 401 });
+  const db = createCryptoFloorDb();
+  if (!db) return NextResponse.json({ error: "Crypto Floor database is not configured." }, { status: 503 });
+  const q = new URL(request.url).searchParams;
+  const limit = Math.max(1, Math.min(500, Number(q.get("limit") ?? 100) || 100));
+  let query = db.from("crypto_floor_events").select("*").order("ts", { ascending: false }).limit(limit);
+  const desk = q.get("desk");
+  const type = q.get("type");
+  const before = q.get("before");
+  if (desk) query = query.eq("desk", desk);
+  if (type) query = query.eq("type", type);
+  else query = query.neq("type", "heartbeat");
+  if (before && Number.isFinite(Date.parse(before))) query = query.lt("ts", new Date(before).toISOString());
+  const { data, error } = await query;
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ events: (data ?? []).map(toEventView) }, { headers: { "Cache-Control": "no-store" } });
 }

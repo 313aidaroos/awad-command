@@ -42,11 +42,23 @@ import { paperTradablePairs, xlmXrpNotes } from "./paper/universe";
 import { awadScore, defaultScoreConfig, type ScoreConfig } from "./scoring";
 import { agentRoleForEvent, filterEvents, type ReplayFilter } from "./replay";
 import "./floor.css";
+import {
+  ChatView,
+  LabView,
+  ManualOrderForm,
+  RobotStatusBar,
+  RobotView,
+  type ChatTarget,
+} from "./RobotConsole";
+import type { RobotState } from "@/lib/crypto-floor/state";
 import { ArtLoop } from "@/art-motion/ArtLoop";
 
-const FLOOR_POLL_MS = 5000;
+const FLOOR_POLL_MS = 10000;
 const tabs = [
   "FLOOR",
+  "ROBOT",
+  "CHAT",
+  "LAB",
   "PORTFOLIO",
   "TEAMS",
   "TRADES",
@@ -117,9 +129,13 @@ function Empty({ children }: { children: ReactNode }) {
   return <p className="cf-empty">{children}</p>;
 }
 function sleeveLabel(id: string) {
-  if (id === "phantom") return "scalp_momentum · paper_scalp";
-  if (id === "samurai" || id === "neon" || id === "orbit") return primaryMethod[id];
-  return "unmapped";
+  const robotStrategy: Record<string, string> = {
+    samurai: "momentum-v1",
+    neon: "dip-v1 (buy the dip)",
+    orbit: "swing-v1 (EMA 20/50)",
+    phantom: "breakout-v1 (volume)",
+  };
+  return robotStrategy[id] ?? (id in primaryMethod ? primaryMethod[id as keyof typeof primaryMethod] : "unmapped");
 }
 function isSim(event: FloorEvent) {
   return event.payload.sim === true;
@@ -247,48 +263,13 @@ function Portfolio({
           <span>Not connected</span>
         </div>
       </div>
-      {paper && !demo && (
-        <button
-          className="cf-order-button"
-          onClick={async () => {
-            const symbol = prompt("Symbol (e.g., BTC/USD, ETH/USD):");
-            if (!symbol) return;
-            
-            const sideConfirm = confirm(`${symbol.toUpperCase()}\n\nClick OK to BUY, Cancel to SELL`);
-            const side = sideConfirm ? "buy" : "sell";
-            
-            const qty = prompt(`Quantity to ${side.toUpperCase()}:`);
-            if (!qty) return;
-            
-            try {
-              const res = await fetch("/api/crypto-floor/place-order", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ symbol, side, qty }),
-              });
-              
-              const result = await res.json();
-              
-              if (res.ok && result.success) {
-                alert(`✅ ${result.message}\n\nOrder placed on Alpaca paper account.`);
-              } else {
-                alert(`❌ Order failed:\n${result.error || "Unknown error"}`);
-              }
-            } catch (err) {
-              alert(`❌ Order failed:\n${err instanceof Error ? err.message : "Network error"}`);
-            }
-          }}
-          title="Place a manual market order on Alpaca paper account"
-        >
-          Place Manual Order
-        </button>
-      )}
+      {paper && !demo && <ManualOrderForm />}
     </Panel>
   );
 }
 export default function CryptoFloor() {
   const [roomPaused, setRoomPaused] = useState(false);
-  const [demo, setDemo] = useState(true),
+  const [demo, setDemo] = useState(false),
     [tab, setTab] = useState<Tab>("FLOOR"),
     [selected, setSelected] = useState({ team: 0, role: 1 }),
     [agentOpen, setAgentOpen] = useState(false),
@@ -310,6 +291,13 @@ export default function CryptoFloor() {
     event: "",
   });
   const [remote, setRemote] = useState<Snapshot | null>(null);
+  const [robot, setRobot] = useState<RobotState | null>(null);
+  const [robotError, setRobotError] = useState<string | null>(null);
+  const [killOpen, setKillOpen] = useState(false);
+  const [chatTarget, setChatTarget] = useState<ChatTarget>({ thread: "floor", agent: null });
+  const [labDesk, setLabDesk] = useState("samurai");
+  const pullRef = useRef<() => Promise<void>>(async () => undefined);
+  const refresh = () => void pullRef.current();
   const [statusNote, setStatusNote] = useState<string | null>(null);
   const [simFills, setSimFills] = useState(0);
   const dialog = useRef<HTMLDialogElement>(null),
@@ -325,18 +313,25 @@ export default function CryptoFloor() {
         const res = await fetch("/api/crypto-floor/snapshot", { cache: "no-store" });
         const body = (await res.json()) as {
           snapshot?: unknown;
+          robot?: RobotState;
           live?: boolean;
           error?: string;
           status?: { note?: unknown; simJournalFills?: unknown };
         };
         if (stop) return;
-        
+        if (body.robot) {
+          setRobot(body.robot);
+          setRobotError(null);
+        } else {
+          setRobotError(body.error || (res.status === 401 ? "Sign in as the owner to see the robot." : "Robot state unavailable."));
+        }
+
         // If live data available, use it; otherwise fall back to disconnected state
         if (body.live && body.snapshot) {
           const parsed = snapshotSchema.safeParse(body.snapshot);
           if (parsed.success) {
             setRemote(parsed.data);
-            setStatusNote("🟢 LIVE PAPER DATA — Alpaca Account");
+            setStatusNote("Live robot data · Alpaca paper");
           } else {
             // Log schema mismatch for debugging
             console.error("Snapshot schema mismatch:", parsed.error);
@@ -355,11 +350,13 @@ export default function CryptoFloor() {
         if (!stop) {
           setRemote(disconnectedSnapshot());
           setStatusNote("Paper book status could not be loaded.");
+          setRobotError("Could not reach the floor API.");
         }
       }
     }
+    pullRef.current = pull;
     void pull();
-    // ~5 Alpaca paper reads per pull; 5s stays far under the 200/min limit for one viewer.
+    // Database reads only (the 5-minute robot tick is the single Alpaca reader).
     const id = setInterval(() => void pull(), FLOOR_POLL_MS);
     const onVisible = () => {
       if (document.visibilityState === "visible") void pull();
@@ -745,13 +742,23 @@ export default function CryptoFloor() {
               </button>
             </div>
           </div>
+          {!demo && (
+            <RobotStatusBar
+              robot={robot}
+              error={robotError}
+              onRefresh={refresh}
+              onTalk={() => setTab("CHAT")}
+              killOpen={killOpen}
+              setKillOpen={setKillOpen}
+            />
+          )}
           <div className="cf-disclosure">
             <Eye size={15} />
             <span>
               {demo
                 ? "VISUAL PREVIEW · Illustrated agent roster and sample paper data. No trading engine or live money is connected."
                 : paper
-                  ? "ALPACA PAPER · Shared AwadBot book. Observe only — COMMAND does not send orders. Live trading is off."
+                  ? "ALPACA PAPER · The robot trades four desks 24/7 with paper money, every 5 minutes. Live trading is off."
                   : "CONNECTION STATUS · No Crypto Floor engine is linked. Characters remain visible; trading data is unavailable."}
             </span>
             <Link href="/agents">
@@ -801,7 +808,7 @@ export default function CryptoFloor() {
             onTouchEnd={(e) => {
               if (
                 startX.current === null ||
-                (e.target as HTMLElement).closest("button,input,select,a")
+                (e.target as HTMLElement).closest("button,input,select,textarea,a,.cf-table-scroll,.rc-messages")
               )
                 return;
               const delta = e.changedTouches[0].clientX - startX.current;
@@ -826,7 +833,7 @@ export default function CryptoFloor() {
                   <Shield size={16} />
                   <span>
                     {paper
-                      ? "Observe only · orders stay on the AwadBot paper process"
+                      ? "Robot trading paper 24/7 · kill switch in the top bar"
                       : "Engine disconnected · no order controls"}
                   </span>
                   <button onClick={() => setTab("SYSTEM")}>SYSTEM →</button>
@@ -860,7 +867,7 @@ export default function CryptoFloor() {
                       {!snapshot.events.some((e) => /ORDER|TARGET/.test(e.eventType)) && (
                         <Empty>
                           {paper
-                            ? "No paper orders in the shared book yet."
+                            ? "No robot orders yet."
                             : "No exchange orders connected."}
                         </Empty>
                       )}
@@ -902,7 +909,7 @@ export default function CryptoFloor() {
                     ) : (
                       <Empty>
                         {paper
-                          ? "Phantom mirrors scalp_momentum on the shared book. No news provider is connected."
+                          ? "PHANTOM trades volume breakouts (breakout-v1). No news provider is connected yet."
                           : "No news provider connected."}
                       </Empty>
                     )}
@@ -1081,11 +1088,15 @@ export default function CryptoFloor() {
                   <Panel title="Trading control" className="cf-control">
                     <button
                       className="cf-kill"
-                      disabled
-                      title="This button cannot halt AwadBot. Live trading stays off."
+                      disabled={!robot}
+                      title="Stops every robot order until you reset it. Does not touch AwadBot."
+                      onClick={() => {
+                        setKillOpen(true);
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
                     >
-                      <Shield size={18} /> KILL SWITCH
-                      <small>{paper ? "DISABLED · DOES NOT HALT AWADBOT" : "ENGINE NOT CONNECTED"}</small>
+                      <Shield size={18} /> {robot?.killSwitch.halted ? "HALTED · RESET" : "KILL SWITCH"}
+                      <small>{robot ? (robot.killSwitch.halted ? robot.killSwitch.reason ?? "Robot halted" : "STOPS ALL ROBOT ORDERS") : "ROBOT NOT CONNECTED"}</small>
                     </button>
                     <div className="cf-control-row">
                       Live capital <b>LOCKED</b>
@@ -1111,7 +1122,7 @@ export default function CryptoFloor() {
                 <div className="cf-lower">
                   <Panel
                     title="Recent events"
-                    tag={demo ? "FIXED SAMPLE" : paper ? "SHARED BOOK" : "NO EVENTS"}
+                    tag={demo ? "FIXED SAMPLE" : paper ? "ROBOT LOG" : "NO EVENTS"}
                   >
                     <div className="cf-event-list">
                       {snapshot.events
@@ -1176,6 +1187,29 @@ export default function CryptoFloor() {
                 </div>
               </>
             )}
+            {(tab === "ROBOT" || tab === "CHAT" || tab === "LAB") &&
+              (demo ? (
+                <Empty>Switch to “Connection status” to see the live robot.</Empty>
+              ) : !robot ? (
+                <Empty>{robotError ?? "Reading the robot…"}</Empty>
+              ) : tab === "ROBOT" ? (
+                <RobotView
+                  robot={robot}
+                  onRefresh={refresh}
+                  onTalk={(t) => {
+                    setChatTarget(t);
+                    setTab("CHAT");
+                  }}
+                  onLab={(d) => {
+                    setLabDesk(d);
+                    setTab("LAB");
+                  }}
+                />
+              ) : tab === "CHAT" ? (
+                <ChatView robot={robot} target={chatTarget} setTarget={setChatTarget} />
+              ) : (
+                <LabView robot={robot} desk={labDesk} onRefresh={refresh} />
+              ))}
             {tab === "PORTFOLIO" && (
               <div className="cf-expanded-grid">
                 <Portfolio
@@ -1336,7 +1370,7 @@ export default function CryptoFloor() {
               <div className="cf-expanded-grid">
                 <Panel
                   title="Trade journal"
-                  tag={demo ? "PAPER SAMPLE" : paper ? "SHARED BOOK" : "NO ENGINE"}
+                  tag={demo ? "PAPER SAMPLE" : paper ? "ROBOT" : "NO ENGINE"}
                 >
                   {demo ? (
                     <button
@@ -1585,18 +1619,24 @@ export default function CryptoFloor() {
             {tab === "SYSTEM" && (
               <div className="cf-expanded-grid">
                 {health}
-                <Panel title="Master kill switch" tag="DISABLED">
-                  <button disabled className="cf-kill">
-                    <Shield /> {paper ? "DOES NOT HALT AWADBOT" : "ENGINE NOT CONNECTED"}
+                <Panel title="Master kill switch" tag={robot?.killSwitch.halted ? "HALTED" : "SERVER-SIDE"}>
+                  <button
+                    className="cf-kill"
+                    disabled={!robot}
+                    onClick={() => {
+                      setKillOpen(true);
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                  >
+                    <Shield /> {robot?.killSwitch.halted ? "HALTED · RESET IN TOP BAR" : "KILL SWITCH"}
                   </button>
                   <p>
-                    {snapshot.killSwitch.halted
-                      ? `AwadBot risk_state reports a halt: ${snapshot.killSwitch.reason ?? "no reason given"}. This button did not trigger it and cannot reset it.`
-                      : "This control cannot halt the AwadBot paper process. A browser switch is not an execution halt."}
+                    {robot?.killSwitch.halted
+                      ? `Halted ${robot.killSwitch.at ?? ""} by ${robot.killSwitch.by ?? "?"}: ${robot.killSwitch.reason ?? "no reason given"}. No robot orders until you reset it.`
+                      : "Stored on the server (crypto_floor_params.halted). While on, the robot sends no orders at all and strategy tests pause. Only you can reset it. It does not touch AwadBot."}
                   </p>
                   <p>
-                    No live-order or risk-policy changes can be made from this
-                    screen.
+                    Day-loss guard: a desk that loses {Math.abs(robot?.limits.dayLossPct ?? 2)}% in a UTC day pauses new entries until midnight UTC; the whole floor pauses at the same limit.
                   </p>
                 </Panel>
                 <Panel title="Execution safeguards">
@@ -1647,7 +1687,7 @@ export default function CryptoFloor() {
           <footer className="cf-footer">
             <span>
               <Radio size={12} />{" "}
-              {demo ? "PAPER PREVIEW" : paper ? "ALPACA PAPER · OBSERVE ONLY" : "CONNECTION STATUS"}{" "}
+              {demo ? "PAPER PREVIEW" : paper ? "ALPACA PAPER · ROBOT TRADING" : "CONNECTION STATUS"}{" "}
               · LIVE EXECUTION DISABLED
             </span>
             <span>CAPITAL SAFETY → EXECUTION CORRECTNESS → DATA INTEGRITY</span>
@@ -1682,6 +1722,22 @@ export default function CryptoFloor() {
                 <small>{descriptions[selected.role]}</small>
               </div>
             </div>
+            {!demo && (
+              <button
+                className="rc-btn primary"
+                style={{ margin: "10px 0" }}
+                onClick={() => {
+                  setChatTarget({
+                    thread: selectedDesk.id as ChatTarget["thread"],
+                    agent: selectedDesk.names[selected.role],
+                  });
+                  setAgentOpen(false);
+                  setTab("CHAT");
+                }}
+              >
+                Talk to {selectedDesk.names[selected.role]}
+              </button>
+            )}
             <div className="cf-agent-card-tabs">
               {["reasoning", "history", "team", "trade"].map((t) => (
                 <button
