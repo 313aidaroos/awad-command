@@ -753,7 +753,6 @@ export default function CryptoFloor() {
               setKillOpen={setKillOpen}
             />
           )}
-          {!demo && robot && <TradesBox robot={robot} />}
           <div className="cf-disclosure">
             <Eye size={15} />
             <span>
@@ -1688,6 +1687,11 @@ export default function CryptoFloor() {
               </div>
             )}
           </div>
+          {!demo && robot && (
+            <div style={{ marginTop: 16 }}>
+              <TradesBox robot={robot} />
+            </div>
+          )}
           <footer className="cf-footer">
             <span>
               <Radio size={12} />{" "}
