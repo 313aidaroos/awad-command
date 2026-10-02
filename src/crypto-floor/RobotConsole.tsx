@@ -57,6 +57,194 @@ function RichText({ text }: { text: string }) {
   );
 }
 
+// ───────────────────────────── trades + P/L box (always on top of the floor)
+
+const qtyFmt = (q: number) => (q >= 1_000_000 ? `${(q / 1_000_000).toFixed(2)}M` : q >= 1000 ? q.toLocaleString(undefined, { maximumFractionDigits: 0 }) : q.toPrecision(4));
+const priceFmt = (p: number | null) => (p === null ? "—" : p < 0.01 ? `$${p.toPrecision(4)}` : usd(p));
+
+export function TradesBox({ robot }: { robot: RobotState }) {
+  const [open, setOpen] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const deskOf = (id: string | null) => robot.desks.find((d) => d.id === id);
+  const positions = robot.desks.flatMap((d) => d.positions.map((p) => ({ desk: d, p })));
+  const fills = robot.orders.filter((o) => o.mode !== "shadow").slice(0, 12);
+  const closed = robot.desks
+    .flatMap((d) => d.recentTrades.map((t) => ({ desk: d, t })))
+    .sort((a, b) => b.t.exitAt.localeCompare(a.t.exitAt))
+    .slice(0, 8);
+  const today = new Date().toISOString().slice(0, 10);
+  const fillsToday = robot.orders.filter((o) => o.mode !== "shadow" && o.status === "filled" && (o.filled_at ?? o.created_at).slice(0, 10) === today).length;
+  const f = robot.floor;
+  const allTime = f.equity - f.capital;
+
+  async function email() {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const r = await postJson<{ emailTo: string }>("/api/crypto-floor/email", {});
+      setMsg({ ok: true, text: `Sent to ${r.emailTo}.` });
+    } catch (e) {
+      setMsg({ ok: false, text: e instanceof Error ? e.message : "Email failed" });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Panel title="Trades & P/L" tag={`LIVE · ${robot.lastTickAt ? `updated ${ago(robot.lastTickAt)}` : "no tick yet"}`}>
+      <div className="rc-row" style={{ justifyContent: "space-between", flexWrap: "wrap" }}>
+        <div className="rc-stats" style={{ flex: "1 1 520px" }}>
+          <div>
+            <small>Floor value</small>
+            <b>{usd(f.equity)}</b>
+          </div>
+          <div>
+            <small>Today</small>
+            <b className={tone(f.dayPnl)}>
+              {usd(f.dayPnl, true)} <small>{pct(f.dayPnlPct)}</small>
+            </b>
+          </div>
+          <div>
+            <small>All time</small>
+            <b className={tone(allTime)}>{usd(allTime, true)}</b>
+          </div>
+          <div>
+            <small>Open P/L</small>
+            <b className={tone(f.unrealizedPnl)}>{usd(f.unrealizedPnl, true)}</b>
+          </div>
+          <div>
+            <small>Open · fills today</small>
+            <b>
+              {f.openPositions} · {fillsToday}
+            </b>
+          </div>
+        </div>
+        <div className="rc-row">
+          <button className="rc-btn primary small" disabled={busy} onClick={() => void email()}>
+            {busy ? "Sending…" : "Email me this"}
+          </button>
+          <button className="rc-btn small" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+            {open ? "Hide details" : "Show details"}
+          </button>
+        </div>
+      </div>
+      {msg && <p className={msg.ok ? "rc-ok" : "rc-error"} style={{ marginTop: 6 }}>{msg.text}</p>}
+      <p className="cf-footnote" style={{ marginTop: 6 }}>
+        {robot.desks.map((d) => `${d.name} ${usd(d.equity - d.capital, true)}${d.dayPnl !== null ? ` (today ${usd(d.dayPnl, true)})` : ""}`).join(" · ")}
+        {robot.coinbase.enabledDesks.length ? ` · REAL MONEY ${usd(robot.coinbase.pnlNow, true)}` : " · Real money off"}
+      </p>
+      {open && (
+        <>
+          <h4 style={{ margin: "12px 0 4px" }}>Open positions</h4>
+          {positions.length ? (
+            <div className="cf-table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Team</th>
+                    <th>Coin</th>
+                    <th>Size</th>
+                    <th>Entry</th>
+                    <th>Now</th>
+                    <th>P/L</th>
+                    <th>Since</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {positions.map(({ desk, p }) => (
+                    <tr key={`${desk.id}-${p.symbol}`}>
+                      <td style={{ color: desk.color }}>{desk.name}</td>
+                      <td>{p.symbol.split("/")[0]}</td>
+                      <td>
+                        {usd(p.qty * p.avgEntryPrice)}
+                        <br />
+                        <small style={{ color: "#7f9ab0" }}>{qtyFmt(p.qty)}</small>
+                      </td>
+                      <td>{priceFmt(p.avgEntryPrice)}</td>
+                      <td>{priceFmt(p.currentPrice)}</td>
+                      <td className={tone(p.unrealizedPnl)}>
+                        {usd(p.unrealizedPnl, true)}
+                        <br />
+                        <small>{pct(p.unrealizedPnlPct)}</small>
+                      </td>
+                      <td>{p.enteredAt ? ago(p.enteredAt) : "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="rc-note">No open positions.</p>
+          )}
+
+          <h4 style={{ margin: "12px 0 4px" }}>Latest orders</h4>
+          {fills.length ? (
+            <div className="cf-table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>Team</th>
+                    <th>Side</th>
+                    <th>Coin</th>
+                    <th>Amount</th>
+                    <th>Price</th>
+                    <th>Status</th>
+                    <th>Why</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {fills.map((o) => {
+                    const d = deskOf(o.desk);
+                    const px = o.filled_avg_price;
+                    const q = o.filled_qty || o.qty;
+                    return (
+                      <tr key={o.client_order_id}>
+                        <td>{dayHhmm(o.created_at)}</td>
+                        <td style={{ color: d?.color }}>{(d?.name ?? o.desk ?? o.book).toUpperCase()}{o.mode === "live" ? " · REAL $" : ""}</td>
+                        <td className={o.side === "buy" ? "cf-positive" : "cf-negative"}>{o.side.toUpperCase()}</td>
+                        <td>{o.symbol.split("/")[0]}</td>
+                        <td>
+                          {px ? usd(q * px) : "—"}
+                          <br />
+                          <small style={{ color: "#7f9ab0" }}>{qtyFmt(q)}</small>
+                        </td>
+                        <td>{priceFmt(px)}</td>
+                        <td>{o.status}</td>
+                        <td>
+                          <small>{(o.reason ?? o.error ?? "").slice(0, 120)}</small>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="rc-note">No orders yet.</p>
+          )}
+
+          <h4 style={{ margin: "12px 0 4px" }}>Closed trades</h4>
+          {closed.length ? (
+            closed.map(({ desk, t }, i) => (
+              <p key={i} className="cf-footnote">
+                <b style={{ color: desk.color }}>{desk.name}</b> {t.symbol.split("/")[0]} · {dayHhmm(t.entryAt)} → {dayHhmm(t.exitAt)} ·{" "}
+                <span className={tone(t.pnl)}>
+                  {usd(t.pnl, true)} ({pct(t.pnlPct)})
+                </span>
+                {t.exitReason ? ` · ${t.exitReason}` : ""}
+              </p>
+            ))
+          ) : (
+            <p className="rc-note">No closed trades yet — P/L above is open (unrealized) until a position is sold.</p>
+          )}
+        </>
+      )}
+    </Panel>
+  );
+}
+
 // ───────────────────────────── status bar + kill switch
 
 export function RobotStatusBar({

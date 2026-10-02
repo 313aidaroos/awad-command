@@ -52,6 +52,33 @@ export function reportRecipient(env: NodeJS.ProcessEnv = process.env) {
   return env.CRYPTO_FLOOR_REPORT_EMAIL?.trim() || DEFAULT_REPORT_EMAIL;
 }
 
+/**
+ * OWNER button "Email me this": the current trades + P/L as an email, right now. Read-only: no tuning, no notes,
+ * no AI call, does not touch the once-a-day report.
+ */
+export async function sendFloorUpdate(deps: Pick<Deps, "db" | "now" | "to" | "siteUrl" | "send">): Promise<{ ok: boolean; emailTo: string; emailId?: string; error?: string }> {
+  const now = deps.now ?? Date.now();
+  const to = deps.to ?? reportRecipient();
+  const siteUrl = (deps.siteUrl ?? process.env.NEXT_PUBLIC_SITE_URL ?? "https://awad-command.vercel.app").replace(/\/$/, "");
+  try {
+    const { summary } = await buildReview(deps.db, now, siteUrl);
+    const from = process.env.CRYPTO_FLOOR_EMAIL_FROM?.trim() || "AWAD COMMAND Crypto Floor <awad@apixis.dev>";
+    const at = new Date(now).toISOString().slice(11, 16);
+    const sent = await (deps.send ?? resendSend)({
+      from,
+      to,
+      subject: `Update ${at} UTC · ${reportSubject(summary)}`.slice(0, 240),
+      text: reportText(summary),
+      html: reportHtml(summary),
+      idempotencyKey: `crypto-floor-update-${now}`,
+    });
+    await new EventLog(deps.db).log({ type: "report", agentRole: "analyst", title: `Floor update emailed to ${to} (owner request)`, payload: { emailId: sent.id, onDemand: true } });
+    return { ok: true, emailTo: to, emailId: sent.id };
+  } catch (err) {
+    return { ok: false, emailTo: to, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
 export async function runDailyReport(deps: Deps): Promise<DailyReportResult> {
   const now = deps.now ?? Date.now();
   const db = deps.db;
