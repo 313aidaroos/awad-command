@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowUpRight,
@@ -13,6 +13,7 @@ import {
   Plus,
   Radio,
   RefreshCw,
+  Settings2,
   Trash2,
   Video,
   X,
@@ -28,6 +29,8 @@ import type { Candle, NewsItem, NotebookItem, FinancePoint } from "./types";
 import "./headquarters.css";
 import { NewsDesk } from "./NewsDesk";
 import { DailyDesk } from "./DailyDesk";
+import { Box, BoxCustomizeContext } from "./RoomBox";
+import { SubscriptionsBox } from "./SubscriptionsBox";
 const usd = (n: number | null | undefined) =>
   n === null || n === undefined
     ? "—"
@@ -36,47 +39,22 @@ const usd = (n: number | null | undefined) =>
         currency: "USD",
         maximumFractionDigits: 0,
       }).format(n);
-function Box({
-  title,
-  icon,
-  children,
-  action,
-  id,
-  className = "",
-}: {
-  title: string;
-  icon?: ReactNode;
-  children: ReactNode;
-  action?: ReactNode;
-  id?: string;
-  className?: string;
-}) {
-  return (
-    <section id={id} className={`room-box ${className}`}>
-      <header>
-        <h2>
-          {icon}
-          {title}
-        </h2>
-        {action}
-      </header>
-      {children}
-    </section>
-  );
-}
 function NewsBox({
   items,
   title,
   crypto,
   error,
+  id,
 }: {
   items: NewsItem[];
   title: string;
   crypto?: boolean;
   error: string;
+  id?: string;
 }) {
   return (
     <Box
+      id={id}
       title={title}
       icon={crypto ? <Coins size={17} /> : <Globe2 size={17} />}
       action={
@@ -221,7 +199,8 @@ export default function Headquarters() {
     [storageError, setStorageError] = useState(""),
     [adding, setAdding] = useState<NotebookItem["kind"] | null>(null),
     [title, setTitle] = useState(""),
-    [when, setWhen] = useState("");
+    [when, setWhen] = useState(""),
+    [customize, setCustomize] = useState(false);
   const { feeds, ops, feedError, opsError, reload } = useHeadquartersData(
     product,
     granularity,
@@ -351,7 +330,8 @@ export default function Headquarters() {
   return (
     <AppShell headquarters embeddedCixy>
       {(d) => (
-        <div className="headquarters-room">
+        <div className={`headquarters-room${customize ? " customizing" : ""}`}>
+        <BoxCustomizeContext.Provider value={customize}>
           <div className="room-heading">
             <div>
               <span>AWAD COMMAND / EXECUTIVE ROOM</span>
@@ -359,6 +339,16 @@ export default function Headquarters() {
               <p>One conversation. Your entire operation.</p>
             </div>
             <div>
+              <button
+                className={`room-customize${customize ? " active" : ""}`}
+                onClick={() => setCustomize((c) => !c)}
+                aria-pressed={customize}
+                aria-label="Toggle customize mode"
+                title="Customize headquarters boxes"
+              >
+                <Settings2 size={14} />
+                <span>CUSTOMIZE</span>
+              </button>
               <button
                 className="room-refresh"
                 onClick={reload}
@@ -399,6 +389,7 @@ export default function Headquarters() {
             <div className="room-news-column">
               <NewsDesk />
               <NewsBox
+                id="hq-crypto-news"
                 title="CRYPTO NEWS"
                 crypto
                 items={feeds?.crypto ?? []}
@@ -502,7 +493,9 @@ export default function Headquarters() {
                   </button>
                 )}
               </Box>
+              <SubscriptionsBox />
               <Box
+                id="hq-schedule"
                 title="UPCOMING SCHEDULE"
                 icon={<CalendarDays size={17} />}
                 action={
@@ -610,6 +603,7 @@ export default function Headquarters() {
               </p>
             </Box>
             <Box
+              id="hq-market"
               title="MARKET WATCH"
               icon={<Radio size={17} />}
               action={
@@ -659,6 +653,7 @@ export default function Headquarters() {
               </p>
             </Box>
             <Box
+              id="hq-content"
               title="CONTENT QUEUE"
               icon={<Video size={17} />}
               action={
@@ -723,6 +718,7 @@ export default function Headquarters() {
             <Link href="/business-world">ENTER YOUR BUSINESS WORLD →</Link>
             <span>{d.health.overall}</span>
           </footer>
+        </BoxCustomizeContext.Provider>
           {adding && (
             <dialog
               ref={dialogRef}

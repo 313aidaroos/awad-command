@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { newsTopics, type NewsTopic, type BriefItem } from "./news-topics";
+import { Box } from "./RoomBox";
 export function NewsDesk() {
   const [topic, setTopic] = useState<NewsTopic>("us"),
     [mode, setMode] = useState("x"),
@@ -39,9 +40,11 @@ export function NewsDesk() {
     };
   }, [topic, mode, refresh]);
   return (
-    <section className="room-box news-desk">
-      <header>
-        <h2>YOUR NEWS DESK</h2>
+    <Box
+      title="YOUR NEWS DESK"
+      id="hq-news-desk"
+      className="news-desk"
+      action={
         <button
           disabled={busy}
           onClick={() => setRefresh((n) => n + 1)}
@@ -49,7 +52,8 @@ export function NewsDesk() {
         >
           {busy ? "Checking…" : "Refresh"}
         </button>
-      </header>
+      }
+    >
       <div className="news-controls">
         <label>
           Topic
@@ -126,6 +130,6 @@ export function NewsDesk() {
           conclusions.
         </p>
       </details>
-    </section>
+    </Box>
   );
 }

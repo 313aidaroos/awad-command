@@ -209,7 +209,7 @@
   color: #e2bd74;
   flex-shrink: 0;
 }
-.room-box header > button {
+.room-box-head-actions > button {
   color: #80cbef;
   border: 0;
   background: transparent;
@@ -1525,4 +1525,238 @@
   .cixy-style-controls {
     grid-template-columns: 1fr;
   }
+}
+
+/* ============ HQ box customization (JunoAI 2026-10-02) ============
+   Per-box shape/size controls. Prefs persist in localStorage ("hq-box-layout").
+   CIXY EXCLUSION: #hq-cixy is never a customizable Box — the guard rules
+   below strip shape/size overrides if they are ever applied to her column. */
+.room-box {
+  display: flex;
+  flex-direction: column;
+}
+.room-box > header {
+  flex-shrink: 0;
+}
+.room-box-body {
+  min-height: 0;
+  flex: 1 1 auto;
+}
+.room-box-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.room-box-settings-wrap {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+.room-box-settings-btn {
+  color: #8a97a8;
+  opacity: 0.65;
+  display: grid;
+  place-items: center;
+  padding: 3px;
+  border: 0;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.room-box-settings-btn:hover {
+  opacity: 1;
+  color: #e2bd74;
+}
+.room-box-settings {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  min-width: 216px;
+  background: #0b1b28;
+  border: 1px solid #90734c;
+  border-radius: 8px;
+  padding: 10px 12px;
+  box-shadow: 0 14px 44px #000b;
+}
+.room-box-settings-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0;
+}
+.room-box-settings-row:first-child {
+  margin-top: 0;
+}
+.room-box-settings-row:last-child {
+  margin-bottom: 0;
+}
+.room-box-settings-row > span {
+  font:
+    700 9px Arial,
+    sans-serif;
+  letter-spacing: 1px;
+  color: #87a0b3;
+  width: 46px;
+  flex-shrink: 0;
+}
+.room-box-settings-row > button {
+  border: 1px solid #294c66;
+  background: #0c2234;
+  color: #8dabbe;
+  font:
+    700 10px Arial,
+    sans-serif;
+  border-radius: 4px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.room-box-settings-row > button[aria-pressed="true"] {
+  border-color: #dbb979;
+  background: #3a2f1c;
+  color: #e8c87e;
+}
+/* Shape + size classes driven by useBoxLayout */
+.room-box--square {
+  aspect-ratio: 1 / 1;
+}
+.room-box--rect {
+  aspect-ratio: auto;
+}
+.room-box--size-s {
+  min-height: 200px;
+}
+.room-box--size-m {
+  min-height: 340px;
+}
+.room-box--size-l {
+  min-height: 500px;
+}
+.room-box--square .room-box-body {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #547086 #071421;
+}
+/* CIXY EXCLUSION — hardcoded: her column can never take box shape/size overrides */
+#hq-cixy.room-box--square,
+#hq-cixy.room-box--rect,
+#hq-cixy.room-box--size-s,
+#hq-cixy.room-box--size-m,
+#hq-cixy.room-box--size-l {
+  aspect-ratio: auto;
+  min-height: 0;
+}
+/* Customize-mode toggle (header) + editing outline */
+.room-customize {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: #0c1d29;
+  border: 1px solid #2c4c60;
+  border-radius: 999px;
+  color: #b1c3d0;
+  padding: 7px 13px;
+  font:
+    700 10px Arial,
+    sans-serif;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+}
+.room-customize.active {
+  border-color: #dbb979;
+  color: #e8c87e;
+  box-shadow: 0 0 12px #dbb97944;
+}
+.headquarters-room.customizing .room-box[data-customizable="true"] {
+  outline: 1px dashed #dbb97966;
+  outline-offset: -1px;
+}
+/* ============ Subscriptions box ============ */
+.room-subs-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 9px 12px;
+  border: 1px solid #3e6176;
+  border-radius: 4px;
+  background: #0a1b28;
+  margin-bottom: 10px;
+}
+.room-subs-total small {
+  font:
+    8px AwadHQMono,
+    monospace;
+  letter-spacing: 1px;
+  color: #87a0b3;
+}
+.room-subs-total strong {
+  font:
+    700 21px Georgia,
+    serif;
+  color: #dbb979;
+}
+.room-subs-flags {
+  margin-bottom: 4px;
+}
+.room-subs-flag {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  padding: 7px 0;
+  border-bottom: 1px solid #173043;
+  font:
+    11px/1.5 Arial,
+    sans-serif;
+  color: #d5e5ef;
+}
+.room-subs-flag i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+.room-subs-flag.red i {
+  background: #f0717b;
+  box-shadow: 0 0 7px #f0717b88;
+}
+.room-subs-flag.amber i {
+  background: #e8b34b;
+  box-shadow: 0 0 7px #e8b34b88;
+}
+.room-subs-flag b {
+  color: #ece6d5;
+}
+.room-subs-list {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+}
+.room-subs-list li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid #173043;
+  font:
+    12px Arial,
+    sans-serif;
+}
+.room-subs-list li span {
+  flex: 1;
+  color: #d5e5ef;
+  overflow-wrap: anywhere;
+}
+.room-subs-list li small {
+  color: #7e9db2;
+  font-size: 9px;
+  white-space: nowrap;
+}
+.room-subs-list li b {
+  color: #e2bd74;
+  white-space: nowrap;
+}
+.room-subs-list li b.paid {
+  color: #44d8ad;
 }

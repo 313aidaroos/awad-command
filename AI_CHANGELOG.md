@@ -48,3 +48,6 @@ Entry format:
 ## 2026-10-02 — Claude (Trades & P/L box moved down)
 - Changed: `CryptoFloor.tsx` — the Trades & P/L box now sits below the floor illustrations (above the footer) instead of under the status bar.
 - Why: Awad wants the illustrations first, then scroll down to trades and P/L.
+## 2026-10-02 — JunoAI (branch junoai/hq-subscriptions-boxes)
+- Changed: `src/headquarters/` — new `RoomBox.tsx` (shared Box with per-box Shape Square/Rectangle + Size S/M/L controls, localStorage key `hq-box-layout`, "Customize" edit-mode toggle), new `SubscriptionsBox.tsx` + `subscriptions-data.ts` (static Oct 2 inbox-audit subscription list, ~$280/mo, attention flags), `Headquarters.tsx` (Box moved to RoomBox, customize toggle in header, SubscriptionsBox added to work column after tasks, stable ids on all boxes), `NewsDesk.tsx` (converted to shared Box, id `hq-news-desk`), `headquarters.css` (`.room-box--square/--rect`, `.room-box--size-s/m/l`, settings popover, customize toggle, subscriptions styles, `#hq-cixy` exclusion guard).
+- Why: Awad wanted his subscriptions dashboard as customizable boxes on the Headquarters dashboard — shape/size per box, Cixy's box excluded (always square, no controls), SubscriptionsBox renders compact at Square/S and full at Rectangle/M/L.
