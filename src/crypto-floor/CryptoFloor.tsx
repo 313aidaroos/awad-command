@@ -760,7 +760,7 @@ export default function CryptoFloor() {
                 : paper
                   ? robot?.coinbase.enabledDesks.length
                     ? `REAL MONEY ON for ${robot.coinbase.enabledDesks.map((d) => d.toUpperCase()).join(", ")} (Coinbase, max $${robot.coinbase.limits.maxTotalUsd}). Every desk also trades Alpaca paper 24/7, every 5 minutes.`
-                    : "ALPACA PAPER · The robot trades four desks 24/7 with paper money, every 5 minutes. Real money (Coinbase) is OFF."
+                    : "ALPACA PAPER · The robot trades five desks 24/7 with paper money, every 5 minutes. Real money (Coinbase) is OFF."
                   : "CONNECTION STATUS · No Crypto Floor engine is linked. Characters remain visible; trading data is unavailable."}
             </span>
             <Link href="/agents">

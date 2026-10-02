@@ -4,7 +4,8 @@
  * Order of work (CHECK STATE → RECONCILE → THEN ACT):
  *  1. Paper-mode guard, single-leader lease.
  *  2. Reconcile every unresolved robot order with Alpaca (by client_order_id).
- *  3. Read account, broker positions, closed hourly bars (8 days) and latest trades.
+ *  3. Read account, broker positions, closed hourly bars (8 days) and latest trades for every coin a desk or test
+ *     trades (core BTC/ETH/SOL + RONIN's own list).
  *  4. Build every desk's ledger, plan the tick (engine.ts, pure).
  *  5. Write pauses/resumes, signals, send paper orders, record shadow fills, heartbeat, snapshot.
  * Any error → `system` event + JSON error. The route always answers 200 so the cron never retries a half tick.
@@ -27,7 +28,7 @@ import {
   releaseTickLease,
   writeBaselines,
 } from "./store";
-import { DEFAULT_UNIVERSE } from "./strategies";
+import { DEFAULT_UNIVERSE, floorUniverse } from "./strategies";
 import { CoinbaseClient, coinbaseConfig } from "./coinbase";
 import { runLiveStep, type LiveSummary } from "./liveRun";
 import type { Bar, OrderRow, WatchStat } from "./types";
@@ -284,7 +285,8 @@ export async function runTick(deps: TickDeps): Promise<TickResult> {
       alpaca.account(),
       alpaca.positions(),
     ]);
-    const universe = DEFAULT_UNIVERSE;
+    const coreUniverse = DEFAULT_UNIVERSE;
+    const universe = floorUniverse([...desks, ...experiments]);
 
     // Market data: 8 days of hourly bars (EMA50 warm-up + 24h windows), only closed hours.
     let dataStaleReason: string | null = null;
@@ -346,7 +348,7 @@ export async function runTick(deps: TickDeps): Promise<TickResult> {
       params,
       desks,
       experiments,
-      universe,
+      universe: coreUniverse,
       bars,
       prices,
       dataStale,
@@ -492,6 +494,7 @@ export async function runTick(deps: TickDeps): Promise<TickResult> {
           params,
           desks,
           universe,
+          coreUniverse,
           bars,
           prices,
           dataStale,
@@ -507,13 +510,15 @@ export async function runTick(deps: TickDeps): Promise<TickResult> {
     }
 
     // Heartbeat: proves the robot is alive and feeds the "Watching" line + robot status in the UI.
-    const line = watchLine(watching);
+    const line = watchLine(watching.filter((w) => coreUniverse.includes(w.symbol)));
     await log.log({
       type: "heartbeat",
       agentRole: "system",
       title: heartbeatTitle(plan, line, result.ordersSubmitted, dataStale || staleSymbols.size > 0),
       payload: {
-        watching,
+        watching: watching.filter((w) => coreUniverse.includes(w.symbol)),
+        watchingWide: watching.filter((w) => !coreUniverse.includes(w.symbol)),
+        universe,
         prices: Object.fromEntries(prices),
         dataStale: dataStale || staleSymbols.size > 0,
         staleSymbols: [...staleSymbols],
@@ -523,6 +528,8 @@ export async function runTick(deps: TickDeps): Promise<TickResult> {
         desks: plan.desks.map((d) => ({
           id: d.id,
           strategy: d.strategy,
+          spec: d.spec ? d.spec.name : null,
+          dayLossLimitPct: d.dayLossLimitPct,
           enabled: d.enabled,
           equity: d.marked.equity,
           dayPnl: d.dayPnl,

@@ -32,8 +32,8 @@ export async function floorManagerNote(facts: unknown): Promise<string | null> {
       model: floorModel(),
       max_tokens: 1500,
       system:
-        "You are the floor manager of THE CRYPTO FLOOR, a paper-money crypto trading floor with four desks (SAMURAI momentum, NEON buy-the-dip, ORBIT swing, PHANTOM volume breakout) inside Awad's AWAD COMMAND. " +
-        "Write Awad's daily note: 4–6 plain sentences, no headings, no bullet points. Cover what happened, why, what deserves attention, and what to watch next. " +
+        "You are the floor manager of THE CRYPTO FLOOR, a paper-money crypto trading floor with five desks (SAMURAI momentum, NEON buy-the-dip, ORBIT swing, PHANTOM volume breakout, and RONIN, the higher-risk team that invents its own strategies) inside Awad's AWAD COMMAND. The teams meet, keep journals and adopt changes when the code's evidence gate passes. " +
+        "Write Awad's daily note: 4–6 plain sentences, no headings, no bullet points. Cover what happened, why, what the teams learned or changed, what deserves attention, and what to watch next. " +
         "Use only the numbers in the JSON you are given; if something is missing, say it is not measured. Never suggest real-money trading. Never claim to have changed settings — the robot's code does that.",
       messages: [{ role: "user", content: `Today's computed floor data (JSON):\n${JSON.stringify(facts).slice(0, 60_000)}` }],
     });

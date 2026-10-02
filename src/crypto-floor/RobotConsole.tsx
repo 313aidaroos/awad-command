@@ -7,7 +7,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { RobotState } from "@/lib/crypto-floor/state";
 
-export type ChatTarget = { thread: "floor" | "samurai" | "neon" | "orbit" | "phantom"; agent: string | null };
+export type ChatTarget = { thread: "floor" | "samurai" | "neon" | "orbit" | "phantom" | "ronin"; agent: string | null };
 
 const usd = (n: number | null | undefined, sign = false) => {
   if (n === null || n === undefined || !Number.isFinite(n)) return "—";
@@ -379,15 +379,19 @@ export function RobotView({
                 </p>
               )}
               <details className="rc-params">
-                <summary>Settings (v{d.version})</summary>
-                <dl>
-                  {Object.entries(d.params).map(([k, v]) => (
-                    <div key={k} style={{ display: "contents" }}>
-                      <dt>{k}</dt>
-                      <dd>{String(v)}</dd>
-                    </div>
-                  ))}
-                </dl>
+                <summary>{d.spec ? "Strategy" : "Settings"} (v{d.version})</summary>
+                {d.spec ? (
+                  <pre className="cf-footnote" style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{JSON.stringify(d.spec, null, 1)}</pre>
+                ) : (
+                  <dl>
+                    {Object.entries(d.params).map(([k, v]) => (
+                      <div key={k} style={{ display: "contents" }}>
+                        <dt>{k}</dt>
+                        <dd>{String(v)}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                )}
               </details>
               <div className="rc-actions">
                 <button className="rc-btn primary small" onClick={() => onTalk({ thread: d.id as ChatTarget["thread"], agent: lead?.name ?? null })}>
@@ -756,6 +760,7 @@ const SUGGESTIONS: Record<string, string[]> = {
     "Backtest a tighter stop over 30 days. Does it help?",
     "Start a 7-day test of the setting you think is best.",
     "Walk me through your last trade.",
+    "What has your team learned so far? Read me your journal.",
   ],
 };
 
@@ -805,7 +810,7 @@ export function ChatView({ robot, target, setTarget }: { robot: RobotState; targ
     }
   }
 
-  const threads: ChatTarget["thread"][] = ["floor", "samurai", "neon", "orbit", "phantom"];
+  const threads: ChatTarget["thread"][] = ["floor", "samurai", "neon", "orbit", "phantom", "ronin"];
   return (
     <Panel title={`Talk to ${target.thread === "floor" ? "the desk leads" : `${agentName} · ${desk?.name ?? ""}`}`} tag={robot.aiConnected ? "LIVE AGENTS · PAPER" : "AI NOT CONNECTED"}>
       <div className="rc-chat">
@@ -815,7 +820,7 @@ export function ChatView({ robot, target, setTarget }: { robot: RobotState; targ
               const d = robot.desks.find((x) => x.id === t);
               return (
                 <button key={t} aria-pressed={target.thread === t} style={d ? { color: d.color } : undefined} onClick={() => setTarget({ thread: t, agent: d?.agents[1]?.name ?? null })}>
-                  {t === "floor" ? "Whole floor (4 leads)" : d?.name ?? t.toUpperCase()}
+                  {t === "floor" ? "Whole floor (5 leads)" : d?.name ?? t.toUpperCase()}
                 </button>
               );
             })}
@@ -835,8 +840,8 @@ export function ChatView({ robot, target, setTarget }: { robot: RobotState; targ
           {messages.length === 0 && !sending && (
             <div className="rc-note">
               {target.thread === "floor"
-                ? "Ask the four desk leads anything — how the floor is doing, what to test next, why a trade happened."
-                : `${agentName} runs on live floor data. They can backtest settings on real Alpaca history and start shadow tests. Promoting a test onto the live desk stays your button in the Lab.`}
+                ? "Ask the five desk leads anything — how the floor is doing, what the teams learned, what to test next, why a trade happened."
+                : `${agentName} runs on live floor data and the team journal. They can backtest on real Alpaca history, start shadow tests, write notes, and adopt a change on paper when the evidence gate passes. Real money stays your switch.`}
               <div className="rc-suggestions" style={{ marginTop: 10 }}>
                 {(target.thread === "floor" ? SUGGESTIONS.floor : SUGGESTIONS.desk).map((s) => (
                   <button key={s} onClick={() => void send(s)}>
@@ -960,7 +965,8 @@ export function LabView({ robot, desk: initialDesk, onRefresh }: { robot: RobotS
               <tbody>
                 {experiments.map((e) => {
                   const d = robot.desks.find((x) => x.id === e.desk);
-                  const changed = d ? Object.entries(e.params).filter(([k, v]) => d.params[k] !== v) : [];
+                  const specName = e.spec && typeof e.spec === "object" ? String((e.spec as { name?: unknown }).name ?? "") : "";
+                  const changed = specName ? [["strategy", specName] as const] : d ? Object.entries(e.params).filter(([k, v]) => d.params[k] !== v) : [];
                   const deskReturn = d ? ((d.equity - d.capital) / d.capital) * 100 : null;
                   return (
                     <tr key={e.id} title={e.hypothesis ?? ""}>
@@ -990,7 +996,7 @@ export function LabView({ robot, desk: initialDesk, onRefresh }: { robot: RobotS
                               Stop
                             </button>
                           )}
-                          {(e.status === "running" || e.status === "stopped") && (
+                          {(e.status === "running" || e.status === "stopped" || e.status === "proposed") && (
                             <button
                               className="rc-btn primary small"
                               disabled={busy !== null}
@@ -1142,6 +1148,81 @@ export function LabView({ robot, desk: initialDesk, onRefresh }: { robot: RobotS
         )}
         <p className="cf-footnote">Backtests fill at the hourly close ± 0.05% and ignore fees and partial fills. Use them to compare settings, not to predict profit.</p>
       </Panel>
+
+      <JournalPanel robot={robot} onRefresh={onRefresh} />
     </div>
+  );
+}
+
+/** The teams' journals and meetings (plain list; the designed version comes later). */
+function JournalPanel({ robot, onRefresh }: { robot: RobotState; onRefresh: () => void }) {
+  const [who, setWho] = useState<string>("all");
+  const [meet, setMeet] = useState<string>("ronin");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const notes = robot.notes.filter((n) => who === "all" || (who === "floor" ? n.desk === null : n.desk === who));
+  return (
+    <Panel title="Team journals & meetings" tag="LEARNING">
+      <p className="rc-note">
+        Every team meets on its own (RONIN every other hour, the others three times a day, all-hands at 11:20 UTC), writes down what it learns, and adopts a change on paper only when the code&apos;s evidence gate passes.
+      </p>
+      <div className="rc-row" style={{ marginTop: 8 }}>
+        <select className="rc-input" style={{ maxWidth: 180 }} value={who} onChange={(e) => setWho(e.target.value)} aria-label="Show notes for">
+          <option value="all">All teams</option>
+          <option value="floor">Floor briefings</option>
+          {robot.desks.map((d) => (
+            <option key={d.id} value={d.id}>
+              {d.name}
+            </option>
+          ))}
+        </select>
+        <select className="rc-input" style={{ maxWidth: 180 }} value={meet} onChange={(e) => setMeet(e.target.value)} aria-label="Meeting to run">
+          {robot.desks.map((d) => (
+            <option key={d.id} value={d.id}>
+              {d.name} meeting
+            </option>
+          ))}
+          <option value="allhands">All-hands</option>
+        </select>
+        <button
+          className="rc-btn small"
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            setMsg(null);
+            try {
+              const r = await postJson<{ ok: boolean; skipped?: string; tools?: string[] }>("/api/crypto-floor/research", { desk: meet });
+              setMsg({ ok: true, text: r.skipped ?? `Meeting done${r.tools?.length ? ` · ${r.tools.join(", ")}` : ""}.` });
+              onRefresh();
+            } catch (e) {
+              setMsg({ ok: false, text: e instanceof Error ? e.message : "Meeting failed" });
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          {busy ? "Meeting… (up to 4 min)" : "Hold meeting now"}
+        </button>
+      </div>
+      {msg && <p className={msg.ok ? "rc-ok" : "rc-error"} style={{ marginTop: 8 }}>{msg.text}</p>}
+      <div style={{ marginTop: 10, maxHeight: "52vh", overflowY: "auto" }}>
+        {notes.length === 0 && <p className="rc-note">No notes yet — the first meetings write them.</p>}
+        {notes.slice(0, 40).map((n) => (
+          <details key={n.id} className="rc-params" style={{ marginBottom: 6 }}>
+            <summary>
+              <b style={{ color: robot.desks.find((d) => d.id === n.desk)?.color }}>{(n.desk ?? "floor").toUpperCase()}</b> · {n.kind} · {n.author} · {dayHhmm(n.created_at)} — {n.title}
+            </summary>
+            <div className="cf-footnote" style={{ whiteSpace: "pre-wrap" }}>
+              <RichText text={n.body} />
+            </div>
+          </details>
+        ))}
+      </div>
+      {robot.meetings.length > 0 && (
+        <p className="cf-footnote" style={{ marginTop: 8 }}>
+          Last meetings: {robot.meetings.slice(0, 6).map((m) => `${(m.desk ?? "all-hands").toUpperCase()} ${dayHhmm(m.created_at)} ${m.status}`).join(" · ")}
+        </p>
+      )}
+    </Panel>
   );
 }

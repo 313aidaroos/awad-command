@@ -11,7 +11,7 @@
  * A desk switched off keeps managing (selling) the live coins it already holds; it never buys.
  * AI never reaches this: agents have no tool that changes live switches or limits.
  */
-import { OPEN_STATUSES, recentEntriesFor, stamp, type SignalOutcome } from "./engine";
+import { OPEN_STATUSES, deskTrading, recentEntriesFor, stamp, type SignalOutcome } from "./engine";
 import { buildBooks, emptyBook, markBook, type MarkedBook } from "./ledger";
 import { nextUtcMidnight } from "./market";
 import { floorToIncrement, toProductId, uuidFromSeed } from "./coinbase";
@@ -177,9 +177,11 @@ export function planLive(input: LivePlanInput): LivePlan {
                   ? "Market data stale"
                   : null),
     );
+    const t = deskTrading(d.strategy, d.spec, input.universe);
     const signals = STRATEGIES[d.strategy].run({
       params: effectiveParams(d.strategy, d.params),
-      universe: input.universe,
+      spec: t.spec,
+      universe: t.universe,
       bars: input.bars,
       positions: m.positions,
       recentEntries: recentEntriesFor(liveBook(d.id), input.recentOrders, d.strategy),

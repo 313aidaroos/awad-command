@@ -22,6 +22,7 @@ export function isPublicEntry(path: string, method: string) {
     // Crypto Floor cron jobs (bearer CRON_SECRET checked in the route; owner POST also accepted on review)
     path === "/api/crypto-floor/tick" ||
     path === "/api/crypto-floor/review" ||
+    path === "/api/crypto-floor/research" ||
     (path === "/api/lead-inbound" && method === "POST")
   );
 }

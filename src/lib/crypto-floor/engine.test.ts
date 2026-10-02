@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { clientOrderId, planTick, type PlanInput } from "./engine";
-import { STRATEGIES } from "./strategies";
+import { clientOrderId, deskDayLossLimit, planTick, type PlanInput } from "./engine";
+import { STRATEGIES, floorUniverse } from "./strategies";
+import { RONIN_SEED_SPEC } from "./strategy/custom-v1";
 import type { Bar, DeskRow, ExperimentRow, FloorParamsRow, OrderRow } from "./types";
 
 const H = 3_600_000;
@@ -13,7 +14,7 @@ function bars(symbol: string, closes: number[]): Bar[] {
 const flat = (symbol: string, price: number) => bars(symbol, Array.from({ length: 60 }, () => price));
 
 function desk(id: DeskRow["id"], over: Partial<DeskRow> = {}): DeskRow {
-  const strategy = ({ samurai: "momentum-v1", neon: "dip-v1", orbit: "swing-v1", phantom: "breakout-v1" } as const)[id];
+  const strategy = ({ samurai: "momentum-v1", neon: "dip-v1", orbit: "swing-v1", phantom: "breakout-v1", ronin: "custom-v1" } as const)[id];
   return { id, name: id.toUpperCase(), strategy, enabled: true, capital_usd: 25_000, params: { ...STRATEGIES[strategy].defaults }, version: 1, paused_until: null, pause_reason: null, ...over };
 }
 
@@ -175,5 +176,52 @@ describe("planTick", () => {
     expect(plan.shadowFills[0].refPrice).toBeGreaterThan(103_000); // buy slippage
     expect(plan.experimentsToStop.map((e) => e.id)).toEqual(["99999999-0000-0000-0000-000000000000"]);
     expect(plan.orders).toHaveLength(1); // the live desk still trades
+  });
+});
+
+describe("RONIN (custom-v1, higher risk)", () => {
+  // XRP: +3% over 3h on 4× volume, RSI not overbought → the seed strategy's "volume ignition".
+  function ignition(symbol: string, base: number): Bar[] {
+    const closes = [...Array.from({ length: 40 }, (_, i) => base * (1 + (i % 2 ? 0.002 : -0.002))), base, base * 1.01, base * 1.02, base * 1.03];
+    return bars(symbol, closes).map((b, i, a) => ({ ...b, volume: i === a.length - 1 ? 40 : 10 }));
+  }
+  const ronin = desk("ronin", { spec: RONIN_SEED_SPEC, risk: { dayLossPct: -5 } });
+
+  it("trades its own coins with its own sizing (8% of the desk)", () => {
+    const xrp = ignition("XRP/USD", 2);
+    const plan = planTick(
+      input({
+        desks: [ronin],
+        bars: new Map([["XRP/USD", xrp], ["BTC/USD", flat("BTC/USD", 100_000)]]),
+        prices: new Map([["XRP/USD", xrp.at(-1)!.close], ["BTC/USD", 100_000]]),
+        baselines: new Map([["ronin", 25_000], ["floor", 25_000]]),
+      }),
+    );
+    const o = plan.orders.find((x) => x.symbol === "XRP/USD");
+    expect(o).toBeDefined();
+    expect(o!.book).toBe("ronin");
+    expect(o!.clientOrderId).toBe(clientOrderId("custom-v1", "XRP/USD", "buy", NOW));
+    expect(o!.qty * o!.refPrice).toBeCloseTo(2000, 0);
+    expect(plan.desks[0].universe).toContain("DOGE/USD");
+  });
+
+  it("has its own day-loss limit (−5%) while core desks keep the floor's (−2%)", () => {
+    expect(deskDayLossLimit(ronin, -2)).toBe(-5);
+    expect(deskDayLossLimit(desk("samurai"), -2)).toBe(-2);
+    expect(deskDayLossLimit(desk("ronin", { risk: { dayLossPct: -90 } }), -2)).toBe(-2);
+    // Both desks down 3% today: SAMURAI pauses, RONIN keeps trading.
+    const plan = planTick(
+      input({
+        desks: [desk("samurai"), ronin],
+        baselines: new Map([["samurai", 25_773], ["ronin", 25_773], ["floor", 40_000]]),
+      }),
+    );
+    expect(plan.deskPauses.map((p) => p.desk)).toEqual(["samurai"]);
+  });
+
+  it("the tick fetches every coin any desk or test trades", () => {
+    const u = floorUniverse([{ strategy: "momentum-v1" }, { strategy: "custom-v1", spec: { ...RONIN_SEED_SPEC, universe: ["DOGE/USD"] } }]);
+    expect(u).toEqual(["BTC/USD", "ETH/USD", "SOL/USD", "DOGE/USD"]);
+    expect(floorUniverse([{ strategy: "custom-v1", spec: { broken: true } }])).toHaveLength(8);
   });
 });

@@ -8,11 +8,12 @@ import { ownerEmail, sameOrigin } from "@/lib/crypto-floor/owner";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 const schema = z.object({
-  desk: z.enum(["samurai", "neon", "orbit", "phantom"]),
+  desk: z.enum(["samurai", "neon", "orbit", "phantom", "ronin"]),
   overrides: z.record(z.union([z.number(), z.boolean()])).default({}),
+  spec: z.record(z.unknown()).optional(),
   days: z.number().int().min(3).max(90).default(30),
 });
 
@@ -32,10 +33,11 @@ export async function POST(request: Request) {
   }
   if (!cfg) return NextResponse.json({ error: "Alpaca paper keys are not configured." }, { status: 503 });
   try {
-    const r = await backtestDesk({ db, alpaca: new AlpacaClient(cfg), desk: parsed.data.desk, overrides: parsed.data.overrides, days: parsed.data.days });
+    const r = await backtestDesk({ db, alpaca: new AlpacaClient(cfg), desk: parsed.data.desk, overrides: parsed.data.overrides, spec: parsed.data.spec, days: parsed.data.days });
     return NextResponse.json({
       ok: true,
       params: r.params,
+      spec: r.spec,
       result: r.result,
       line: backtestLine(r.result),
       baseline: r.baseline ?? null,

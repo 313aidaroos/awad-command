@@ -55,6 +55,12 @@ export function reportText(s: ReviewSummary): string {
       : `- OFF for every team (all trading is Alpaca paper)${rm.connected ? ` · Coinbase connected${rm.totalUsd !== null ? `, balance ${usd(rm.totalUsd)}` : ""}` : " · Coinbase not connected"}`,
   );
   if (rm.note) lines.push(`- ${rm.note}`);
+  const ln = s.learning;
+  lines.push("");
+  lines.push("WHAT THE TEAMS LEARNED (24h)");
+  lines.push(`- ${ln.meetings24h} team meeting${ln.meetings24h === 1 ? "" : "s"} held${ln.failedMeetings24h ? ` (${ln.failedMeetings24h} failed)` : ""} · ${ln.adopted.length} change${ln.adopted.length === 1 ? "" : "s"} adopted on paper`);
+  for (const a of ln.adopted) lines.push(`- ADOPTED ${a.desk.toUpperCase()}: ${a.reason}`);
+  for (const n of ln.notes.slice(0, 10)) lines.push(`- ${(n.desk ?? "floor").toUpperCase()} ${n.kind} (${n.author}): ${n.title} — ${n.body.replace(/\s+/g, " ").slice(0, 220)}`);
   if (s.experiments.length) {
     lines.push("");
     lines.push("STRATEGY TESTS (shadow books, simulated fills)");
@@ -98,6 +104,11 @@ export function reportHtml(s: ReviewSummary): string {
     .map((e) => `<li><b>${esc(e.name)}</b> (${esc(e.desk)}/${esc(e.strategy)}, ${esc(e.status)}): ${e.trades} trades, ${pct(e.returnPct)} vs desk ${pct(e.deskReturnPct)} — ${esc(e.recommendation)}</li>`)
     .join("");
   const issues = s.issues.map((i) => `<li>${esc(i)}</li>`).join("");
+  const ln = s.learning;
+  const learned = [
+    ...ln.adopted.map((a) => `<li><b style="color:#21eaaa">ADOPTED · ${esc(a.desk.toUpperCase())}</b> — ${esc(a.reason)}</li>`),
+    ...ln.notes.slice(0, 10).map((n) => `<li><b>${esc((n.desk ?? "floor").toUpperCase())}</b> <span style="color:#8ca8bc">${esc(n.kind)} · ${esc(n.author)}</span> — ${esc(n.title)}<br><span style="color:#8ca8bc">${esc(n.body.replace(/\s+/g, " ").slice(0, 220))}</span></li>`),
+  ].join("");
   const watching = s.watching
     .map((w) => `${esc(w.symbol.split("/")[0])} <b>${w.price ? usd(w.price) : "—"}</b> <span style="color:${color(w.ret24h)}">${pct(w.ret24h)}</span>`)
     .join(" &nbsp;·&nbsp; ");
@@ -124,6 +135,9 @@ ${trades ? `<h2 style="font-size:15px;margin:18px 0 6px">Closed trades (24h)</h2
       ? `ON for <b>${esc(s.realMoney.enabledDesks.map((d) => d.toUpperCase()).join(", "))}</b> · real P&amp;L <b style="color:${color(s.realMoney.pnl)}">${usd(s.realMoney.pnl, true)}</b> · ${s.realMoney.trades24h} closed real trades in 24h · limits $${s.realMoney.limits.maxTotalUsd} total / $${s.realMoney.limits.maxTradeUsd} per buy / −$${s.realMoney.limits.dayLossUsd} per day`
       : `OFF for every team — all trading is Alpaca paper.${s.realMoney.connected ? ` Coinbase connected${s.realMoney.totalUsd !== null ? `, balance ${usd(s.realMoney.totalUsd)}` : ""}.` : " Coinbase not connected."}`
   }${s.realMoney.note ? ` ${esc(s.realMoney.note)}` : ""}</p>
+<h2 style="font-size:15px;margin:18px 0 6px">What the teams learned (24h)</h2>
+<p style="margin:0 0 6px;color:#8ca8bc">${ln.meetings24h} team meeting${ln.meetings24h === 1 ? "" : "s"}${ln.failedMeetings24h ? ` (${ln.failedMeetings24h} failed)` : ""} · ${ln.adopted.length} change${ln.adopted.length === 1 ? "" : "s"} adopted on paper</p>
+${learned ? `<ul style="padding-left:18px">${learned}</ul>` : ""}
 ${exps ? `<h2 style="font-size:15px;margin:18px 0 6px">Strategy tests (shadow books)</h2><ul style="padding-left:18px">${exps}</ul>` : ""}
 ${issues ? `<h2 style="font-size:15px;margin:18px 0 6px;color:#ffb547">Needs attention</h2><ul style="padding-left:18px">${issues}</ul>` : ""}
 <p style="margin-top:20px"><a href="${esc(s.siteUrl)}/crypto-floor" style="background:#42d5ff;color:#03111b;padding:10px 14px;border-radius:6px;text-decoration:none;font-weight:700">Open the Crypto Floor</a></p>

@@ -41,17 +41,23 @@ export type Signal = {
   [extra: string]: unknown;
 };
 
-export type StrategyId = "momentum-v1" | "dip-v1" | "swing-v1" | "breakout-v1";
+export type StrategyId = "momentum-v1" | "dip-v1" | "swing-v1" | "breakout-v1" | "custom-v1";
 
 export type ParamValue = number | boolean;
 export type StrategyParams = Record<string, ParamValue>;
 
-export type DeskId = "samurai" | "neon" | "orbit" | "phantom";
+export type DeskId = "samurai" | "neon" | "orbit" | "phantom" | "ronin";
 
-export const DESK_IDS: DeskId[] = ["samurai", "neon", "orbit", "phantom"];
+export const DESK_IDS: DeskId[] = ["samurai", "neon", "orbit", "phantom", "ronin"];
 
-/** Coins the robot may trade. Hard list (ADD 5: AI can never widen it). */
+/** Coins the four core desks trade. Hard list (ADD 5: AI can never widen it). RONIN's wider list is RONIN_UNIVERSE (strategy/custom-v1.ts). */
 export const ROBOT_UNIVERSE = ["BTC/USD", "ETH/USD", "SOL/USD"] as const;
+
+/** Per-desk risk overrides (crypto_floor_desks.risk). Set by migration/owner only, never by an agent. */
+export type DeskRisk = {
+  /** Desk day-loss pause, % of the desk's start-of-day equity (default: floor halt_day_loss_pct). */
+  dayLossPct?: number;
+};
 
 export type OrderStatus =
   | "pending_submit"
@@ -101,6 +107,9 @@ export type DeskRow = {
   live_enabled?: boolean;
   live_enabled_at?: string | null;
   live_enabled_by?: string | null;
+  /** custom-v1 desks (RONIN): the team's own strategy, written in the rule language. Validated before use. */
+  spec?: unknown;
+  risk?: DeskRisk | null;
   updated_at?: string;
 };
 
@@ -112,6 +121,8 @@ export type ExperimentRow = {
   name: string;
   hypothesis: string | null;
   params: StrategyParams;
+  /** custom-v1 tests: the candidate strategy (rule language). */
+  spec?: unknown;
   capital_usd: number;
   status: "proposed" | "running" | "stopped" | "promoted" | "rejected";
   proposed_by: string | null;

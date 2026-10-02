@@ -10,7 +10,7 @@ import { ownerEmail, sameOrigin } from "@/lib/crypto-floor/owner";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const deskId = z.enum(["samurai", "neon", "orbit", "phantom"]);
+const deskId = z.enum(["samurai", "neon", "orbit", "phantom", "ronin"]);
 const schema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("kill_on"), reason: z.string().max(300).default("") }),
   z.object({ action: z.literal("kill_off") }),
@@ -26,7 +26,8 @@ const schema = z.discriminatedUnion("action", [
     desk: deskId,
     name: z.string().trim().min(1).max(80),
     hypothesis: z.string().max(500).optional(),
-    overrides: z.record(z.union([z.number(), z.boolean()])),
+    overrides: z.record(z.union([z.number(), z.boolean()])).default({}),
+    spec: z.record(z.unknown()).optional(),
     days: z.number().int().min(1).max(30).optional(),
   }),
 ]);
@@ -81,7 +82,7 @@ export async function POST(request: Request) {
         await stopExperiment(db, log, body.id, by);
         return NextResponse.json({ ok: true });
       case "start_experiment": {
-        const exp = await startExperiment({ db, log, desk: body.desk, name: body.name, hypothesis: body.hypothesis, overrides: body.overrides, days: body.days, proposedBy: `Awad (${by})` });
+        const exp = await startExperiment({ db, log, desk: body.desk, name: body.name, hypothesis: body.hypothesis, overrides: body.overrides, spec: body.spec, days: body.days, proposedBy: `Awad (${by})` });
         return NextResponse.json({ ok: true, experiment: exp });
       }
     }

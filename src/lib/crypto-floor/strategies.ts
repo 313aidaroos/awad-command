@@ -1,16 +1,20 @@
 /**
  * Strategy registry: one entry per desk strategy, with defaults, hard bounds and a common run signature.
  * Bounds are guardrails (ADD 5): daily learning, desk agents and experiments can only move params inside them.
- * positionSizePct is capped at 5 everywhere.
+ * positionSizePct is capped at 5 for the four core desks. custom-v1 (RONIN) has no params: its strategy is a spec
+ * in the rule language (strategy/custom-v1.ts), checked by validateSpec against RONIN_LIMITS (max 10% per trade).
  */
 import { runStrategy as runMomentum } from "./strategy/momentum-v1";
 import { runDipStrategy } from "./strategy/dip-v1";
 import { runSwingStrategy } from "./strategy/swing-v1";
 import { runBreakoutStrategy } from "./strategy/breakout-v1";
+import { RONIN_LIMITS, RONIN_SEED_SPEC, runCustomStrategy, specWarmup, validateSpec, type CustomSpec } from "./strategy/custom-v1";
 import { ROBOT_UNIVERSE, type Bar, type DeskId, type Position, type RecentEntry, type Signal, type StrategyId, type StrategyParams } from "./types";
 
 export type StrategyInput = {
   params: StrategyParams;
+  /** custom-v1 only: the team's strategy. */
+  spec?: CustomSpec | null;
   universe: string[];
   bars: Map<string, Bar[]>;
   positions: Position[];
@@ -186,6 +190,16 @@ export const STRATEGIES: Record<StrategyId, StrategyDef> = {
         now,
       ).signals,
   },
+  "custom-v1": {
+    id: "custom-v1",
+    desk: "ronin",
+    label: "Own strategies (RONIN)",
+    summary: "RONIN writes its own strategies in the rule language (indicators, entry/exit rules, sizing), tests them, and adopts the ones that prove themselves. Higher risk: up to 10% per trade, 4 positions, 8 coins.",
+    defaults: {},
+    bounds: {},
+    warmupBars: 2,
+    run: ({ spec, bars, positions, recentEntries, equity, now }) => runCustomStrategy(spec ?? RONIN_SEED_SPEC, bars, positions, recentEntries, equity, now),
+  },
 };
 
 export function isStrategyId(id: unknown): id is StrategyId {
@@ -193,6 +207,36 @@ export function isStrategyId(id: unknown): id is StrategyId {
 }
 
 export const DEFAULT_UNIVERSE: string[] = [...ROBOT_UNIVERSE];
+
+/** The spec a custom-v1 desk/test trades: the stored one when valid, otherwise RONIN's seed. null for core strategies. */
+export function resolveSpec(strategy: StrategyId, stored: unknown): CustomSpec | null {
+  if (strategy !== "custom-v1") return null;
+  const v = validateSpec(stored, RONIN_LIMITS);
+  return v.ok ? v.spec : RONIN_SEED_SPEC;
+}
+
+/** Coins a strategy trades. */
+export function strategyUniverse(strategy: StrategyId, spec: CustomSpec | null): string[] {
+  return strategy === "custom-v1" ? (spec ?? RONIN_SEED_SPEC).universe : DEFAULT_UNIVERSE;
+}
+
+/** Hourly bars needed before the strategy can decide. */
+export function strategyWarmup(strategy: StrategyId, spec: CustomSpec | null): number {
+  return strategy === "custom-v1" ? specWarmup(spec ?? RONIN_SEED_SPEC) : STRATEGIES[strategy].warmupBars;
+}
+
+/** Every coin any desk or running test trades (what the tick fetches). Core coins first. */
+export function floorUniverse(items: Array<{ strategy: StrategyId; spec?: unknown }>): string[] {
+  const out = new Set<string>(DEFAULT_UNIVERSE);
+  for (const it of items) for (const s of strategyUniverse(it.strategy, resolveSpec(it.strategy, it.spec))) out.add(s);
+  return [...out];
+}
+
+/** One-line description of what a desk trades right now. */
+export function strategySummary(strategy: StrategyId, spec: CustomSpec | null): string {
+  if (strategy === "custom-v1" && spec) return `"${spec.name}": ${spec.thesis}`;
+  return STRATEGIES[strategy].summary;
+}
 
 /**
  * Merge `overrides` onto `base` (defaults when absent) and check every value against the strategy bounds.

@@ -46,6 +46,7 @@ describe("daily brief", () => {
     trades24h: [{ desk: "neon", book: "neon", symbol: "SOL/USD", entryAt: "", exitAt: "", qty: 2, entryPrice: 190, exitPrice: 197.5, pnl: 15, pnlPct: 3.9, exitReason: "Take profit" }],
     experiments: [],
     realMoney: { connected: false, ok: false, totalUsd: null, enabledDesks: [], pnl: 0, trades24h: 0, limits: { maxTotalUsd: 100, maxTradeUsd: 25, dayLossUsd: 10 }, note: "Coinbase not connected" },
+    learning: { meetings24h: 9, failedMeetings24h: 0, adopted: [{ desk: "ronin", reason: "KAEDE: volume ignition with a trailing stop" }], notes: [{ desk: "neon", author: "SORA", kind: "lesson", title: "Dips <b>fail</b> in downtrends", body: "3 of 4 losers came while BTC was under its 50h EMA." }] },
     issues: ["Shared account"],
     aiNote: "Quiet day.",
   };
@@ -59,9 +60,13 @@ describe("daily brief", () => {
     expect(text).toContain("Shared account");
     expect(text).toContain("REAL MONEY (COINBASE)");
     expect(text).toContain("OFF for every team");
+    expect(text).toContain("WHAT THE TEAMS LEARNED (24h)");
+    expect(text).toContain("9 team meetings held · 1 change adopted on paper");
+    expect(text).toContain("ADOPTED RONIN: KAEDE: volume ignition");
     const html = reportHtml(summary);
     expect(html).toContain("deeper &lt;dip&gt;");
     expect(html).not.toContain("deeper <dip>");
+    expect(html).toContain("Dips &lt;b&gt;fail&lt;/b&gt; in downtrends");
     expect(html).toContain("https://awad-command.vercel.app/crypto-floor");
   });
 });

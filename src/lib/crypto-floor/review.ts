@@ -13,8 +13,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { DESK_STRATEGY } from "./desks";
 import { EventLog } from "./events";
 import { buildBooks, emptyBook, markBook, tradeStats, type ClosedTrade, type TradeStats } from "./ledger";
+import { loadMeetings, loadNotes } from "./notes";
 import { loadDesks, loadExperiments, loadFilledOrders, loadParams } from "./store";
-import { STRATEGIES, effectiveParams } from "./strategies";
+import { STRATEGIES, effectiveParams, resolveSpec } from "./strategies";
 import type { DeskRow, StrategyId, StrategyParams, WatchStat } from "./types";
 
 export const MIN_TRADES_TO_TUNE = 3;
@@ -115,6 +116,13 @@ export type ReviewSummary = {
   experiments: ExperimentReview[];
   /** REAL MONEY (Coinbase). OFF unless the owner switched a desk on. */
   realMoney: { connected: boolean; ok: boolean; totalUsd: number | null; enabledDesks: string[]; pnl: number; trades24h: number; limits: { maxTotalUsd: number; maxTradeUsd: number; dayLossUsd: number }; note: string | null };
+  /** What the teams learned in 24h: meetings held, changes adopted, journal lessons. */
+  learning: {
+    meetings24h: number;
+    failedMeetings24h: number;
+    adopted: Array<{ desk: string; reason: string }>;
+    notes: Array<{ desk: string | null; author: string; kind: string; title: string; body: string }>;
+  };
   issues: string[];
   aiNote: string | null;
 };
@@ -141,7 +149,7 @@ async function heartbeatNear(db: SupabaseClient, iso: string, before = true) {
 export async function buildReview(db: SupabaseClient, now: number, siteUrl: string): Promise<{ summary: ReviewSummary; desks: DeskRow[] }> {
   const since24 = now - DAY_MS;
   const since7d = now - 7 * DAY_MS;
-  const [params, desks, experiments, filled, latest, dayAgo, ticks, events] = await Promise.all([
+  const [params, desks, experiments, filled, latest, dayAgo, ticks, events, notes24, meetings24, adopted24] = await Promise.all([
     loadParams(db),
     loadDesks(db),
     loadExperiments(db),
@@ -150,6 +158,9 @@ export async function buildReview(db: SupabaseClient, now: number, siteUrl: stri
     heartbeatNear(db, new Date(since24).toISOString(), false),
     db.from("crypto_floor_events").select("payload", { count: "exact" }).eq("type", "heartbeat").gte("ts", new Date(since24).toISOString()).limit(400),
     db.from("crypto_floor_events").select("ts,type,desk,symbol,payload").in("type", ["halt", "system", "order_rejected", "data_stale", "kill_switch", "kill_reset"]).gte("ts", new Date(since24).toISOString()).order("ts", { ascending: false }).limit(300),
+    loadNotes(db, { since: new Date(since24).toISOString(), kinds: ["lesson", "change", "strategy", "plan"], limit: 40 }),
+    loadMeetings(db, { since: new Date(since24).toISOString(), limit: 60 }),
+    db.from("crypto_floor_param_changes").select("desk,reason").eq("source", "research").gte("created_at", new Date(since24).toISOString()).order("created_at", { ascending: false }).limit(20),
   ]);
   const prices = new Map(Object.entries(latest?.payload.prices ?? {}).map(([k, v]) => [k, Number(v)]));
   const books = buildBooks(filled);
@@ -172,7 +183,7 @@ export async function buildReview(db: SupabaseClient, now: number, siteUrl: stri
       id: d.id,
       name: d.name,
       strategy,
-      label: STRATEGIES[strategy].label,
+      label: strategy === "custom-v1" ? `Own strategy: "${resolveSpec(strategy, d.spec)?.name ?? "—"}"` : STRATEGIES[strategy].label,
       enabled: d.enabled,
       pausedUntil: d.paused_until,
       version: d.version,
@@ -238,6 +249,15 @@ export async function buildReview(db: SupabaseClient, now: number, siteUrl: stri
     note: !cbp?.configured ? "Coinbase not connected" : cbp.ok ? null : `Coinbase error: ${cbp.error ?? "unknown"}`,
   };
 
+  const failedMeetings = meetings24.filter((m) => m.status === "failed");
+  if (failedMeetings.length) issues.push(`${failedMeetings.length} team meeting(s) failed: ${failedMeetings[0].error?.slice(0, 160) ?? "unknown error"}`);
+  const learning: ReviewSummary["learning"] = {
+    meetings24h: meetings24.filter((m) => m.status === "done").length,
+    failedMeetings24h: failedMeetings.length,
+    adopted: (adopted24.data ?? []).map((r) => ({ desk: String(r.desk ?? ""), reason: String(r.reason ?? "") })),
+    notes: notes24.filter((n) => n.kind !== "change").slice(0, 15).map((n) => ({ desk: n.desk, author: n.author, kind: n.kind, title: n.title, body: n.body.slice(0, 400) })),
+  };
+
   const trades24h = deskReviews.flatMap((d) => (books.get(d.id)?.closedTrades ?? []).filter((t) => Date.parse(t.exitAt) >= since24).map((t) => ({ ...t, desk: d.id })));
   const allStats24 = tradeStats(trades24h);
   const capital = deskReviews.reduce((s, d) => s + d.capital, 0);
@@ -272,6 +292,7 @@ export async function buildReview(db: SupabaseClient, now: number, siteUrl: stri
     trades24h: trades24h.sort((a, b) => b.exitAt.localeCompare(a.exitAt)),
     experiments: expReviews,
     realMoney,
+    learning,
     issues,
     aiNote: null,
   };
