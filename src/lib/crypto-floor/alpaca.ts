@@ -117,6 +117,32 @@ export class AlpacaClient {
     return this.request<AlpacaAccount>(this.cfg.tradeBase, "/v2/account");
   }
 
+  private assetCache: Promise<Map<string, CryptoAssetRule> | null> | null = null;
+
+  /** Crypto pairs Alpaca lists (tradable flag, minimum size, quantity increment). Fetched once per client; null on error. */
+  cryptoAssets(): Promise<Map<string, CryptoAssetRule> | null> {
+    this.assetCache ??= this.request<Array<{ symbol: string; tradable?: boolean; status?: string; min_order_size?: string | number; min_trade_increment?: string | number }>>(
+      this.cfg.tradeBase,
+      "/v2/assets?asset_class=crypto&status=active",
+    )
+      .then((rows) => {
+        const out = new Map<string, CryptoAssetRule>();
+        for (const r of rows ?? []) {
+          if (!r.symbol?.includes("/") || !r.symbol.endsWith("/USD")) continue;
+          out.set(normalizePair(r.symbol), { tradable: r.tradable !== false, minOrderSize: Number(r.min_order_size ?? 0) || 0, minTradeIncrement: Number(r.min_trade_increment ?? 0) || 0 });
+        }
+        return out.size ? out : null;
+      })
+      .catch(() => null);
+    return this.assetCache;
+  }
+
+  /** Drop pairs Alpaca does not list (asking for an unknown pair can fail the whole data request). */
+  async listedPairs(symbols: string[]): Promise<string[]> {
+    const assets = await this.cryptoAssets();
+    return assets ? symbols.filter((s) => assets.get(normalizePair(s))?.tradable) : symbols;
+  }
+
   positions() {
     return this.request<AlpacaPosition[]>(this.cfg.tradeBase, "/v2/positions");
   }
@@ -128,6 +154,8 @@ export class AlpacaClient {
    */
   async bars(symbols: string[], start: Date, timeframe = "1Hour"): Promise<Map<string, Bar[]>> {
     const out = new Map<string, Bar[]>(symbols.map((s) => [normalizePair(s), []]));
+    symbols = await this.listedPairs(symbols);
+    if (!symbols.length) return out;
     let pageToken: string | null = null;
     for (let page = 0; page < 20; page++) {
       const q = new URLSearchParams({
@@ -155,6 +183,8 @@ export class AlpacaClient {
   }
 
   async latestTrades(symbols: string[]): Promise<Map<string, { price: number; at: string }>> {
+    symbols = await this.listedPairs(symbols);
+    if (!symbols.length) return new Map();
     const q = new URLSearchParams({ symbols: symbols.map(normalizePair).join(",") });
     const body: { trades?: Record<string, { p: number; t: string }> } = await this.request(
       this.cfg.dataBase,
@@ -203,6 +233,15 @@ export class AlpacaClient {
 }
 
 /** Format a crypto quantity for Alpaca: at most 9 decimals, always rounded down. */
+export type CryptoAssetRule = { tradable: boolean; minOrderSize: number; minTradeIncrement: number };
+
+/** Round a quantity down to Alpaca's increment for the pair (no-op when unknown). */
+export function roundQty(qty: number, increment: number): number {
+  if (!(increment > 0)) return qty;
+  const decimals = Math.max(0, Math.min(9, Math.ceil(-Math.log10(increment) - 1e-9)));
+  return Number((Math.floor(qty / increment + 1e-9) * increment).toFixed(decimals));
+}
+
 export function formatQty(qty: number): string {
   const floored = Math.floor(qty * 1e9) / 1e9;
   return floored.toFixed(9).replace(/0+$/, "").replace(/\.$/, "");

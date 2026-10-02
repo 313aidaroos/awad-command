@@ -36,3 +36,7 @@ Entry format:
 - Changed: `engine.ts` floor start-of-day equity = sum of each desk's own baseline (was a separate floor row); `state.ts` same; `review.ts` floor 24h P&L = sum of desk P&L; tests.
 - Why: RONIN was added mid-day and the floor showed "+$25,000 today" (its capital counted as profit), which also loosened the floor −2% day-loss pause for the rest of the day.
 
+
+## 2026-10-02 — Claude (Awad's coins on every desk)
+- Changed: `types.ts` OWNER_COINS (XRP, DOGE, SOL, PEPE, XLM, HBAR, BILL — Awad's Robinhood holdings) first in every desk's coin list + BTC/ETH; RONIN_UNIVERSE widened to match (+AVAX/LINK/LTC); `alpaca.ts` reads Alpaca's crypto asset list (skip pairs Alpaca doesn't carry, round qty to the pair's increment, respect minimum size); tick reports `notOnAlpaca`; training update tells every team. RONIN's stored spec universe updated in the DB (owner-directed).
+- Why: Awad (screenshot of his Robinhood): "have all them watch these and buy more of these". Paper only — Robinhood is not connected.

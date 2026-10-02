@@ -40,14 +40,14 @@ describe("validateSpec", () => {
   it("rejects everything outside the team's limits — nothing is clamped", () => {
     const v = validateSpec({
       ...RONIN_SEED_SPEC,
-      universe: ["BTC/USD", "PEPE/USD"],
+      universe: ["BTC/USD", "SHIB/USD"],
       exit: { takeProfitPct: 6, stopLossPct: -40 },
       sizing: { positionSizePct: 25, maxOpenPositions: 9, minEntryIntervalHours: 1 },
     });
     expect(v.ok).toBe(false);
     if (!v.ok) {
       const all = v.errors.join(" | ");
-      expect(all).toMatch(/PEPE\/USD/);
+      expect(all).toMatch(/SHIB\/USD/);
       expect(all).toMatch(/stopLossPct/);
       expect(all).toMatch(/positionSizePct must be 0.5–10/);
       expect(all).toMatch(/maxOpenPositions must be 1–4/);

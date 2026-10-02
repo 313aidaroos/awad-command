@@ -66,3 +66,4 @@ Asked by Awad: fix everything found in the crypto-floor audit, make it trade 24/
 - Not yet verified at time of writing: first RONIN tick, first meeting, first adoption.
 - 07:25 UTC: RONIN row applied after deploy `dpl_8cpoVRKwQcKgiY1rZ4hrLRFWxUZd` (PR #47). First tick showed "floor today +$25,000" (new capital counted as P&L) → fixed: floor baseline = sum of desk baselines (PR #48).
 
+- Awad's coins (Robinhood screenshot): XRP, BILL, HBAR, DOGE, PEPE, XLM, SOL are now first on every desk's list (`OWNER_COINS`), plus BTC/ETH; RONIN also AVAX/LINK/LTC. Coins Alpaca doesn't list are skipped (heartbeat `notOnAlpaca`), quantities rounded to Alpaca's increment. Paper only; Robinhood is not connected.

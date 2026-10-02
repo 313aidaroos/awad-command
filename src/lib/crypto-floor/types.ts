@@ -50,8 +50,14 @@ export type DeskId = "samurai" | "neon" | "orbit" | "phantom" | "ronin";
 
 export const DESK_IDS: DeskId[] = ["samurai", "neon", "orbit", "phantom", "ronin"];
 
-/** Coins the four core desks trade. Hard list (ADD 5: AI can never widen it). RONIN's wider list is RONIN_UNIVERSE (strategy/custom-v1.ts). */
-export const ROBOT_UNIVERSE = ["BTC/USD", "ETH/USD", "SOL/USD"] as const;
+/**
+ * Awad's coins (his Robinhood holdings, 2026-10-02: "have all them watch these and buy more of these").
+ * Listed first so they get priority when a desk has room for only one more position.
+ */
+export const OWNER_COINS = ["XRP/USD", "DOGE/USD", "SOL/USD", "PEPE/USD", "XLM/USD", "HBAR/USD", "BILL/USD"] as const;
+
+/** Coins the four core desks trade: Awad's coins + BTC/ETH. Hard list (ADD 5: AI can never widen it). Coins Alpaca does not list are skipped at run time. */
+export const ROBOT_UNIVERSE = [...OWNER_COINS, "BTC/USD", "ETH/USD"] as const;
 
 /** Per-desk risk overrides (crypto_floor_desks.risk). Set by migration/owner only, never by an agent. */
 export type DeskRisk = {

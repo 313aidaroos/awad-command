@@ -14,6 +14,7 @@ export const TRAINING_VERSION = "2026-10-02";
 
 /** Newest first. Every agent reads these in every meeting. */
 export const TRAINING_UPDATES: string[] = [
+  "2026-10-02: Awad's own coins (his Robinhood holdings): XRP, BILL, HBAR, DOGE, PEPE, XLM, SOL. He wants every team to watch them closely and buy more of them when your strategy sees a setup — they are first on every desk's coin list. (Paper here; his Robinhood account is not connected.) Coins Alpaca doesn't carry are skipped automatically.",
   "2026-10-02: RONIN joined the floor (own strategies, higher risk, 8 coins). Every team now holds meetings, keeps a journal, and can adopt a change on paper once the code-checked evidence gate passes (24h cooldown). Real-money desks only propose.",
 ];
 

@@ -11,7 +11,7 @@
  * Any error → `system` event + JSON error. The route always answers 200 so the cron never retries a half tick.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { AlpacaClient, AlpacaHttpError, formatQty, mapAlpacaStatus, type AlpacaOrder } from "./alpaca";
+import { AlpacaClient, AlpacaHttpError, formatQty, mapAlpacaStatus, roundQty, type AlpacaOrder } from "./alpaca";
 import { agentForEvent } from "./desks";
 import { planTick, type PlannedOrder, type TickPlan } from "./engine";
 import { EventLog } from "./events";
@@ -285,8 +285,12 @@ export async function runTick(deps: TickDeps): Promise<TickResult> {
       alpaca.account(),
       alpaca.positions(),
     ]);
-    const coreUniverse = DEFAULT_UNIVERSE;
-    const universe = floorUniverse([...desks, ...experiments]);
+    // Only coins Alpaca lists (Awad's watch list may include coins Alpaca doesn't carry — those are skipped, not "stale").
+    const wanted = floorUniverse([...desks, ...experiments]);
+    const universe = await alpaca.listedPairs(wanted);
+    const notOnAlpaca = wanted.filter((s) => !universe.includes(s));
+    const coreUniverse = DEFAULT_UNIVERSE.filter((s) => universe.includes(s));
+    const assetRules = await alpaca.cryptoAssets();
 
     // Market data: 8 days of hourly bars (EMA50 warm-up + 24h windows), only closed hours.
     let dataStaleReason: string | null = null;
@@ -424,6 +428,14 @@ export async function runTick(deps: TickDeps): Promise<TickResult> {
     // Paper orders
     result.ordersPlanned = plan.orders.length;
     for (const o of plan.orders) {
+      const rule = assetRules?.get(o.symbol);
+      if (rule) {
+        o.qty = roundQty(o.qty, rule.minTradeIncrement);
+        if (!(o.qty > 0) || o.qty < rule.minOrderSize) {
+          await log.log({ type: "signal", agentRole: "trader", desk: o.desk, strategy: o.strategy, symbol: o.symbol, side: o.side, title: `${o.desk.toUpperCase()} ${o.side} ${o.symbol} skipped: below Alpaca's minimum order size (${rule.minOrderSize})`, payload: { action: "skipped", skipReason: "below Alpaca minimum" } });
+          continue;
+        }
+      }
       const r = await placePaperOrder(db, alpaca, log, o, sleep);
       if (r === "submitted" || r === "filled") result.ordersSubmitted++;
       if (r === "filled") result.ordersFilled++;
@@ -519,6 +531,7 @@ export async function runTick(deps: TickDeps): Promise<TickResult> {
         watching: watching.filter((w) => coreUniverse.includes(w.symbol)),
         watchingWide: watching.filter((w) => !coreUniverse.includes(w.symbol)),
         universe,
+        notOnAlpaca,
         prices: Object.fromEntries(prices),
         dataStale: dataStale || staleSymbols.size > 0,
         staleSymbols: [...staleSymbols],
