@@ -118,4 +118,4 @@ Grok Bot (Developer Bot hub + product leads) notes. Every change Grok Bot makes 
 - What: Appended the entries above so `NOTES/GROK.md` records changes since 2026-09-28 (PRs, direct-to-master commits, hub migrations, crons, Coinbase settings left OFF). Sources: `git log`, GitHub PR history, `AI_CHANGELOG.md`, `NOTES/CLAUDE.md`, `docs/crypto-floor/ROBOT-SPEC.md`. No other file in this change.
 - Where: `NOTES/GROK.md` only.
 - Who: Dashboard Lead via cloud agent, for Awad.
-- Undo: revert the commits on this PR, newest first (`NOTES/GROK.md` only). The backfill body is `f003c2347378d587e30914b33e16bf5ad45d4998`; the following commit only records that SHA here.
+- Undo: `git revert 7a6795556d8012d859b2e6d74643a37c8df0a53f` then `git revert f003c2347378d587e30914b33e16bf5ad45d4998` (newest first; `NOTES/GROK.md` only). If a later commit on this PR only names those SHAs, revert that commit first.
