@@ -48,6 +48,7 @@ import {
   ManualOrderForm,
   RobotStatusBar,
   RobotView,
+  TradesBox,
   type ChatTarget,
 } from "./RobotConsole";
 import type { RobotState } from "@/lib/crypto-floor/state";
@@ -752,6 +753,7 @@ export default function CryptoFloor() {
               setKillOpen={setKillOpen}
             />
           )}
+          {!demo && robot && <TradesBox robot={robot} />}
           <div className="cf-disclosure">
             <Eye size={15} />
             <span>

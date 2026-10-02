@@ -40,3 +40,7 @@ Entry format:
 ## 2026-10-02 — Claude (Awad's coins on every desk)
 - Changed: `types.ts` OWNER_COINS (XRP, DOGE, SOL, PEPE, XLM, HBAR, BILL — Awad's Robinhood holdings) first in every desk's coin list + BTC/ETH; RONIN_UNIVERSE widened to match (+AVAX/LINK/LTC); `alpaca.ts` reads Alpaca's crypto asset list (skip pairs Alpaca doesn't carry, round qty to the pair's increment, respect minimum size); tick reports `notOnAlpaca`; training update tells every team. RONIN's stored spec universe updated in the DB (owner-directed).
 - Why: Awad (screenshot of his Robinhood): "have all them watch these and buy more of these". Paper only — Robinhood is not connected.
+
+## 2026-10-02 — Claude (Trades & P/L box + "Email me this")
+- Changed: `RobotConsole.tsx` new `TradesBox` (floor value, today / all-time / open P/L, per-team P/L, open positions, latest orders, closed trades; live with the 10s poll) shown on top of `/crypto-floor`; new owner route `/api/crypto-floor/email` + `dailyReport.ts sendFloorUpdate` (emails the current trades + P/L to the report address now; no tuning, no AI call).
+- Why: Awad asked for a box on the crypto floor with trades, P/L and other relevant info, and an option to send it to his email.
