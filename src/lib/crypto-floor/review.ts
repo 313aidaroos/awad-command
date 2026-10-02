@@ -263,6 +263,7 @@ export async function buildReview(db: SupabaseClient, now: number, siteUrl: stri
   const capital = deskReviews.reduce((s, d) => s + d.capital, 0);
   const equity = deskReviews.reduce((s, d) => s + d.equity, 0);
   const prevFloor = dayAgo?.payload.floor?.equity;
+  const floorPnl24h = deskReviews.reduce((s, d) => s + (d.pnl24h ?? d.equity - d.capital), 0);
 
   const summary: ReviewSummary = {
     day: new Date(now).toISOString().slice(0, 10),
@@ -281,8 +282,9 @@ export async function buildReview(db: SupabaseClient, now: number, siteUrl: stri
     floor: {
       capital,
       equity,
-      pnl24h: prevFloor !== undefined ? equity - Number(prevFloor) : null,
-      pnl24hPct: prevFloor ? ((equity - Number(prevFloor)) / Number(prevFloor)) * 100 : null,
+      // Sum of desk P&L (a desk added within 24h counts from its starting capital), never "new capital = profit".
+      pnl24h: prevFloor !== undefined ? floorPnl24h : null,
+      pnl24hPct: prevFloor !== undefined && equity - floorPnl24h > 0 ? (floorPnl24h / (equity - floorPnl24h)) * 100 : null,
       openPositions: deskReviews.reduce((s, d) => s + d.open.length, 0),
       trades24h: allStats24.trades,
       winRate24h: allStats24.winRate,

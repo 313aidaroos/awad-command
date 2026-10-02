@@ -109,7 +109,9 @@ describe("planTick", () => {
   });
 
   it("floor-wide day loss pauses all entries", () => {
-    const plan = planTick(input({ baselines: new Map([["samurai", 25_000], ["floor", 26_000]]) }));
+    // SAMURAI −1.5% (under its −2% limit), RONIN −3% (under its −5%): floor −2.25% → floor pause, no desk pause.
+    const plan = planTick(input({ desks: [desk("samurai"), desk("ronin", { spec: RONIN_SEED_SPEC, risk: { dayLossPct: -5 } })], baselines: new Map([["samurai", 25_000 / 0.985], ["ronin", 25_000 / 0.97]]) }));
+    expect(plan.deskPauses).toHaveLength(0);
     expect(plan.floorPause?.until).toBe("2026-10-03T00:00:00.000Z");
     expect(plan.orders).toHaveLength(0);
   });
@@ -225,3 +227,12 @@ describe("RONIN (custom-v1, higher risk)", () => {
     expect(floorUniverse([{ strategy: "custom-v1", spec: { broken: true } }])).toHaveLength(8);
   });
 });
+
+describe("floor day P&L", () => {
+  it("a desk added mid-day does not count as profit", () => {
+    const plan = planTick(input({ desks: [desk("samurai"), desk("ronin", { spec: RONIN_SEED_SPEC })], baselines: new Map([["samurai", 25_000], ["floor", 25_000]]) }));
+    expect(plan.floor.startEquity).toBeCloseTo(50_000);
+    expect(Math.abs(plan.floor.dayPnl)).toBeLessThan(1);
+  });
+});
+

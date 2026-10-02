@@ -64,4 +64,5 @@ Asked by Awad: fix everything found in the crypto-floor audit, make it trade 24/
 - DB (hub `myfclypikkcvfurkbzmj`): APPLIED `crypto_floor_learning` (= `20261002020000_crypto_floor_learning.sql`: desks.spec/risk, experiments.spec, param_changes source 'research', tables crypto_floor_notes + crypto_floor_meetings, max_open_positions_total 8→12). `20261002020100_crypto_floor_ronin.sql` (RONIN row) is applied AFTER the deploy (older code does not know custom-v1).
 - Cost note: each meeting is up to 8 Claude calls (model = ANTHROPIC_MODEL). 24 meetings/day. If cost matters, lower the cron to every 2h in `vercel.json`.
 - Not yet verified at time of writing: first RONIN tick, first meeting, first adoption.
+- 07:25 UTC: RONIN row applied after deploy `dpl_8cpoVRKwQcKgiY1rZ4hrLRFWxUZd` (PR #47). First tick showed "floor today +$25,000" (new capital counted as P&L) → fixed: floor baseline = sum of desk baselines (PR #48).
 

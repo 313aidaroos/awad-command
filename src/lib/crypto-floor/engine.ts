@@ -228,7 +228,9 @@ export function planTick(input: PlanInput): TickPlan {
   // ---- floor
   const capital = deskPlans.reduce((s, d) => s + d.marked.capital, 0);
   const equity = deskPlans.reduce((s, d) => s + d.marked.equity, 0);
-  const floorStart = baseline("floor", equity);
+  // Floor start = sum of the desks' own start-of-day equity, so adding a desk mid-day is not counted as P&L.
+  const floorStart = deskPlans.reduce((s, d) => s + d.startEquity, 0);
+  baseline("floor", floorStart);
   const floorDayPnl = equity - floorStart;
   const floorDayPnlPct = floorStart > 0 ? (floorDayPnl / floorStart) * 100 : 0;
   let floorPausedUntil = params.day_paused_until;
