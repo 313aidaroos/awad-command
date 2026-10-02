@@ -234,7 +234,7 @@ export async function loadRobotState(db: SupabaseClient, now = Date.now()): Prom
 
   const capital = deskViews.reduce((s, d) => s + d.capital, 0);
   const equity = deskViews.reduce((s, d) => s + d.equity, 0);
-  const floorStart = baselines.get("floor") ?? null;
+  const floorStart = desks.every((d) => baselines.has(d.id)) ? desks.reduce((s, d) => s + (baselines.get(d.id) ?? 0), 0) : baselines.get("floor") ?? null;
   const account = (hp.account as RobotState["account"]) ?? null;
   const ticks24h = ticks.count ?? 0;
 
