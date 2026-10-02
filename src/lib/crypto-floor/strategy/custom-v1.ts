@@ -51,7 +51,7 @@ export type SpecLimits = {
 };
 
 /** RONIN's limits (riskier team). Other teams don't use custom specs. */
-export const RONIN_UNIVERSE = ["BTC/USD", "ETH/USD", "SOL/USD", "XRP/USD", "DOGE/USD", "AVAX/USD", "LINK/USD", "LTC/USD"];
+export const RONIN_UNIVERSE = ["XRP/USD", "DOGE/USD", "SOL/USD", "PEPE/USD", "XLM/USD", "HBAR/USD", "BILL/USD", "BTC/USD", "ETH/USD", "AVAX/USD", "LINK/USD", "LTC/USD"];
 export const RONIN_LIMITS: SpecLimits = {
   allowedUniverse: RONIN_UNIVERSE,
   maxPositionSizePct: 10,

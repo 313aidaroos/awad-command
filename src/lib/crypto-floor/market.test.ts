@@ -54,3 +54,12 @@ describe("market", () => {
     expect(nextUtcMidnight(Date.UTC(2026, 9, 2, 23, 59)).toISOString()).toBe("2026-10-03T00:00:00.000Z");
   });
 });
+
+describe("roundQty (Alpaca increments)", () => {
+  it("rounds down to the pair's increment", async () => {
+    const { roundQty } = await import("./alpaca");
+    expect(roundQty(111_111_111.7, 1)).toBe(111_111_111);
+    expect(roundQty(5263.157, 0.01)).toBe(5263.15);
+    expect(roundQty(0.123456789, 0)).toBe(0.123456789);
+  });
+});

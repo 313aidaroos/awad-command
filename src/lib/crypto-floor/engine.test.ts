@@ -223,8 +223,9 @@ describe("RONIN (custom-v1, higher risk)", () => {
 
   it("the tick fetches every coin any desk or test trades", () => {
     const u = floorUniverse([{ strategy: "momentum-v1" }, { strategy: "custom-v1", spec: { ...RONIN_SEED_SPEC, universe: ["DOGE/USD"] } }]);
-    expect(u).toEqual(["BTC/USD", "ETH/USD", "SOL/USD", "DOGE/USD"]);
-    expect(floorUniverse([{ strategy: "custom-v1", spec: { broken: true } }])).toHaveLength(8);
+    expect(u.slice(0, 3)).toEqual(["XRP/USD", "DOGE/USD", "SOL/USD"]);
+    expect(u).toHaveLength(9);
+    expect(floorUniverse([{ strategy: "custom-v1", spec: { broken: true } }])).toHaveLength(12);
   });
 });
 

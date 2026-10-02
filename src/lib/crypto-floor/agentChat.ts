@@ -18,7 +18,7 @@ import { LabError, adoptChange, backtestDesk, isDeskId, startExperiment, stopExp
 import { noteLine, writeNote } from "./notes";
 import { loadRobotState, type RobotState } from "./state";
 import { STRATEGIES } from "./strategies";
-import { RULE_LANGUAGE_DOC, TEAM_PLAYBOOK, trainingFor } from "./training";
+import { RULE_LANGUAGE_DOC, TEAM_PLAYBOOK, TRAINING_UPDATES, trainingFor } from "./training";
 import { DESK_IDS, type DeskId } from "./types";
 
 export type ChatThread = "floor" | DeskId;
@@ -172,12 +172,12 @@ function systemPrompt(thread: ChatThread, agent: DeskAgent | null) {
     thread === "floor" || !agent
       ? `You are the five desk leads of THE CRYPTO FLOOR answering together: ${leads.map((l) => `${l.name} (${l.deskName})`).join(", ")}. KAEDE leads RONIN, the higher-risk team that invents its own strategies. When more than one lead has something to say, start each part with the lead's name in bold.`
       : `You are ${agent.name}, the ${agent.role} on desk ${agent.deskName} of THE CRYPTO FLOOR. ${ROLE_BRIEF[agent.role] ?? ""} Your teammates on ${agent.deskName}: ${deskAgents(agent.desk).filter((a) => a.name !== agent.name).map((a) => `${a.name} (${a.role})`).join(", ")}.`;
-  const training = thread === "floor" || !agent ? `THE TEAMS:\n${Object.values(TEAM_PLAYBOOK).join("\n")}\n\n${RULE_LANGUAGE_DOC}` : trainingFor(agent.desk, agent.role);
+  const training = thread === "floor" || !agent ? `THE TEAMS:\n${Object.values(TEAM_PLAYBOOK).join("\n")}\n\n${RULE_LANGUAGE_DOC}\n\nLatest updates: ${TRAINING_UPDATES.join(" | ")}` : trainingFor(agent.desk, agent.role);
   return [
     who,
     training,
     "You talk to Awad, the owner, inside AWAD COMMAND. Be direct and concrete; short paragraphs; numbers with units. No hidden chain-of-thought — give conclusions and the evidence.",
-    "THE CRYPTO FLOOR is a robot trading Alpaca PAPER money (no real money) 24/7: every 5 minutes deterministic code reads closed hourly bars, runs each desk's strategy on the desk's own ledger, and sends paper market orders. The four core desks trade BTC/ETH/SOL; RONIN trades its own list of 8 coins with bigger positions. Code enforces the guardrails (kill switch, day-loss pauses, position caps, bounds on every parameter and spec). You interpret, explain, test and learn; you never decide orders.",
+    "THE CRYPTO FLOOR is a robot trading Alpaca PAPER money (no real money) 24/7: every 5 minutes deterministic code reads closed hourly bars, runs each desk's strategy on the desk's own ledger, and sends paper market orders. Every desk trades Awad's coins first (XRP, DOGE, SOL, PEPE, XLM, HBAR, BILL — his Robinhood holdings) plus BTC/ETH; RONIN adds AVAX, LINK, LTC and takes bigger positions. Coins Alpaca doesn't carry are skipped. Code enforces the guardrails (kill switch, day-loss pauses, position caps, bounds on every parameter and spec). You interpret, explain, test and learn; you never decide orders.",
     "Every team learns on its own: it meets on a schedule (RONIN every other hour, the others three times a day, plus a daily all-hands of the five leads), keeps a journal, tests ideas and adopts what the evidence gate passes. Your journal, other teams' lessons, the latest floor briefing and recent meeting minutes are in <floor_state> — use them and refer to them.",
     "What you can do with tools: run_backtest (always before recommending a change), start_experiment (a shadow test with simulated fills; safe, no broker orders), stop_experiment, adopt_change (the code decides if the evidence is good enough; paper desks only), write_note (the team journal — write down what Awad teaches you), list_trades.",
     "What only Awad can do (buttons in the Crypto Floor UI): switch a desk on/off, the kill switch, manual orders, promoting a proposal, and REAL MONEY: switching a desk to trade real money on Coinbase (ROBOT tab → Real money · Coinbase → Go live…, he types REAL MONEY) and the real-money dollar limits. If he asks you to do one of these, tell him exactly which button to press. Never claim a change the tools did not confirm.",
