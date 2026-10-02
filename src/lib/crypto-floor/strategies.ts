@@ -1,0 +1,250 @@
+/**
+ * Strategy registry: one entry per desk strategy, with defaults, hard bounds and a common run signature.
+ * Bounds are guardrails (ADD 5): daily learning, desk agents and experiments can only move params inside them.
+ * positionSizePct is capped at 5 everywhere.
+ */
+import { runStrategy as runMomentum } from "./strategy/momentum-v1";
+import { runDipStrategy } from "./strategy/dip-v1";
+import { runSwingStrategy } from "./strategy/swing-v1";
+import { runBreakoutStrategy } from "./strategy/breakout-v1";
+import { ROBOT_UNIVERSE, type Bar, type DeskId, type Position, type RecentEntry, type Signal, type StrategyId, type StrategyParams } from "./types";
+
+export type StrategyInput = {
+  params: StrategyParams;
+  universe: string[];
+  bars: Map<string, Bar[]>;
+  positions: Position[];
+  recentEntries: RecentEntry[];
+  equity: number;
+  now: number;
+};
+
+export type ParamBound = { min: number; max: number; label: string; kind?: "number" | "boolean" | "integer" };
+
+export type StrategyDef = {
+  id: StrategyId;
+  desk: DeskId;
+  label: string;
+  summary: string;
+  defaults: StrategyParams;
+  bounds: Record<string, ParamBound>;
+  /** Closed hourly bars needed before the strategy can produce an entry. */
+  warmupBars: number;
+  run(input: StrategyInput): Signal[];
+};
+
+const n = (p: StrategyParams, k: string) => Number(p[k]);
+const b = (p: StrategyParams, k: string) => p[k] === true;
+
+export const STRATEGIES: Record<StrategyId, StrategyDef> = {
+  "momentum-v1": {
+    id: "momentum-v1",
+    desk: "samurai",
+    label: "Momentum",
+    summary: "Buys a coin after a strong closed hour (1h return above the threshold); sells at the stop or the target.",
+    defaults: { entryThresholdPct: 2.0, exitStopPct: -1.5, exitTakePct: 3.0, positionSizePct: 2.0, maxOpenPositions: 3, minEntryIntervalHours: 4 },
+    bounds: {
+      entryThresholdPct: { min: 0.5, max: 6, label: "Entry: 1h return above (%)" },
+      exitStopPct: { min: -10, max: -0.5, label: "Stop loss (%)" },
+      exitTakePct: { min: 0.5, max: 20, label: "Take profit (%)" },
+      positionSizePct: { min: 0.5, max: 5, label: "Size (% of desk equity)" },
+      maxOpenPositions: { min: 1, max: 3, label: "Max open positions", kind: "integer" },
+      minEntryIntervalHours: { min: 1, max: 48, label: "Min hours between entries per coin", kind: "integer" },
+    },
+    warmupBars: 2,
+    run: ({ params, universe, bars, positions, recentEntries, equity, now }) =>
+      runMomentum(
+        {
+          universe,
+          entryThresholdPct: n(params, "entryThresholdPct"),
+          exitStopPct: n(params, "exitStopPct"),
+          exitTakePct: n(params, "exitTakePct"),
+          positionSizePct: n(params, "positionSizePct"),
+          maxOpenPositions: n(params, "maxOpenPositions"),
+          minEntryIntervalHours: n(params, "minEntryIntervalHours"),
+          // Day-loss halts are enforced by the engine per desk and floor-wide, not inside the strategy.
+          haltDayLossPct: Number.NEGATIVE_INFINITY,
+        },
+        bars,
+        positions,
+        recentEntries,
+        equity,
+        equity,
+        now,
+      ).signals,
+  },
+  "dip-v1": {
+    id: "dip-v1",
+    desk: "neon",
+    label: "Buy the dip (Awad's)",
+    summary: "Watches each coin; when it is down ≥4% in 24h or 5% under its 24h high, waits for the first green hour, then buys. Scales in once more if it drops another 4%. Sells at +4%, −8%, or after 72h in profit.",
+    defaults: { dipThresholdPct: -4.0, dipFromHighPct: 0.95, takeProfitPct: 4.0, stopLossPct: -8.0, positionSizePct: 2.0, scaleInEnabled: true, scaleInDropPct: -4.0, maxTranches: 2, minEntryIntervalHours: 24, maxHoldHours: 72 },
+    bounds: {
+      dipThresholdPct: { min: -15, max: -1, label: "Dip: 24h return at or below (%)" },
+      dipFromHighPct: { min: 0.8, max: 0.99, label: "Dip: price at or below × 24h high" },
+      takeProfitPct: { min: 1, max: 20, label: "Take profit (%)" },
+      stopLossPct: { min: -20, max: -1, label: "Hard stop (%)" },
+      positionSizePct: { min: 0.5, max: 5, label: "Size per tranche (% of desk equity)" },
+      scaleInEnabled: { min: 0, max: 1, label: "Scale-in on", kind: "boolean" },
+      scaleInDropPct: { min: -15, max: -1, label: "Scale-in after a further drop of (%)" },
+      maxTranches: { min: 1, max: 2, label: "Max tranches per coin", kind: "integer" },
+      minEntryIntervalHours: { min: 1, max: 72, label: "Min hours between dip entries per coin", kind: "integer" },
+      maxHoldHours: { min: 6, max: 240, label: "Time exit after (h, when in profit)", kind: "integer" },
+    },
+    warmupBars: 25,
+    run: ({ params, universe, bars, positions, recentEntries, equity, now }) =>
+      runDipStrategy(
+        {
+          universe,
+          dipThresholdPct: n(params, "dipThresholdPct"),
+          dipFromHighPct: n(params, "dipFromHighPct"),
+          takeProfitPct: n(params, "takeProfitPct"),
+          stopLossPct: n(params, "stopLossPct"),
+          positionSizePct: n(params, "positionSizePct"),
+          scaleInEnabled: b(params, "scaleInEnabled"),
+          scaleInDropPct: n(params, "scaleInDropPct"),
+          maxTranches: n(params, "maxTranches"),
+          minEntryIntervalHours: n(params, "minEntryIntervalHours"),
+          maxHoldHours: n(params, "maxHoldHours"),
+        },
+        bars,
+        positions,
+        recentEntries.map((e) => ({ ...e, strategy: "dip-v1" })),
+        equity,
+        now,
+      ).signals,
+  },
+  "swing-v1": {
+    id: "swing-v1",
+    desk: "orbit",
+    label: "Swing (EMA cross)",
+    summary: "Rides multi-day swings: buys when the 20-hour EMA crosses above the 50-hour EMA, sells on the cross back down, −3% stop or +6% target.",
+    defaults: { fastEma: 20, slowEma: 50, takeProfitPct: 6.0, stopLossPct: -3.0, positionSizePct: 2.0, maxOpenPositions: 3, minEntryIntervalHours: 12 },
+    bounds: {
+      fastEma: { min: 5, max: 50, label: "Fast EMA (hours)", kind: "integer" },
+      slowEma: { min: 20, max: 200, label: "Slow EMA (hours)", kind: "integer" },
+      takeProfitPct: { min: 1, max: 30, label: "Take profit (%)" },
+      stopLossPct: { min: -15, max: -0.5, label: "Stop loss (%)" },
+      positionSizePct: { min: 0.5, max: 5, label: "Size (% of desk equity)" },
+      maxOpenPositions: { min: 1, max: 3, label: "Max open positions", kind: "integer" },
+      minEntryIntervalHours: { min: 1, max: 72, label: "Min hours between entries per coin", kind: "integer" },
+    },
+    warmupBars: 51,
+    run: ({ params, universe, bars, positions, recentEntries, equity, now }) =>
+      runSwingStrategy(
+        {
+          universe,
+          fastEma: n(params, "fastEma"),
+          slowEma: n(params, "slowEma"),
+          takeProfitPct: n(params, "takeProfitPct"),
+          stopLossPct: n(params, "stopLossPct"),
+          positionSizePct: n(params, "positionSizePct"),
+          maxOpenPositions: n(params, "maxOpenPositions"),
+          minEntryIntervalHours: n(params, "minEntryIntervalHours"),
+        },
+        bars,
+        positions,
+        recentEntries,
+        equity,
+        now,
+      ).signals,
+  },
+  "breakout-v1": {
+    id: "breakout-v1",
+    desk: "phantom",
+    label: "Volume breakout",
+    summary: "Event desk without a news feed: buys when an hour closes above the prior 24h high on at least 2× normal volume; quick +2.5% target, −1.5% stop, out within 24h.",
+    defaults: { lookbackHours: 24, volumeMultiple: 2.0, takeProfitPct: 2.5, stopLossPct: -1.5, maxHoldHours: 24, positionSizePct: 2.0, maxOpenPositions: 3, minEntryIntervalHours: 6 },
+    bounds: {
+      lookbackHours: { min: 6, max: 72, label: "Breakout lookback (hours)", kind: "integer" },
+      volumeMultiple: { min: 1.2, max: 5, label: "Volume vs average (×)" },
+      takeProfitPct: { min: 0.5, max: 15, label: "Take profit (%)" },
+      stopLossPct: { min: -10, max: -0.5, label: "Stop loss (%)" },
+      maxHoldHours: { min: 2, max: 96, label: "Time exit after (h)", kind: "integer" },
+      positionSizePct: { min: 0.5, max: 5, label: "Size (% of desk equity)" },
+      maxOpenPositions: { min: 1, max: 3, label: "Max open positions", kind: "integer" },
+      minEntryIntervalHours: { min: 1, max: 48, label: "Min hours between entries per coin", kind: "integer" },
+    },
+    warmupBars: 25,
+    run: ({ params, universe, bars, positions, recentEntries, equity, now }) =>
+      runBreakoutStrategy(
+        {
+          universe,
+          lookbackHours: n(params, "lookbackHours"),
+          volumeMultiple: n(params, "volumeMultiple"),
+          takeProfitPct: n(params, "takeProfitPct"),
+          stopLossPct: n(params, "stopLossPct"),
+          maxHoldHours: n(params, "maxHoldHours"),
+          positionSizePct: n(params, "positionSizePct"),
+          maxOpenPositions: n(params, "maxOpenPositions"),
+          minEntryIntervalHours: n(params, "minEntryIntervalHours"),
+        },
+        bars,
+        positions,
+        recentEntries,
+        equity,
+        now,
+      ).signals,
+  },
+};
+
+export function isStrategyId(id: unknown): id is StrategyId {
+  return typeof id === "string" && id in STRATEGIES;
+}
+
+export const DEFAULT_UNIVERSE: string[] = [...ROBOT_UNIVERSE];
+
+/**
+ * Merge `overrides` onto `base` (defaults when absent) and check every value against the strategy bounds.
+ * Unknown keys and out-of-range values are errors; nothing is clamped silently.
+ */
+export function validateParams(
+  strategy: StrategyId,
+  overrides: Record<string, unknown>,
+  base?: StrategyParams,
+): { ok: true; params: StrategyParams } | { ok: false; errors: string[] } {
+  const def = STRATEGIES[strategy];
+  const params: StrategyParams = { ...def.defaults, ...(base ?? {}) };
+  const errors: string[] = [];
+  for (const [key, raw] of Object.entries(overrides ?? {})) {
+    const bound = def.bounds[key];
+    if (!bound) {
+      errors.push(`${key} is not a ${strategy} parameter. Allowed: ${Object.keys(def.bounds).join(", ")}`);
+      continue;
+    }
+    if (bound.kind === "boolean") {
+      if (typeof raw !== "boolean") errors.push(`${key} must be true or false`);
+      else params[key] = raw;
+      continue;
+    }
+    const value = typeof raw === "string" ? Number(raw) : raw;
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+      errors.push(`${key} must be a number`);
+      continue;
+    }
+    if (bound.kind === "integer" && !Number.isInteger(value)) {
+      errors.push(`${key} must be a whole number`);
+      continue;
+    }
+    if (value < bound.min || value > bound.max) {
+      errors.push(`${key}=${value} is outside the allowed range ${bound.min}…${bound.max}`);
+      continue;
+    }
+    params[key] = value;
+  }
+  if (strategy === "swing-v1" && Number(params.fastEma) >= Number(params.slowEma)) {
+    errors.push("fastEma must be smaller than slowEma");
+  }
+  return errors.length ? { ok: false, errors } : { ok: true, params };
+}
+
+/** Desk params from the DB merged over defaults (missing keys → defaults). */
+export function effectiveParams(strategy: StrategyId, stored: unknown): StrategyParams {
+  const base = { ...STRATEGIES[strategy].defaults };
+  if (stored && typeof stored === "object") {
+    for (const [k, v] of Object.entries(stored as Record<string, unknown>)) {
+      if (k in base && (typeof v === "number" || typeof v === "boolean")) base[k] = v;
+    }
+  }
+  return base;
+}

@@ -91,9 +91,10 @@ export function calculateReturn(bars: Bar[]): number | null {
 export function hasRecentEntry(
   symbol: string,
   recentEntries: RecentEntry[],
-  minIntervalHours: number
+  minIntervalHours: number,
+  now: number = Date.now()
 ): boolean {
-  const cutoff = Date.now() - minIntervalHours * 60 * 60 * 1000;
+  const cutoff = now - minIntervalHours * 60 * 60 * 1000;
   
   return recentEntries.some(
     (entry) =>
@@ -111,7 +112,8 @@ export function runStrategy(
   positions: Position[],
   recentEntries: RecentEntry[],
   equity: number,
-  startOfDayEquity: number
+  startOfDayEquity: number,
+  now: number = Date.now()
 ): StrategyState {
   const signals: Signal[] = [];
   
@@ -160,7 +162,7 @@ export function runStrategy(
     if (positions.some((p) => p.symbol === symbol)) continue;
     
     // Skip if recent entry
-    if (hasRecentEntry(symbol, recentEntries, config.minEntryIntervalHours)) {
+    if (hasRecentEntry(symbol, recentEntries, config.minEntryIntervalHours, now)) {
       continue;
     }
     

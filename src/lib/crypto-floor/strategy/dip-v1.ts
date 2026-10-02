@@ -126,9 +126,10 @@ export function isLastCandleGreen(bars: Bar[]): boolean {
 export function hasRecentDipEntry(
   symbol: string,
   recentEntries: RecentEntry[],
-  minIntervalHours: number
+  minIntervalHours: number,
+  now: number = Date.now()
 ): boolean {
-  const cutoff = Date.now() - minIntervalHours * 60 * 60 * 1000;
+  const cutoff = now - minIntervalHours * 60 * 60 * 1000;
   return recentEntries.some(
     (entry) =>
       entry.symbol === symbol &&
@@ -140,10 +141,9 @@ export function hasRecentDipEntry(
 /**
  * Calculate hours held for a position
  */
-export function hoursHeld(position: Position): number {
+export function hoursHeld(position: Position, nowMs: number = Date.now()): number {
   if (!position.enteredAt) return 0;
   const enteredMs = new Date(position.enteredAt).getTime();
-  const nowMs = Date.now();
   return (nowMs - enteredMs) / (1000 * 60 * 60);
 }
 
@@ -155,7 +155,8 @@ export function runDipStrategy(
   bars1h: Map<string, Bar[]>, // symbol → 1h bars (need 25 for 24h data)
   positions: Position[],
   recentEntries: RecentEntry[],
-  equity: number
+  equity: number,
+  now: number = Date.now()
 ): DipState {
   const signals: Signal[] = [];
 
@@ -163,7 +164,7 @@ export function runDipStrategy(
   for (const position of positions.filter(
     (p) => p.symbol && config.universe.includes(p.symbol)
   )) {
-    const held = hoursHeld(position);
+    const held = hoursHeld(position, now);
 
     // Take profit
     if (position.unrealizedPnlPct >= config.takeProfitPct) {
@@ -235,7 +236,7 @@ export function runDipStrategy(
     if (positions.some((p) => p.symbol === symbol)) continue;
 
     // Skip if recent dip entry
-    if (hasRecentDipEntry(symbol, recentEntries, config.minEntryIntervalHours)) {
+    if (hasRecentDipEntry(symbol, recentEntries, config.minEntryIntervalHours, now)) {
       continue;
     }
 

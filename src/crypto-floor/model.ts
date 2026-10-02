@@ -13,7 +13,7 @@ export const desks = [
   {
     id: "neon",
     name: "NEON",
-    strategy: "Mean Reversion",
+    strategy: "Buy the Dip",
     color: "#29c8ff",
     symbol: "光",
     names: ["YUKI", "SORA", "NOVA", "REI"],
@@ -29,7 +29,7 @@ export const desks = [
   {
     id: "phantom",
     name: "PHANTOM",
-    strategy: "News / Event Driven",
+    strategy: "Volume Breakout",
     color: "#be6dff",
     symbol: "影",
     names: ["ECHO", "MIRA", "ZERO", "SAGE"],

@@ -2,6 +2,8 @@
 import { requestPayment, stripeSummary } from "@/lib/payments";
 import { fetchWalletSummary, walletFactsForCixy } from "@/lib/walletStats";
 import { loadFloor } from "@/crypto-floor/paper/load";
+import { createCryptoFloorDb } from "@/lib/crypto-floor/db";
+import { loadRobotState } from "@/lib/crypto-floor/state";
 import {
   createNewDraft,
   createReplyDraft,
@@ -64,7 +66,7 @@ You can draft and save emails for review, read mail actually available through t
 
 Tools:
 - wallet_summary — real Apixis Wallet sales: cash in, refunds, Ixis sold/redeemed, top sites, unspent Ixis owed. Use for "how are sales", "what did we make today/this week". Unspent Ixis are owed service, not profit.
-- trading_floor — live AwadBot PAPER trading (not real money): positions, P/L, latest orders. Always say it is paper.
+- trading_floor — the Crypto Floor robot's four PAPER desks plus the shared AwadBot paper book (not real money): status, P/L, positions, robot trades, strategy tests. Always say it is paper. Awad talks to the desk leads and controls the robot at /crypto-floor.
 - request_payment — save a payment request for Awad to approve in /payments. Never charges a card. Use integer cents and USD.
 - stripe_summary — read verified income and balances from the connected Stripe account. Never confuse Stripe balances with permission to spend or net profit.
 - list_business_agents — find the correct company-specific agent ID before assigning work. Never pick a same-named agent from another business.
@@ -155,7 +157,7 @@ export const CEO_ANTHROPIC_TOOLS: Tool[] = [
   {
     name: "trading_floor",
     description:
-      "Read the Crypto Floor: AwadBot's Alpaca PAPER account (fake money) — engine state, equity, open positions and the latest orders. Read-only; COMMAND never places orders.",
+      "Read the Crypto Floor (Alpaca PAPER, fake money): the robot's four desks (SAMURAI momentum, NEON buy-the-dip, ORBIT swing, PHANTOM breakout) — status, P&L, positions, recent robot trades, running strategy tests — plus the shared AwadBot paper book. Read-only. To talk to a desk lead or press the kill switch, send Awad to /crypto-floor.",
     input_schema: { type: "object", properties: {} },
   },
   {
@@ -465,11 +467,31 @@ export async function executeCeoTool(
   }
 
   if (call.name === "trading_floor") {
+    let robot: unknown = null;
+    try {
+      const db = createCryptoFloorDb();
+      if (db) {
+        const r = await loadRobotState(db);
+        robot = {
+          status: r.status,
+          lastTickAt: r.lastTickAt,
+          killSwitch: r.killSwitch,
+          watching: r.watchLine,
+          floor: r.floor,
+          desks: r.desks.map((d) => ({ name: d.name, strategy: d.strategyLabel, enabled: d.enabled, paused: d.pausedUntil, equity: d.equity, dayPnl: d.dayPnl, open: d.positions.map((p) => `${p.symbol} ${p.unrealizedPnlPct.toFixed(2)}%`), stats7d: d.stats7d })),
+          recentRobotOrders: r.orders.slice(0, 8).map((o) => `${o.created_at.slice(0, 16)} ${o.mode === "shadow" ? "TEST " : ""}${(o.desk ?? o.book).toUpperCase()} ${o.side} ${o.symbol} ${o.status}${o.filled_avg_price ? ` @ ${o.filled_avg_price}` : ""}`),
+          runningTests: r.experiments.filter((e) => e.status === "running").map((e) => ({ name: e.name, desk: e.desk, trades: e.trades, returnPct: e.returnPct })),
+        };
+      }
+    } catch {
+      robot = { error: "Robot state unavailable." };
+    }
     try {
       const { status, book } = await loadFloor();
       return {
         forModel: {
           paperOnly: true,
+          robot,
           engine: status.engine,
           trading: status.trading,
           heartbeat: status.heartbeat,
@@ -496,7 +518,7 @@ export async function executeCeoTool(
       };
     } catch {
       return {
-        forModel: { error: "Crypto Floor unavailable. Open /crypto-floor to check keys." },
+        forModel: { paperOnly: true, robot, awadbotBook: { error: "AwadBot paper book unavailable. Open /crypto-floor to check keys." } },
         clientActions: [],
       };
     }

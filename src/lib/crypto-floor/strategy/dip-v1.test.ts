@@ -1,4 +1,4 @@
-import { describe, it, expect } from "@jest/globals";
+import { describe, it, expect } from "vitest";
 import {
   calculate1hReturn,
   calculate24hReturn,
@@ -115,7 +115,7 @@ describe("dip-v1 strategy", () => {
           "BTC/USD",
           new Array(25).fill(null).map((_, i) => ({
             symbol: "BTC/USD",
-            open: i === 24 ? 64000 : 65000,
+            open: i === 24 ? 63500 : 65000, // last hour green (close 64000 > open 63500)
             close: i === 0 ? 67000 : 64000, // -4.48%
             high: 67000,
           } as Bar)),

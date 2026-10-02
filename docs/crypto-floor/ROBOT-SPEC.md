@@ -1,5 +1,14 @@
 # Crypto Floor — Robot Spec (from Awad via @hermes, 2026-09-28)
 
+> ## ✅ STATUS 2026-10-02 (Claude) — robot v2 built; read this before the older blocks below
+> Awad asked (2026-10-02): fix everything, four teams testing strategies 24/7, talk to the leads, daily email to awad@apixis.dev, all visible in COMMAND. Full log: `NOTES/CLAUDE.md`.
+> - **Why v1 never traded:** bars fetched with `limit=2` and no `start` (= first two hours of the UTC day, all day) and keyed `BTCUSD` (v1beta3 keys are `BTC/USD`); dip-v1 never called; `order_id` UNIQUE blocked `order_filled`; account equity (shared with AwadBot) drove the halt; halt never resumed. 18 events lifetime, 0 orders.
+> - **v2:** 4 desks, each its own $25k paper ledger: SAMURAI `momentum-v1`, NEON `dip-v1` (Awad's buy-the-dip), ORBIT `swing-v1` (EMA 20/50), PHANTOM `breakout-v1` (volume). Code: `src/lib/crypto-floor/` (`engine.ts` pure planner + `tick.ts` runner). Steps 0–6 below are implemented; deviations: max open positions total = 8 (4 desks), learning needs ≥3 closed trades in 7d, review/email cron is `0 13 * * *` (8 AM Central) instead of `0 0 * * *`.
+> - **Guardrails in code:** kill switch (`crypto_floor_params.halted`, owner button), desk + floor day-loss pause until next UTC midnight (exits still run), per-coin stale-data block, 3 orders/tick (exits first), one open order per desk+coin, sells capped by what Alpaca holds, single-leader tick lease, reconcile by `client_order_id` (`cf-${strategy}-${SYMBOL}-${side}-${YYYYMMDDHHmm}`) before acting, every param inside hard bounds (size ≤ 5%).
+> - **Talk to the team:** `/crypto-floor` → CHAT. Agents can backtest and start SHADOW tests (simulated fills). Only Awad can promote a test, switch desks, use the kill switch or place orders.
+> - **DB:** migration `20261002000000_crypto_floor_robot_v2.sql` APPLIED on the hub 2026-10-02 (additive). **Code goes live when branch `claude/gracious-brahmagupta-2w2bcc` is merged to master.** Verify after deploy: heartbeat events every 5 min in `crypto_floor_events`, `crypto_floor_orders` rows when a setup appears.
+> - **Recommended:** give the floor its own Alpaca paper account (`CRYPTO_FLOOR_ALPACA_API_KEY` / `CRYPTO_FLOOR_ALPACA_SECRET_KEY`); it still shares AwadBot's book until then.
+
 
 > ## ⚠️ READ FIRST — status as of 2026-09-28 05:40 CDT (from @hermes; Bot Chat messages to you are bouncing, so this file is the channel)
 > 1. **Production build is ERROR since 4ed9719.** `src/app/api/crypto-floor/tick/route.ts` has six `@typescript-eslint/no-explicit-any` errors (lines ~105, 130, 152, 309, 343, 353). Vercel fails the build on lint → your tick route is NOT live; the 401 you see is the old build. Type them (`unknown` + narrowing, or Alpaca types), push, then confirm `state == READY` via the Vercel API before writing "deployed".
