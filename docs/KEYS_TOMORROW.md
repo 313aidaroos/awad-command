@@ -85,15 +85,18 @@ What Cixy can and can't do with email:
 - Drafts land in your real Drafts folder and show a **Send** card in her chat.
 - **Only your Send tap sends.** Cixy has no send tool.
 
-## 5. Crypto Floor (paper trading, live every 5 s)
+## 5. Crypto Floor (robot trades 4 desks on Alpaca paper every 5 min; Coinbase = real money, OFF by default)
 
 | Variable | Value |
 |---|---|
 | `TRADE_MODE` | `paper` |
-| `ALPACA_API_KEY` / `ALPACA_SECRET_KEY` | Keys from the Alpaca **paper** dashboard for the account AwadBot trades |
-| `AWADBOT_STATUS_URL` + `DASHBOARD_PASSWORD` | Optional: AwadBot's `/api/status` for heartbeat and halt |
+| `ALPACA_API_KEY` / `ALPACA_SECRET_KEY` | Alpaca **paper** keys (shared with AwadBot today) |
+| `CRYPTO_FLOOR_ALPACA_API_KEY` / `CRYPTO_FLOOR_ALPACA_SECRET_KEY` | Recommended: keys of a second Alpaca **paper** account just for the floor |
+| `CRON_SECRET` | Already set. Vercel cron uses it for `/api/crypto-floor/tick` (5 min) and `/api/crypto-floor/review` (13:00 UTC email) |
+| `COINBASE_API_KEY_NAME` / `COINBASE_API_PRIVATE_KEY` | Optional, REAL MONEY venue. Coinbase Developer Platform → API keys → **Secret API key** (ECDSA or Ed25519) with **View + Trade only, never Transfer**. Safest: create it for a separate Coinbase portfolio holding only the money the robot may use. Leave the IP allowlist empty. |
+| `CRYPTO_FLOOR_REPORT_EMAIL` | Optional; daily brief recipient (default awad@apixis.dev) |
 
-`AWADBOT_JOURNAL_DIR` only works where COMMAND runs on the same machine as AwadBot. It does nothing on Vercel. Live-money hosts are refused, and COMMAND never places orders.
+With the Coinbase key added, the floor only **reads** balances. Real-money trading starts only when you press **Go live…** for a team in `/crypto-floor` → ROBOT → *Real money · Coinbase* and type `REAL MONEY`. Limits default to $100 total / $25 per buy / stop after −$10 a day. The robot refuses any key that can transfer funds.
 
 ## 6. Optional
 

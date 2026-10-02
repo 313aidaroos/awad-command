@@ -45,6 +45,7 @@ describe("daily brief", () => {
     desks: [{ id: "neon", name: "NEON", strategy: "dip-v1", label: "Buy the dip", enabled: true, pausedUntil: null, version: 2, capital: 25_000, equity: 25_120, pnl24h: 120, pnl24hPct: 0.48, realizedAllTime: 15, stats24h: empty, stats7d: empty, bySymbol24h: {}, open: [{ symbol: "ETH/USD", qty: 0.12, entry: 4000, price: 4100, pnlPct: 2.5, pnl: 12 }], tuning: { reason: "deeper <dip>", before: {}, after: {} } }],
     trades24h: [{ desk: "neon", book: "neon", symbol: "SOL/USD", entryAt: "", exitAt: "", qty: 2, entryPrice: 190, exitPrice: 197.5, pnl: 15, pnlPct: 3.9, exitReason: "Take profit" }],
     experiments: [],
+    realMoney: { connected: false, ok: false, totalUsd: null, enabledDesks: [], pnl: 0, trades24h: 0, limits: { maxTotalUsd: 100, maxTradeUsd: 25, dayLossUsd: 10 }, note: "Coinbase not connected" },
     issues: ["Shared account"],
     aiNote: "Quiet day.",
   };
@@ -56,6 +57,8 @@ describe("daily brief", () => {
     expect(text).toContain("NEON (Buy the dip, v2)");
     expect(text).toContain("LEARNED: deeper <dip>");
     expect(text).toContain("Shared account");
+    expect(text).toContain("REAL MONEY (COINBASE)");
+    expect(text).toContain("OFF for every team");
     const html = reportHtml(summary);
     expect(html).toContain("deeper &lt;dip&gt;");
     expect(html).not.toContain("deeper <dip>");

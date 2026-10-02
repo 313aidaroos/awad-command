@@ -193,3 +193,70 @@ export function strategyCatalog() {
     return { desk, strategy: s.id, label: s.label, summary: s.summary, defaults: s.defaults, bounds: s.bounds };
   });
 }
+
+// ── REAL MONEY (Coinbase) — OWNER ONLY ───────────────────────────────────────
+
+/** Ceilings on what the owner can set from the UI. Raising these needs a code change. */
+export const LIVE_LIMIT_CEILINGS = { maxTotalUsd: 10_000, maxTradeUsd: 2_500, dayLossUsd: 2_500 } as const;
+export const LIVE_CONFIRM_PHRASE = "REAL MONEY";
+
+/**
+ * OWNER ONLY. Switch a desk's real-money trading on/off. Turning it ON re-checks the Coinbase key right now:
+ * it must exist, have Trade, and must NOT have Transfer.
+ */
+export async function setDeskLive(opts: {
+  db: SupabaseClient;
+  log: EventLog;
+  coinbase: import("./coinbase").CoinbaseClient | null;
+  desk: DeskId;
+  on: boolean;
+  confirm?: string;
+  by: string;
+}) {
+  const { db, log, desk, on, by } = opts;
+  if (on) {
+    if (opts.confirm !== LIVE_CONFIRM_PHRASE) throw new LabError(`Type ${LIVE_CONFIRM_PHRASE} to switch on real-money trading.`);
+    if (!opts.coinbase) throw new LabError("Coinbase is not connected. Add COINBASE_API_KEY_NAME and COINBASE_API_PRIVATE_KEY on Vercel first.");
+    let perms;
+    try {
+      perms = await opts.coinbase.keyPermissions();
+    } catch (err) {
+      throw new LabError(`Could not reach Coinbase with the saved key: ${err instanceof Error ? err.message.slice(0, 160) : "error"}`);
+    }
+    if (perms.can_transfer) throw new LabError("This Coinbase key can TRANSFER funds. Create a new key with View + Trade only, then try again.");
+    if (!perms.can_trade) throw new LabError("This Coinbase key has no Trade permission.");
+  }
+  const now = new Date().toISOString();
+  const { error } = await db
+    .from("crypto_floor_desks")
+    .update(on ? { live_enabled: true, live_enabled_at: now, live_enabled_by: by, updated_at: now } : { live_enabled: false, updated_at: now })
+    .eq("id", desk);
+  if (error) throw new LabError(error.message);
+  await db.from("crypto_floor_param_changes").insert({ desk, source: "owner", reason: `Real money ${on ? "ON" : "OFF"} by ${by}`, before: { live_enabled: !on }, after: { live_enabled: on } });
+  await log.log({
+    type: "live_switch",
+    agentRole: "risk",
+    desk,
+    title: on ? `REAL MONEY ON for ${desk.toUpperCase()} (Coinbase) — switched on by ${by}` : `REAL MONEY OFF for ${desk.toUpperCase()} — no new real-money buys; it still sells coins it holds. Switched off by ${by}`,
+    payload: { scope: "live", live: on, by },
+  });
+}
+
+/** OWNER ONLY. Real-money hard limits. */
+export async function setLiveLimits(db: SupabaseClient, log: EventLog, limits: { maxTotalUsd: number; maxTradeUsd: number; dayLossUsd: number }, by: string) {
+  const { maxTotalUsd, maxTradeUsd, dayLossUsd } = limits;
+  const c = LIVE_LIMIT_CEILINGS;
+  if (![maxTotalUsd, maxTradeUsd, dayLossUsd].every((x) => Number.isFinite(x) && x >= 0)) throw new LabError("Limits must be zero or positive numbers.");
+  if (maxTotalUsd > c.maxTotalUsd || maxTradeUsd > c.maxTradeUsd || dayLossUsd > c.dayLossUsd) {
+    throw new LabError(`Above the built-in ceiling ($${c.maxTotalUsd} total, $${c.maxTradeUsd} per trade, $${c.dayLossUsd} daily loss). Ask Claude to raise the ceiling in code.`);
+  }
+  if (maxTradeUsd > maxTotalUsd) throw new LabError("Per-trade limit can't be bigger than the total limit.");
+  const { data: before } = await db.from("crypto_floor_params").select("live_max_total_usd,live_max_trade_usd,live_day_loss_usd").eq("id", 1).maybeSingle();
+  const { error } = await db
+    .from("crypto_floor_params")
+    .update({ live_max_total_usd: maxTotalUsd, live_max_trade_usd: maxTradeUsd, live_day_loss_usd: dayLossUsd, updated_at: new Date().toISOString() })
+    .eq("id", 1);
+  if (error) throw new LabError(error.message);
+  await db.from("crypto_floor_param_changes").insert({ desk: null, source: "owner", reason: `Real-money limits set by ${by}`, before, after: { live_max_total_usd: maxTotalUsd, live_max_trade_usd: maxTradeUsd, live_day_loss_usd: dayLossUsd } });
+  await log.log({ type: "param_change", agentRole: "risk", title: `Real-money limits: $${maxTotalUsd} total · $${maxTradeUsd} per trade · stop after −$${dayLossUsd}/day (set by ${by})`, payload: { scope: "live", by } });
+}

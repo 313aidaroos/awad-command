@@ -113,11 +113,14 @@ export type ReviewSummary = {
   desks: DeskReview[];
   trades24h: Array<ClosedTrade & { desk: string }>;
   experiments: ExperimentReview[];
+  /** REAL MONEY (Coinbase). OFF unless the owner switched a desk on. */
+  realMoney: { connected: boolean; ok: boolean; totalUsd: number | null; enabledDesks: string[]; pnl: number; trades24h: number; limits: { maxTotalUsd: number; maxTradeUsd: number; dayLossUsd: number }; note: string | null };
   issues: string[];
   aiNote: string | null;
 };
 
 type HeartbeatPayload = {
+  coinbase?: { configured?: boolean; ok?: boolean; error?: string | null; totalUsd?: number; canTransfer?: boolean; blocked?: string | null } | null;
   prices?: Record<string, number>;
   watching?: WatchStat[];
   desks?: Array<{ id: string; equity: number }>;
@@ -219,6 +222,22 @@ export async function buildReview(db: SupabaseClient, now: number, siteUrl: stri
   if (staleTicks) issues.push(`Market data was stale on ${staleTicks} tick(s); entries were blocked then.`);
   if (latest?.payload.dedicatedAccount === false) issues.push("The floor still trades the Alpaca paper account it shares with AwadBot. Add CRYPTO_FLOOR_ALPACA_API_KEY / CRYPTO_FLOOR_ALPACA_SECRET_KEY (a separate paper account) to isolate it.");
 
+  const cbp = latest?.payload.coinbase ?? null;
+  const liveBooks = desks.map((d) => markBook(books.get(`live:${d.id}`) ?? emptyBook(`live:${d.id}`), 0, prices));
+  const enabledLive = desks.filter((d) => d.live_enabled).map((d) => d.id);
+  if (cbp?.canTransfer) issues.push("Your Coinbase key can TRANSFER funds — the robot refuses to trade with it. Create a View + Trade key.");
+  if (enabledLive.length && cbp?.blocked) issues.push(`Real-money trading is blocked: ${cbp.blocked}`);
+  const realMoney: ReviewSummary["realMoney"] = {
+    connected: cbp?.configured === true,
+    ok: cbp?.ok === true,
+    totalUsd: cbp?.ok ? Number(cbp.totalUsd ?? 0) : null,
+    enabledDesks: enabledLive,
+    pnl: liveBooks.reduce((sum, b) => sum + b.realizedPnl + b.unrealizedPnl, 0),
+    trades24h: liveBooks.reduce((sum, b) => sum + b.closedTrades.filter((t) => Date.parse(t.exitAt) >= since24).length, 0),
+    limits: { maxTotalUsd: params.live_max_total_usd, maxTradeUsd: params.live_max_trade_usd, dayLossUsd: params.live_day_loss_usd },
+    note: !cbp?.configured ? "Coinbase not connected" : cbp.ok ? null : `Coinbase error: ${cbp.error ?? "unknown"}`,
+  };
+
   const trades24h = deskReviews.flatMap((d) => (books.get(d.id)?.closedTrades ?? []).filter((t) => Date.parse(t.exitAt) >= since24).map((t) => ({ ...t, desk: d.id })));
   const allStats24 = tradeStats(trades24h);
   const capital = deskReviews.reduce((s, d) => s + d.capital, 0);
@@ -252,6 +271,7 @@ export async function buildReview(db: SupabaseClient, now: number, siteUrl: stri
     desks: deskReviews,
     trades24h: trades24h.sort((a, b) => b.exitAt.localeCompare(a.exitAt)),
     experiments: expReviews,
+    realMoney,
     issues,
     aiNote: null,
   };

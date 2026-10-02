@@ -481,6 +481,7 @@ export async function executeCeoTool(
           desks: r.desks.map((d) => ({ name: d.name, strategy: d.strategyLabel, enabled: d.enabled, paused: d.pausedUntil, equity: d.equity, dayPnl: d.dayPnl, open: d.positions.map((p) => `${p.symbol} ${p.unrealizedPnlPct.toFixed(2)}%`), stats7d: d.stats7d })),
           recentRobotOrders: r.orders.slice(0, 8).map((o) => `${o.created_at.slice(0, 16)} ${o.mode === "shadow" ? "TEST " : ""}${(o.desk ?? o.book).toUpperCase()} ${o.side} ${o.symbol} ${o.status}${o.filled_avg_price ? ` @ ${o.filled_avg_price}` : ""}`),
           runningTests: r.experiments.filter((e) => e.status === "running").map((e) => ({ name: e.name, desk: e.desk, trades: e.trades, returnPct: e.returnPct })),
+          realMoney: { coinbaseConnected: r.coinbase.configured, desksLive: r.coinbase.enabledDesks, limits: r.coinbase.limits, realPnl: r.coinbase.pnlNow, note: r.coinbase.enabledDesks.length ? "REAL MONEY ON for these desks (Coinbase)" : "Real money OFF — all trading is Alpaca paper" },
         };
       }
     } catch {

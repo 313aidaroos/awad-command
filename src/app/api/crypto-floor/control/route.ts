@@ -3,7 +3,8 @@ import { z } from "zod";
 import { AlpacaClient, floorAlpacaConfig } from "@/lib/crypto-floor/alpaca";
 import { createCryptoFloorDb } from "@/lib/crypto-floor/db";
 import { EventLog } from "@/lib/crypto-floor/events";
-import { LabError, promoteExperiment, setDeskEnabled, setKillSwitch, startExperiment, stopExperiment } from "@/lib/crypto-floor/lab";
+import { CoinbaseClient, coinbaseConfig } from "@/lib/crypto-floor/coinbase";
+import { LabError, promoteExperiment, setDeskEnabled, setDeskLive, setKillSwitch, setLiveLimits, startExperiment, stopExperiment } from "@/lib/crypto-floor/lab";
 import { ownerEmail, sameOrigin } from "@/lib/crypto-floor/owner";
 
 export const runtime = "nodejs";
@@ -16,6 +17,9 @@ const schema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("desk_on"), desk: deskId }),
   z.object({ action: z.literal("desk_off"), desk: deskId }),
   z.object({ action: z.literal("promote"), id: z.string().uuid() }),
+  z.object({ action: z.literal("live_on"), desk: deskId, confirm: z.string().max(40) }),
+  z.object({ action: z.literal("live_off"), desk: deskId }),
+  z.object({ action: z.literal("live_limits"), maxTotalUsd: z.number(), maxTradeUsd: z.number(), dayLossUsd: z.number() }),
   z.object({ action: z.literal("stop_experiment"), id: z.string().uuid() }),
   z.object({
     action: z.literal("start_experiment"),
@@ -27,7 +31,7 @@ const schema = z.discriminatedUnion("action", [
   }),
 ]);
 
-/** OWNER ONLY: kill switch, desk on/off, strategy tests (start / stop / promote to the live paper desk). */
+/** OWNER ONLY: kill switch, desk on/off, strategy tests (start / stop / promote), REAL MONEY switch + limits (Coinbase). */
 export async function POST(request: Request) {
   const by = await ownerEmail();
   if (!by) return NextResponse.json({ error: "Owner sign-in required." }, { status: 401 });
@@ -55,6 +59,21 @@ export async function POST(request: Request) {
       case "desk_on":
       case "desk_off":
         await setDeskEnabled(db, log, body.desk, body.action === "desk_on", by);
+        return NextResponse.json({ ok: true });
+      case "live_on":
+      case "live_off": {
+        let cb: CoinbaseClient | null = null;
+        try {
+          const cfg = coinbaseConfig();
+          cb = cfg ? new CoinbaseClient(cfg) : null;
+        } catch {
+          cb = null;
+        }
+        await setDeskLive({ db, log, coinbase: cb, desk: body.desk, on: body.action === "live_on", confirm: body.action === "live_on" ? body.confirm : undefined, by });
+        return NextResponse.json({ ok: true });
+      }
+      case "live_limits":
+        await setLiveLimits(db, log, { maxTotalUsd: body.maxTotalUsd, maxTradeUsd: body.maxTradeUsd, dayLossUsd: body.dayLossUsd }, by);
         return NextResponse.json({ ok: true });
       case "promote":
         return NextResponse.json({ ok: true, ...(await promoteExperiment(db, log, body.id, by)) });

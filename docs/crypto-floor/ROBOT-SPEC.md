@@ -8,6 +8,7 @@
 > - **Talk to the team:** `/crypto-floor` → CHAT. Agents can backtest and start SHADOW tests (simulated fills). Only Awad can promote a test, switch desks, use the kill switch or place orders.
 > - **DB:** migration `20261002000000_crypto_floor_robot_v2.sql` APPLIED on the hub 2026-10-02 (additive). **Code goes live when branch `claude/gracious-brahmagupta-2w2bcc` is merged to master.** Verify after deploy: heartbeat events every 5 min in `crypto_floor_events`, `crypto_floor_orders` rows when a setup appears.
 > - **Recommended:** give the floor its own Alpaca paper account (`CRYPTO_FLOOR_ALPACA_API_KEY` / `CRYPTO_FLOOR_ALPACA_SECRET_KEY`); it still shares AwadBot's book until then.
+> - **2026-10-02 Coinbase (REAL MONEY) — built, OFF.** Awad: "keep it on Alpaca for now; when it's ready I'll flip it to live". Coinbase has no paper trading. Each desk has an owner-only real-money switch (`crypto_floor_desks.live_enabled`, default false; turning on requires typing REAL MONEY and re-checks the key). Hard limits in `crypto_floor_params.live_*` ($100 total / $25 per buy / −$10 per UTC day, owner-only, code ceilings in `lab.ts`). A live desk runs its own strategy on its own `live:<desk>` ledger; kill switch stops it; key with Transfer permission → refused. Code: `coinbase.ts`, `live.ts` (pure, tested), `liveRun.ts`. Migration `20261002010000_crypto_floor_coinbase.sql` applied. AI never toggles real money.
 
 
 > ## ⚠️ READ FIRST — status as of 2026-09-28 05:40 CDT (from @hermes; Bot Chat messages to you are bouncing, so this file is the channel)

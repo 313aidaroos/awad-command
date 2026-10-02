@@ -60,6 +60,27 @@ export type DeskView = {
   statsAll: Stats;
   lastEvent: { ts: string; title: string } | null;
   agents: Array<{ name: string; role: string }>;
+  /** REAL MONEY (Coinbase) for this desk. */
+  live: { enabled: boolean; enabledAt: string | null; enabledBy: string | null; positions: Position[]; realizedPnl: number; unrealizedPnl: number; trades: number };
+};
+
+export type CoinbaseView = {
+  configured: boolean;
+  ok: boolean;
+  error: string | null;
+  canTrade: boolean;
+  canTransfer: boolean;
+  usdAvailable: number;
+  totalUsd: number;
+  holdings: Array<{ currency: string; available: number; hold: number; usdValue: number | null }>;
+  enabledDesks: string[];
+  blocked: string | null;
+  exposureUsd: number;
+  dayPnl: number;
+  pnlNow: number;
+  pausedUntil: string | null;
+  limits: { maxTotalUsd: number; maxTradeUsd: number; dayLossUsd: number };
+  asOf: string | null;
 };
 
 export type ExperimentView = ExperimentRow & { equity: number; returnPct: number; trades: number; winRate: number | null; open: number };
@@ -91,6 +112,8 @@ export type RobotState = {
   paramChanges: Array<{ created_at: string; desk: string | null; version: number | null; source: string; reason: string | null }>;
   report: { day: string; email_status: string; email_to: string | null; created_at: string; error: string | null } | null;
   catalog: ReturnType<typeof strategyCatalog>;
+  /** REAL MONEY venue status (Coinbase), as of the last tick. */
+  coinbase: CoinbaseView;
 };
 
 const iso = (ts: string) => {
@@ -176,6 +199,10 @@ export async function loadRobotState(db: SupabaseClient, now = Date.now()): Prom
       statsAll: lite(tradeStats(marked.closedTrades)),
       lastEvent: last ? { ts: last.ts, title: last.title } : null,
       agents: deskAgents(d.id).map((a) => ({ name: a.name, role: a.role })),
+      live: (() => {
+        const lm = markBook(books.get(`live:${d.id}`) ?? emptyBook(`live:${d.id}`), 0, prices);
+        return { enabled: d.live_enabled === true, enabledAt: d.live_enabled_at ?? null, enabledBy: d.live_enabled_by ?? null, positions: lm.positions, realizedPnl: lm.realizedPnl, unrealizedPnl: lm.unrealizedPnl, trades: lm.closedTrades.length };
+      })(),
     };
   });
 
@@ -227,6 +254,28 @@ export async function loadRobotState(db: SupabaseClient, now = Date.now()): Prom
     paramChanges: changesRes.data ?? [],
     report: reportRes.data?.[0] ?? null,
     catalog: strategyCatalog(),
+    coinbase: (() => {
+      const c = (hp.coinbase ?? null) as Partial<CoinbaseView> | null;
+      const liveExposure = deskViews.reduce((sum, d) => sum + d.live.positions.reduce((a, p) => a + p.qty * p.avgEntryPrice, 0), 0);
+      return {
+        configured: c?.configured === true,
+        ok: c?.ok === true,
+        error: c?.error ?? null,
+        canTrade: c?.canTrade === true,
+        canTransfer: c?.canTransfer === true,
+        usdAvailable: Number(c?.usdAvailable ?? 0),
+        totalUsd: Number(c?.totalUsd ?? 0),
+        holdings: c?.holdings ?? [],
+        enabledDesks: desks.filter((d) => d.live_enabled).map((d) => d.id),
+        blocked: c?.blocked ?? null,
+        exposureUsd: liveExposure,
+        dayPnl: Number(c?.dayPnl ?? 0),
+        pnlNow: deskViews.reduce((sum, d) => sum + d.live.realizedPnl + d.live.unrealizedPnl, 0),
+        pausedUntil: params.live_paused_until && Date.parse(params.live_paused_until) > now ? params.live_paused_until : null,
+        limits: { maxTotalUsd: params.live_max_total_usd, maxTradeUsd: params.live_max_trade_usd, dayLossUsd: params.live_day_loss_usd },
+        asOf: c ? lastTickAt : null,
+      };
+    })(),
   };
 }
 
@@ -243,6 +292,7 @@ const EVENT_MAP: Record<string, FloorEvent["eventType"]> = {
   review: "DAILY_SUMMARY_CREATED",
   report: "DAILY_SUMMARY_CREATED",
   param_change: "CONFIG_CHANGED",
+  live_switch: "CONFIG_CHANGED",
   experiment: "THESIS_CREATED",
   data_stale: "MARKET_DATA_STALE",
   system: "ENGINE_OFFLINE",
@@ -284,6 +334,7 @@ export function toFloorSnapshot(s: RobotState): Snapshot {
     { name: "Supabase event store", status: "ONLINE", detail: `${s.events.length} recent events` },
     { name: "AI provider (desk chat)", status: s.aiConnected ? "ONLINE" : "OFFLINE", detail: s.aiConnected ? "Desk leads can answer" : "ANTHROPIC_API_KEY not set" },
     { name: "Daily email", status: s.report?.email_status === "sent" ? "ONLINE" : s.report ? "STALE" : "UNKNOWN", detail: s.report ? `${s.report.day}: ${s.report.email_status}${s.report.error ? ` (${s.report.error.slice(0, 80)})` : ""}` : "First brief goes out at 13:00 UTC" },
+    { name: "Coinbase (real money)", status: s.coinbase.ok ? "ONLINE" : s.coinbase.configured ? "STALE" : "UNKNOWN", detail: !s.coinbase.configured ? "Not connected — add COINBASE_API_KEY_NAME / COINBASE_API_PRIVATE_KEY" : s.coinbase.ok ? `$${s.coinbase.totalUsd.toFixed(2)} · real money ${s.coinbase.enabledDesks.length ? `ON for ${s.coinbase.enabledDesks.join(", ")}` : "OFF"}${s.coinbase.canTransfer ? " · KEY CAN TRANSFER — trading refused" : ""}` : `Error: ${s.coinbase.error ?? "unknown"}` },
     { name: "Account isolation", status: s.dedicatedAccount ? "ONLINE" : s.dedicatedAccount === false ? "STALE" : "UNKNOWN", detail: s.dedicatedAccount ? "Floor has its own paper account" : "Shares AwadBot's paper account — desks use their own ledgers" },
   ];
   const teams: Snapshot["teams"] = visualDesks.map((vd) => {
@@ -321,9 +372,9 @@ export function toFloorSnapshot(s: RobotState): Snapshot {
       .map((w) => ({ symbol: w.symbol.split("/")[0], price: w.price as number, change: w.ret24h ?? 0, timestamp: iso(w.priceAt ?? now) })),
     portfolio: {
       paperBalance: s.floor.equity,
-      liveBalance: null,
+      liveBalance: s.coinbase.ok ? s.coinbase.totalUsd : null,
       paperPnl: s.floor.dayPnl,
-      livePnl: null,
+      livePnl: s.coinbase.enabledDesks.length || s.coinbase.exposureUsd > 0 ? s.coinbase.pnlNow : null,
       openPositions: s.floor.openPositions,
     },
     killSwitch: { halted: s.killSwitch.halted, reason: s.killSwitch.reason, timestamp: s.killSwitch.at, triggeredBy: s.killSwitch.by },

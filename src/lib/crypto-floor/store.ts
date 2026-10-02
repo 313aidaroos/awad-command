@@ -16,7 +16,10 @@ export function toOrderRow(r: Record<string, unknown>): OrderRow {
     book: String(r.book),
     desk: (r.desk as string) ?? null,
     strategy: (r.strategy as string) ?? null,
-    mode: r.mode === "shadow" ? "shadow" : "paper",
+    mode: r.mode === "shadow" ? "shadow" : r.mode === "live" ? "live" : "paper",
+    venue: (r.venue as OrderRow["venue"]) ?? undefined,
+    venue_order_id: (r.venue_order_id as string) ?? null,
+    fees: r.fees === null || r.fees === undefined ? null : num(r.fees),
     symbol: String(r.symbol),
     side: r.side === "sell" ? "sell" : "buy",
     intent: (r.intent as OrderRow["intent"]) ?? null,
@@ -47,6 +50,11 @@ export async function loadParams(db: SupabaseClient): Promise<FloorParamsRow> {
     day_pause_reason: data.day_pause_reason ?? null,
     max_open_positions_total: num(data.max_open_positions_total, 8),
     max_orders_per_tick: num(data.max_orders_per_tick, 3),
+    live_max_total_usd: num(data.live_max_total_usd, 100),
+    live_max_trade_usd: num(data.live_max_trade_usd, 25),
+    live_day_loss_usd: num(data.live_day_loss_usd, 10),
+    live_paused_until: data.live_paused_until ?? null,
+    live_pause_reason: data.live_pause_reason ?? null,
     updated_at: data.updated_at ?? new Date(0).toISOString(),
   };
 }
@@ -64,6 +72,9 @@ export async function loadDesks(db: SupabaseClient): Promise<DeskRow[]> {
     version: num(d.version, 1),
     paused_until: d.paused_until ?? null,
     pause_reason: d.pause_reason ?? null,
+    live_enabled: d.live_enabled === true,
+    live_enabled_at: d.live_enabled_at ?? null,
+    live_enabled_by: d.live_enabled_by ?? null,
     updated_at: d.updated_at,
   })) as DeskRow[];
   return rows.sort((a, b) => DESK_IDS.indexOf(a.id) - DESK_IDS.indexOf(b.id));
@@ -78,7 +89,7 @@ export async function loadExperiments(db: SupabaseClient, statuses?: ExperimentR
 }
 
 /** Every order that has filled any quantity (the ledgers' input). Paged. */
-export async function loadFilledOrders(db: SupabaseClient, modes: Array<"paper" | "shadow"> = ["paper", "shadow"]): Promise<OrderRow[]> {
+export async function loadFilledOrders(db: SupabaseClient, modes: Array<"paper" | "shadow" | "live"> = ["paper", "shadow", "live"]): Promise<OrderRow[]> {
   const out: OrderRow[] = [];
   for (let page = 0; page < 50; page++) {
     const { data, error } = await db
