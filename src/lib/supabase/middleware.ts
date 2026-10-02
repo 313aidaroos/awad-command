@@ -23,6 +23,7 @@ export function isPublicEntry(path: string, method: string) {
     path === "/api/crypto-floor/tick" ||
     path === "/api/crypto-floor/review" ||
     path === "/api/crypto-floor/research" ||
+    path === "/api/crypto-floor/daily-start" ||
     (path === "/api/lead-inbound" && method === "POST")
   );
 }

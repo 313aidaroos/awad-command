@@ -13,6 +13,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { AlpacaClient, AlpacaHttpError, formatQty, mapAlpacaStatus, roundQty, type AlpacaOrder } from "./alpaca";
 import { agentForEvent } from "./desks";
+import { tradeAlert } from "./alerts";
 import { planTick, type PlannedOrder, type TickPlan } from "./engine";
 import { EventLog } from "./events";
 import { HOUR_MS, closedBars, normalizePair, utcDay, watchStat, watchLine } from "./market";
@@ -101,6 +102,7 @@ async function applyRemote(db: SupabaseClient, log: EventLog, row: OrderRow, rem
       price: avg,
       payload: { alpaca_order_id: remote.id, intent: row.intent, reason: row.reason, agent: agentForEvent(row.desk, "trader") },
     });
+    await tradeAlert(db, { clientOrderId: row.client_order_id, desk: row.desk, side: row.side, symbol: row.symbol, qty: filledQty, price: avg, reason: row.reason, live: false, agent: agentForEvent(row.desk, "trader") });
   } else if ((status === "canceled" || status === "rejected") && row.status !== status) {
     await log.log({
       ...base,

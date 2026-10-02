@@ -49,12 +49,31 @@ import {
   RobotStatusBar,
   RobotView,
   TradesBox,
+  LiveBox,
+  ScoutBoard,
+  JournalPanel,
+  type LiveTopic,
   type ChatTarget,
 } from "./RobotConsole";
 import type { RobotState } from "@/lib/crypto-floor/state";
 import { ArtLoop } from "@/art-motion/ArtLoop";
 
 const FLOOR_POLL_MS = 10000;
+
+/** The LIVE box on top of every tab: what it follows, and whether you can talk to the leads from it. */
+const LIVE_BY_TAB: Record<string, { title: string; topic: LiveTopic; ask?: boolean }> = {
+  FLOOR: { title: "The floor right now", topic: "all" },
+  ROBOT: { title: "Robot actions", topic: "robot" },
+  CHAT: { title: "What every team is doing", topic: "all", ask: false },
+  LAB: { title: "Learning — meetings, tests, changes", topic: "learning" },
+  PORTFOLIO: { title: "Money — fills and P/L", topic: "money" },
+  TEAMS: { title: "All five teams", topic: "all" },
+  TRADES: { title: "Trades", topic: "trades" },
+  PATTERNS: { title: "Signals the scouts see", topic: "signals" },
+  NEWS: { title: "Floor news — meetings and lessons", topic: "learning" },
+  REPLAY: { title: "Everything, as it happens", topic: "all" },
+  SYSTEM: { title: "System health", topic: "system" },
+};
 const tabs = [
   "FLOOR",
   "ROBOT",
@@ -830,6 +849,7 @@ export default function CryptoFloor() {
               startX.current = null;
             }}
           >
+            {!demo && robot && tab !== "FLOOR" && LIVE_BY_TAB[tab] && <LiveBox key={tab} robot={robot} {...LIVE_BY_TAB[tab]} />}
             {tab === "FLOOR" && (
               <>
                 <div className="cf-mobile-safety">
@@ -877,7 +897,7 @@ export default function CryptoFloor() {
                     </div>
                   </Panel>
                   <Panel
-                    title="BTC / USDT"
+                    title="BTC / USD"
                     tag={demo ? "1H · SAMPLE CHART" : paper ? "ALPACA PAPER" : "OFFLINE"}
                   >
                     <CandleChart
@@ -890,8 +910,8 @@ export default function CryptoFloor() {
                     />
                   </Panel>
                   <Panel
-                    title="News intelligence"
-                    tag={demo ? "SCENARIO" : paper ? "NO NEWS FEED" : "NO FEED"}
+                    title={demo ? "News intelligence" : "Team notes"}
+                    tag={demo ? "SCENARIO" : paper ? "FROM THE JOURNALS" : "NO FEED"}
                   >
                     {demo ? (
                       <div className="cf-news">
@@ -910,16 +930,27 @@ export default function CryptoFloor() {
                         <small>Illustrative headlines, not current news</small>
                       </div>
                     ) : (
-                      <Empty>
-                        {paper
-                          ? "PHANTOM trades volume breakouts (breakout-v1). No news provider is connected yet."
-                          : "No news provider connected."}
-                      </Empty>
+                      robot && robot.notes.length ? (
+                        <div className="cf-news">
+                          {robot.notes
+                            .filter((n) => n.kind !== "meeting")
+                            .slice(0, 4)
+                            .map((n) => (
+                              <p key={n.id}>
+                                <span>{(n.desk ?? "floor").toUpperCase()}</span>
+                                {n.title} <em>{n.kind}</em>
+                              </p>
+                            ))}
+                          <small>From the teams&apos; journals · no outside news feed yet</small>
+                        </div>
+                      ) : (
+                        <Empty>{paper ? "The teams' first notes appear after their first meeting." : "No news provider connected."}</Empty>
+                      )
                     )}
                   </Panel>
                   <Panel
-                    title="Detected patterns"
-                    tag={demo ? "SAMPLE" : paper ? "SLEEVE NOTES" : "OFFLINE"}
+                    title={demo ? "Detected patterns" : "Biggest moves"}
+                    tag={demo ? "SAMPLE" : paper ? "SCOUTS · LAST HOUR" : "OFFLINE"}
                   >
                     {(demo
                       ? [
@@ -927,7 +958,11 @@ export default function CryptoFloor() {
                           "ETH trend continuation",
                           "SOL volatility spike",
                         ]
-                      : sleeveNotes
+                      : [...(robot?.watching ?? []), ...(robot?.watchingWide ?? [])]
+                          .filter((w) => w.ret1h !== null)
+                          .sort((a, b) => Math.abs(b.ret1h ?? 0) - Math.abs(a.ret1h ?? 0))
+                          .slice(0, 4)
+                          .map((w) => `${w.symbol.split("/")[0]} ${pct(w.ret1h)} last hour · ${pct(w.ret24h)} 24h`)
                     ).map((p, i) => (
                       <button
                         className="cf-pattern"
@@ -936,15 +971,11 @@ export default function CryptoFloor() {
                       >
                         <Crosshair size={14} />
                         {p}
-                        <small>{demo && i === 2 ? "WATCH" : "JOURNAL"}</small>
+                        <small>{demo && i === 2 ? "WATCH" : demo ? "JOURNAL" : "SCOUT"}</small>
                       </button>
                     ))}
-                    {!demo && sleeveNotes.length === 0 && (
-                      <Empty>
-                        {paper
-                          ? "No sleeve notes in the journal yet."
-                          : "No detected patterns."}
-                      </Empty>
+                    {!demo && !robot?.watching.length && (
+                      <Empty>{paper ? "The scouts post their first read on the next check." : "No detected patterns."}</Empty>
                     )}
                   </Panel>
                 </div>
@@ -967,7 +998,7 @@ export default function CryptoFloor() {
                   <div className="cf-room-brand">
                     <small>AWAD COMMAND</small>
                     <h2>THE CRYPTO FLOOR</h2>
-                    <span>FOUR STRATEGIES. SIXTEEN MINDS. ONE FLOOR.</span>
+                    <span>FIVE TEAMS. TWENTY MINDS. TRADING 24/7.</span>
                     <button
                       className="scene-motion-control"
                       aria-pressed={roomPaused}
@@ -1059,6 +1090,7 @@ export default function CryptoFloor() {
                     })}
                   </div>
                 </section>
+                {!demo && robot && <LiveBox robot={robot} {...LIVE_BY_TAB.FLOOR} />}
                 <div className="cf-bottom">
                   <Portfolio
                     snapshot={snapshot}
@@ -1102,7 +1134,7 @@ export default function CryptoFloor() {
                       <small>{robot ? (robot.killSwitch.halted ? robot.killSwitch.reason ?? "Robot halted" : "STOPS ALL ROBOT ORDERS") : "ROBOT NOT CONNECTED"}</small>
                     </button>
                     <div className="cf-control-row">
-                      Live capital <b>LOCKED</b>
+                      Real money (Coinbase) <b>{robot?.coinbase.enabledDesks.length ? `ON · ${robot.coinbase.enabledDesks.join(", ").toUpperCase()}` : "OFF"}</b>
                     </div>
                     <div className="cf-control-row">
                       Paper capital{" "}
@@ -1221,12 +1253,12 @@ export default function CryptoFloor() {
                   paper={paper}
                   simFills={simFills}
                 />
-                <Panel title="Capital separation" tag="LIVE LOCKED">
-                  <h3>Paper and live stay separate.</h3>
+                <Panel title="Paper vs real money" tag={robot?.coinbase.enabledDesks.length ? "REAL MONEY ON" : "REAL MONEY OFF"}>
+                  <h3>{robot?.coinbase.enabledDesks.length ? `Real money ON for ${robot.coinbase.enabledDesks.join(", ").toUpperCase()}` : "All five teams trade paper money (Alpaca)."}</h3>
                   <p>
-                    All illustrated teams are in Paper League. Sample balances
-                    are not account balances. No capital is allocated by this
-                    interface.
+                    {robot
+                      ? `Paper: $${robot.floor.capital.toLocaleString()} across ${robot.desks.length} teams. Real money (Coinbase): ${robot.coinbase.configured ? (robot.coinbase.ok ? `connected, balance $${robot.coinbase.totalUsd.toFixed(2)}` : "connected, not reachable") : "not connected"} · limits $${robot.coinbase.limits.maxTotalUsd} total / $${robot.coinbase.limits.maxTradeUsd} per buy / −$${robot.coinbase.limits.dayLossUsd} a day. Only you can switch real money on (ROBOT tab).`
+                      : "Sample balances are not account balances."}
                   </p>
                   <div className="cf-lifecycle">
                     {[
@@ -1462,6 +1494,9 @@ export default function CryptoFloor() {
             )}
             {tab === "PATTERNS" && (
               <div className="cf-expanded-grid">
+                {!demo && robot ? (
+                  <ScoutBoard robot={robot} />
+                ) : (
                 <Panel
                   title="Pattern board"
                   tag={demo ? "SAMPLE" : paper ? "SLEEVE NOTES" : "UNAVAILABLE"}
@@ -1505,6 +1540,7 @@ export default function CryptoFloor() {
                     </Empty>
                   )}
                 </Panel>
+                )}
                 <Panel
                   title="Market regime"
                   tag={demo ? "SAMPLE CLASSIFICATION" : paper ? "NOT CALCULATED" : "UNAVAILABLE"}
@@ -1575,6 +1611,7 @@ export default function CryptoFloor() {
                     Levels are the paper-host notes, not a floor price.
                   </p>
                 </Panel>
+                {!demo && robot && <JournalPanel robot={robot} onRefresh={refresh} />}
                 <Panel title="News intelligence" tag="NO LIVE NEWS PROVIDER">
                 <Empty>
                   The news desk is visible. Its source is not connected yet.

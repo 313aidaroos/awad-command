@@ -15,6 +15,10 @@
     {
       "path": "/api/crypto-floor/research",
       "schedule": "20 * * * *"
+    },
+    {
+      "path": "/api/crypto-floor/daily-start",
+      "schedule": "5 0 * * *"
     }
   ]
 }

@@ -6,6 +6,7 @@
  */
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { RobotState } from "@/lib/crypto-floor/state";
+import { nextMeetingAt, type ScheduledDesk } from "@/lib/crypto-floor/schedule";
 
 export type ChatTarget = { thread: "floor" | "samurai" | "neon" | "orbit" | "phantom" | "ronin"; agent: string | null };
 
@@ -57,10 +58,223 @@ function RichText({ text }: { text: string }) {
   );
 }
 
+function priceFmt(p: number | null) {
+  return p === null ? "—" : p < 0.01 ? `$${p.toPrecision(4)}` : usd(p);
+}
+
+/** What the scouts see on every coin the floor trades (from the last tick). */
+export function ScoutBoard({ robot }: { robot: RobotState }) {
+  const rows = [...robot.watching, ...robot.watchingWide];
+  const teamsFor = (sym: string) => robot.desks.filter((d) => d.universe.includes(sym)).map((d) => d.name);
+  return (
+    <Panel title="What the scouts see" tag={`EVERY COIN · ${robot.lastTickAt ? `as of ${ago(robot.lastTickAt)}` : "no tick yet"}`}>
+      {rows.length ? (
+        <div className="cf-table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Coin</th>
+                <th>Price</th>
+                <th>Last hour</th>
+                <th>24h</th>
+                <th>From 24h high</th>
+                <th>Traded by</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((w) => (
+                <tr key={w.symbol}>
+                  <td>
+                    <b>{w.symbol.split("/")[0]}</b>
+                  </td>
+                  <td>{priceFmt(w.price)}</td>
+                  <td className={tone(w.ret1h)}>{pct(w.ret1h)}</td>
+                  <td className={tone(w.ret24h)}>{pct(w.ret24h)}</td>
+                  <td className={tone(w.distFromHighPct)}>{pct(w.distFromHighPct)}</td>
+                  <td>
+                    <small>{teamsFor(w.symbol).join(", ") || "—"}</small>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p className="rc-note">The scouts post their first read on the next 5-minute check.</p>
+      )}
+    </Panel>
+  );
+}
+
+// ───────────────────────────── LIVE box (same layout on every tab)
+
+export type LiveTopic = "all" | "trades" | "robot" | "learning" | "money" | "signals" | "system";
+
+const TOPIC_TYPES: Record<LiveTopic, string[] | null> = {
+  all: null,
+  trades: ["order_submitted", "order_filled", "order_rejected", "order_canceled", "signal", "shadow_fill"],
+  robot: ["order_submitted", "order_filled", "order_rejected", "signal", "halt", "resume", "data_stale", "kill_switch", "kill_reset"],
+  learning: ["meeting", "experiment", "param_change", "review", "report"],
+  money: ["order_filled", "param_change", "live_switch", "halt", "resume", "report"],
+  signals: ["signal", "data_stale"],
+  system: ["system", "data_stale", "halt", "resume", "kill_switch", "kill_reset", "live_switch", "report"],
+};
+
+function teamStatus(robot: RobotState, d: RobotState["desks"][number]) {
+  if (robot.killSwitch.halted) return { label: "Halted", tone: "cf-negative" };
+  if (robot.meetings.some((m) => m.desk === d.id && m.status === "running")) return { label: "In a meeting", tone: "cf-positive" };
+  if (!d.enabled) return { label: "Off", tone: "cf-negative" };
+  if (d.pausedUntil) return { label: "Paused today", tone: "cf-negative" };
+  return { label: "Trading 24/7", tone: "cf-positive" };
+}
+
+export function LiveBox({
+  robot,
+  title,
+  topic,
+  defaultThread = "floor",
+  ask = true,
+}: {
+  robot: RobotState;
+  title: string;
+  topic: LiveTopic;
+  defaultThread?: ChatTarget["thread"];
+  ask?: boolean;
+}) {
+  const [thread, setThread] = useState<ChatTarget["thread"]>(defaultThread);
+  const [text, setText] = useState("");
+  const [sending, setSending] = useState(false);
+  const [reply, setReply] = useState<{ who: string; text: string } | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const types = TOPIC_TYPES[topic];
+  const feed = robot.events.filter((e) => !types || types.includes(e.type)).slice(0, 12);
+  const now = Date.now();
+  const lead = (id: string) => robot.desks.find((d) => d.id === id)?.agents[1]?.name ?? id.toUpperCase();
+  const nextMeeting = (id: string) => nextMeetingAt(id as ScheduledDesk, now).slice(11, 16);
+  const lastTickMin = robot.tickAgeSec === null ? null : Math.round(robot.tickAgeSec / 60);
+
+  async function send() {
+    const msg = text.trim();
+    if (!msg || sending) return;
+    setSending(true);
+    setErr(null);
+    setReply(null);
+    try {
+      const r = await postJson<{ reply: string; agent: string }>("/api/crypto-floor/chat", { thread, agent: null, message: msg, requestId: crypto.randomUUID() });
+      setReply({ who: r.agent, text: r.reply });
+      setText("");
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "No reply");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <section className="cf-panel lb">
+      <header className="lb-head">
+        <h2>
+          <span className="lb-dot" data-on={robot.status === "RUNNING"} /> LIVE · {title}
+        </h2>
+        <span className="lb-status">
+          {robot.status === "RUNNING" ? "Robot working 24/7" : `Robot ${robot.status.toLowerCase()}`}
+          {lastTickMin !== null ? ` · last check ${lastTickMin} min ago · next in ${Math.max(0, Math.ceil((robot.nextTickInSec ?? 0) / 60))} min` : ""}
+        </span>
+      </header>
+
+      <div className="lb-teams" aria-label="Teams right now">
+        {robot.desks.map((d) => {
+          const st = teamStatus(robot, d);
+          return (
+            <button
+              key={d.id}
+              className="lb-team"
+              aria-pressed={thread === d.id}
+              style={{ "--team": d.color } as CSSProperties}
+              onClick={() => setThread(d.id as ChatTarget["thread"])}
+              title={`Talk to ${lead(d.id)} (${d.name} lead)`}
+            >
+              <b>{d.name}</b>
+              <span className={st.tone}>{st.label}</span>
+              <span>
+                Today <em className={tone(d.dayPnl)}>{usd(d.dayPnl, true)}</em> · {d.positions.length} open
+              </span>
+              <small>Next meeting {nextMeeting(d.id)} UTC</small>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className={ask ? "lb-body" : "lb-body single"}>
+        <div className="lb-feed">
+          <h3>What they&apos;re doing</h3>
+          {feed.length === 0 && <p className="rc-note">Nothing yet in this area — the robot checks every 5 minutes.</p>}
+          <ol>
+            {feed.map((e) => {
+              const d = robot.desks.find((x) => x.id === e.desk);
+              return (
+                <li key={e.id}>
+                  <time>{ago(e.ts)}</time>
+                  <span className="lb-who" style={{ color: d?.color }}>
+                    {d?.name ?? "FLOOR"}
+                    {e.agent ? ` · ${e.agent}` : ""}
+                  </span>
+                  <span className="lb-what">{e.title}</span>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+
+        {ask && (
+          <div className="lb-ask">
+            <h3>Talk to {thread === "floor" ? "all five leads" : `${lead(thread)} · ${thread.toUpperCase()} lead`}</h3>
+            <select className="rc-input" value={thread} onChange={(e) => setThread(e.target.value as ChatTarget["thread"])} aria-label="Who to talk to">
+              <option value="floor">All five leads</option>
+              {robot.desks.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {lead(d.id)} — {d.name} lead
+                </option>
+              ))}
+            </select>
+            <textarea
+              className="rc-input"
+              rows={3}
+              placeholder="Ask what they're doing, why they traded, or tell them what to focus on…"
+              value={text}
+              maxLength={4000}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  void send();
+                }
+              }}
+            />
+            <button className="rc-btn primary" disabled={sending || !text.trim()} onClick={() => void send()}>
+              {sending ? "Waiting for the reply…" : "Send"}
+            </button>
+            {err && <p className="rc-error">{err}</p>}
+            {reply && (
+              <div className="lb-reply">
+                <b>{reply.who}</b>
+                <div>
+                  <RichText text={reply.text} />
+                </div>
+              </div>
+            )}
+            {!robot.aiConnected && <p className="rc-note">AI is not connected (ANTHROPIC_API_KEY), so the leads can&apos;t answer yet.</p>}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 // ───────────────────────────── trades + P/L box (always on top of the floor)
 
 const qtyFmt = (q: number) => (q >= 1_000_000 ? `${(q / 1_000_000).toFixed(2)}M` : q >= 1000 ? q.toLocaleString(undefined, { maximumFractionDigits: 0 }) : q.toPrecision(4));
-const priceFmt = (p: number | null) => (p === null ? "—" : p < 0.01 ? `$${p.toPrecision(4)}` : usd(p));
+
 
 export function TradesBox({ robot }: { robot: RobotState }) {
   const [open, setOpen] = useState(true);
@@ -94,7 +308,7 @@ export function TradesBox({ robot }: { robot: RobotState }) {
   return (
     <Panel title="Trades & P/L" tag={`LIVE · ${robot.lastTickAt ? `updated ${ago(robot.lastTickAt)}` : "no tick yet"}`}>
       <div className="rc-row" style={{ justifyContent: "space-between", flexWrap: "wrap" }}>
-        <div className="rc-stats" style={{ flex: "1 1 520px" }}>
+        <div className="rc-stats" style={{ flex: "1 1 520px", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))" }}>
           <div>
             <small>Floor value</small>
             <b>{usd(f.equity)}</b>
@@ -1343,7 +1557,7 @@ export function LabView({ robot, desk: initialDesk, onRefresh }: { robot: RobotS
 }
 
 /** The teams' journals and meetings (plain list; the designed version comes later). */
-function JournalPanel({ robot, onRefresh }: { robot: RobotState; onRefresh: () => void }) {
+export function JournalPanel({ robot, onRefresh }: { robot: RobotState; onRefresh: () => void }) {
   const [who, setWho] = useState<string>("all");
   const [meet, setMeet] = useState<string>("ronin");
   const [busy, setBusy] = useState(false);

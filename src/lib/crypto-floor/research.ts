@@ -24,12 +24,11 @@ import { loadNotes, noteLine, writeNote, type NoteKind } from "./notes";
 import { loadRobotState, type DeskView, type RobotState } from "./state";
 import { STRATEGIES } from "./strategies";
 import { trainingFor, TEAM_PLAYBOOK, TRAINING_UPDATES } from "./training";
+import { meetingAtHour } from "./schedule";
+import { openingReport } from "./teamReports";
 import { DESK_IDS, type DeskId } from "./types";
 
-/** Hour of the day (UTC) % 8 → team. RONIN every other hour; each core team three times a day. */
-export const MEETING_ROTATION: DeskId[] = ["samurai", "ronin", "neon", "ronin", "orbit", "ronin", "phantom", "ronin"];
-/** Daily all-hands of the desk leads (before the 13:00 UTC review + email). Replaces that hour's RONIN slot. */
-export const ALLHANDS_HOUR_UTC = 11;
+export { ALLHANDS_HOUR_UTC, MEETING_ROTATION } from "./schedule";
 export const MEETING_MAX_TURNS = 8;
 /** Stop calling tools after this long and write the minutes (the route has 300s). */
 export const MEETING_BUDGET_MS = 190_000;
@@ -37,9 +36,8 @@ export const MEETING_BUDGET_MS = 190_000;
 export type MeetingPlan = { kind: "team"; desk: DeskId } | { kind: "allhands" };
 
 export function scheduledMeeting(now: number): MeetingPlan {
-  const h = new Date(now).getUTCHours();
-  if (h === ALLHANDS_HOUR_UTC) return { kind: "allhands" };
-  return { kind: "team", desk: MEETING_ROTATION[h % MEETING_ROTATION.length] };
+  const m = meetingAtHour(new Date(now).getUTCHours());
+  return m === "allhands" ? { kind: "allhands" } : { kind: "team", desk: m };
 }
 
 const NOTE_WRITE_KINDS = ["lesson", "observation", "plan", "strategy"] as const;
@@ -291,7 +289,8 @@ export async function runMeeting(opts: { db: SupabaseClient; alpaca: AlpacaClien
   try {
     const now = clock();
     const state = await loadRobotState(db, now);
-    const context = desk ? await teamContext(db, state, desk, now) : await allHandsContext(db, state, now);
+    const opening = await openingReport(db, state, desk, meetingId);
+    const context = { openingReport: opening, ...(desk ? await teamContext(db, state, desk, now) : await allHandsContext(db, state, now)) };
     const system = desk ? teamSystem(desk) : allHandsSystem();
     const tools = desk ? teamTools(desk) : ALLHANDS_TOOLS;
     const tag = desk ? "desk_state" : "floor_state";

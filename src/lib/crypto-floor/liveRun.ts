@@ -7,6 +7,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { CoinbaseClient, CoinbaseHttpError, mapCoinbaseStatus, toProductId, type CoinbaseOrder } from "./coinbase";
 import type { EventLog } from "./events";
+import { tradeAlert } from "./alerts";
 import { effectiveFillPrice, planLive, type CoinbaseState, type LivePlan, type LivePlannedOrder } from "./live";
 import { writeBaselines } from "./store";
 import type { Bar, DeskRow, FloorParamsRow, OrderRow } from "./types";
@@ -133,6 +134,7 @@ async function applyCoinbaseOrder(db: SupabaseClient, log: EventLog, row: OrderR
       title: `REAL MONEY · ${who} ${row.side.toUpperCase()} ${filled} ${row.symbol} filled on Coinbase @ ${Number(o.average_filled_price ?? 0).toFixed(2)} (fees $${fees.toFixed(2)})`,
       payload: { live: true, venue: "coinbase", coinbase_order_id: o.order_id, status: o.status, fees },
     });
+    await tradeAlert(db, { clientOrderId: row.client_order_id, desk: row.desk, side: row.side, symbol: row.symbol, qty: filled, price: eff, reason: row.reason, live: true });
   } else if ((status === "canceled" || status === "rejected") && row.status !== status) {
     await log.log({ type: status === "canceled" ? "order_canceled" : "order_rejected", agentRole: "trader", desk: row.desk, strategy: row.strategy, symbol: row.symbol, side: row.side, orderId: row.client_order_id, title: `REAL MONEY · ${who} ${row.side.toUpperCase()} ${row.symbol} ${status} on Coinbase (${o.status})`, payload: { live: true, venue: "coinbase", coinbase_order_id: o.order_id } });
   }

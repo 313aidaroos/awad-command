@@ -67,3 +67,4 @@ Asked by Awad: fix everything found in the crypto-floor audit, make it trade 24/
 - 07:25 UTC: RONIN row applied after deploy `dpl_8cpoVRKwQcKgiY1rZ4hrLRFWxUZd` (PR #47). First tick showed "floor today +$25,000" (new capital counted as P&L) → fixed: floor baseline = sum of desk baselines (PR #48).
 
 - Awad's coins (Robinhood screenshot): XRP, BILL, HBAR, DOGE, PEPE, XLM, SOL are now first on every desk's list (`OWNER_COINS`), plus BTC/ETH; RONIN also AVAX/LINK/LTC. Coins Alpaca doesn't list are skipped (heartbeat `notOnAlpaca`), quantities rounded to Alpaca's increment. Paper only; Robinhood is not connected.
+- LIVE box on every tab (same layout: robot status, 5 team chips, tab feed, talk to the lead). Email alerts: every robot fill (paper + real), every meeting's opening report, each team's start-of-day report (cron `/api/crypto-floor/daily-start` 00:05 UTC). Turn alert emails off with env `CRYPTO_FLOOR_EMAIL_ALERTS=off` (the 13:00 daily report is separate).
