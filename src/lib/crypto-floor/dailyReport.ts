@@ -7,6 +7,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { resendRequest } from "@/lib/cixyEmail";
 import { floorManagerNote } from "./ai";
 import { EventLog } from "./events";
+import { writeNote } from "./notes";
 import { reportHtml, reportSubject, reportText } from "./report";
 import { applyTuning, buildReview, type ReviewSummary } from "./review";
 
@@ -81,6 +82,21 @@ export async function runDailyReport(deps: Deps): Promise<DailyReportResult> {
       payload: { floor: summary.floor, robot: summary.robot, issues: summary.issues },
     });
 
+    // Daily floor briefing: every team reads it before its next meeting ("updates" for the whole floor).
+    const money = (n: number | null) => (n === null ? "n/a" : `${n >= 0 ? "+" : "−"}$${Math.abs(n).toFixed(2)}`);
+    await writeNote(db, {
+      desk: null,
+      author: "FLOOR REVIEW",
+      kind: "briefing",
+      title: `Daily review ${day}: floor ${money(summary.floor.pnl24h)} · ${summary.floor.trades24h} closed trades`,
+      body: [
+        ...summary.desks.map((d) => `${d.name} (${d.label}, v${d.version}): 24h ${money(d.pnl24h)}, ${d.stats24h.trades} closed; 7d ${d.stats7d.trades} trades, win ${d.stats7d.winRate === null ? "—" : `${Math.round(d.stats7d.winRate * 100)}%`}, expectancy ${d.stats7d.expectancy === null ? "—" : money(d.stats7d.expectancy)}${d.open.length ? `; open ${d.open.map((p) => `${p.symbol} ${p.pnlPct.toFixed(1)}%`).join(", ")}` : ""}${d.tuning ? `; tuned: ${d.tuning.reason}` : ""}`),
+        `Learning: ${summary.learning.meetings24h} meetings, ${summary.learning.adopted.length} adopted change(s)${summary.learning.adopted.length ? ` (${summary.learning.adopted.map((a) => a.desk.toUpperCase()).join(", ")})` : ""}.`,
+        summary.issues.length ? `Issues: ${summary.issues.join(" ")}` : "No issues.",
+      ].join("\n"),
+      data: { floor: summary.floor },
+    });
+
     // Prune old heartbeat telemetry (30 days kept). Trading events are never pruned.
     await db.from("crypto_floor_events").delete().in("type", ["heartbeat", "data_stale"]).lt("ts", new Date(now - 30 * 86_400_000).toISOString());
 
@@ -97,6 +113,7 @@ export async function runDailyReport(deps: Deps): Promise<DailyReportResult> {
       desks: summary.desks.map((d) => ({ name: d.name, strategy: d.label, equity: d.equity, pnl24h: d.pnl24h, trades24h: d.stats24h.trades, winRate7d: d.stats7d.winRate, expectancy7d: d.stats7d.expectancy, open: d.open, learned: d.tuning?.reason ?? null, paused: d.pausedUntil, enabled: d.enabled })),
       trades24h: summary.trades24h.slice(0, 20),
       experiments: summary.experiments,
+      learning: summary.learning,
       issues: summary.issues,
     });
 

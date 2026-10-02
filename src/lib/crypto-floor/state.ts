@@ -6,12 +6,15 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { desks as visualDesks, emptyMetrics, type FloorEvent, type Snapshot } from "@/crypto-floor/model";
 import { anthropicApiKey } from "@/lib/env";
-import { agentForEvent, deskAgents } from "./desks";
+import { agentForEvent, deskAgents, deskRoster } from "./desks";
+import { deskDayLossLimit, deskTrading } from "./engine";
+import { loadMeetings, loadNotes, type MeetingRow, type NoteRow } from "./notes";
 import { strategyCatalog } from "./lab";
 import { buildBooks, emptyBook, markBook, tradeStats, type TradeStats } from "./ledger";
 import { utcDay, watchLine } from "./market";
 import { loadBaselines, loadDesks, loadExperiments, loadFilledOrders, loadParams, toOrderRow } from "./store";
-import { STRATEGIES, effectiveParams } from "./strategies";
+import { DEFAULT_UNIVERSE, STRATEGIES, effectiveParams, strategySummary } from "./strategies";
+import type { CustomSpec } from "./strategy/custom-v1";
 import type { ExperimentRow, OrderRow, Position, StrategyParams, WatchStat } from "./types";
 
 export const TICK_EVERY_SEC = 300;
@@ -46,6 +49,10 @@ export type DeskView = {
   enabled: boolean;
   version: number;
   params: StrategyParams;
+  /** RONIN: the strategy the team wrote (rule language). null for core desks. */
+  spec: CustomSpec | null;
+  universe: string[];
+  dayLossLimitPct: number;
   capital: number;
   equity: number;
   startEquity: number | null;
@@ -58,6 +65,7 @@ export type DeskView = {
   positions: Position[];
   stats7d: Stats;
   statsAll: Stats;
+  recentTrades: Array<{ symbol: string; entryAt: string; exitAt: string; pnl: number; pnlPct: number; exitReason: string | null }>;
   lastEvent: { ts: string; title: string } | null;
   agents: Array<{ name: string; role: string }>;
   /** REAL MONEY (Coinbase) for this desk. */
@@ -114,6 +122,11 @@ export type RobotState = {
   catalog: ReturnType<typeof strategyCatalog>;
   /** REAL MONEY venue status (Coinbase), as of the last tick. */
   coinbase: CoinbaseView;
+  /** The teams' journals + briefings (newest first) and recent meetings. */
+  notes: NoteRow[];
+  meetings: MeetingRow[];
+  /** RONIN's wider coin list, as of the last tick. */
+  watchingWide: WatchStat[];
 };
 
 const iso = (ts: string) => {
@@ -145,7 +158,7 @@ export function toEventView(r: Record<string, unknown>): RobotEventView {
 
 export async function loadRobotState(db: SupabaseClient, now = Date.now()): Promise<RobotState> {
   const day = utcDay(now);
-  const [params, desks, experiments, filled, baselines, hb, ticks, eventsRes, ordersRes, changesRes, reportRes] = await Promise.all([
+  const [params, desks, experiments, filled, baselines, hb, ticks, eventsRes, ordersRes, changesRes, reportRes, notes, meetings] = await Promise.all([
     loadParams(db),
     loadDesks(db),
     loadExperiments(db),
@@ -157,6 +170,8 @@ export async function loadRobotState(db: SupabaseClient, now = Date.now()): Prom
     db.from("crypto_floor_orders").select("*").order("created_at", { ascending: false }).limit(60),
     db.from("crypto_floor_param_changes").select("created_at,desk,version,source,reason").order("created_at", { ascending: false }).limit(12),
     db.from("crypto_floor_reports").select("day,email_status,email_to,created_at,error").order("day", { ascending: false }).limit(1),
+    loadNotes(db, { limit: 60 }),
+    loadMeetings(db, { limit: 12 }),
   ]);
   const heartbeat = hb.data?.[0] ?? null;
   const hp = (heartbeat?.payload ?? {}) as Record<string, unknown>;
@@ -172,19 +187,23 @@ export async function loadRobotState(db: SupabaseClient, now = Date.now()): Prom
   const deskViews: DeskView[] = desks.map((d) => {
     const marked = markBook(books.get(d.id) ?? emptyBook(d.id), d.capital_usd, prices);
     const start = baselines.get(d.id) ?? null;
-    const visual = visualDesks.find((x) => x.id === d.id);
+    const roster = deskRoster(d.id);
     const last = events.find((e) => e.desk === d.id);
     const s = STRATEGIES[d.strategy];
+    const t = deskTrading(d.strategy, d.spec, DEFAULT_UNIVERSE);
     return {
       id: d.id,
       name: d.name,
-      color: visual?.color ?? "#42d5ff",
+      color: roster?.color ?? "#42d5ff",
       strategy: d.strategy,
       strategyLabel: s.label,
-      summary: s.summary,
+      summary: strategySummary(d.strategy, t.spec),
       enabled: d.enabled,
       version: d.version,
       params: effectiveParams(d.strategy, d.params),
+      spec: t.spec,
+      universe: t.universe,
+      dayLossLimitPct: deskDayLossLimit(d, params.halt_day_loss_pct),
       capital: d.capital_usd,
       equity: marked.equity,
       startEquity: start,
@@ -197,6 +216,7 @@ export async function loadRobotState(db: SupabaseClient, now = Date.now()): Prom
       positions: marked.positions,
       stats7d: lite(tradeStats(marked.closedTrades, since7)),
       statsAll: lite(tradeStats(marked.closedTrades)),
+      recentTrades: marked.closedTrades.slice(-10).reverse().map((x) => ({ symbol: x.symbol, entryAt: x.entryAt, exitAt: x.exitAt, pnl: x.pnl, pnlPct: x.pnlPct, exitReason: x.exitReason })),
       lastEvent: last ? { ts: last.ts, title: last.title } : null,
       agents: deskAgents(d.id).map((a) => ({ name: a.name, role: a.role })),
       live: (() => {
@@ -276,6 +296,9 @@ export async function loadRobotState(db: SupabaseClient, now = Date.now()): Prom
         asOf: c ? lastTickAt : null,
       };
     })(),
+    notes,
+    meetings,
+    watchingWide: (hp.watchingWide as WatchStat[]) ?? [],
   };
 }
 
@@ -293,6 +316,7 @@ const EVENT_MAP: Record<string, FloorEvent["eventType"]> = {
   report: "DAILY_SUMMARY_CREATED",
   param_change: "CONFIG_CHANGED",
   live_switch: "CONFIG_CHANGED",
+  meeting: "THESIS_CREATED",
   experiment: "THESIS_CREATED",
   data_stale: "MARKET_DATA_STALE",
   system: "ENGINE_OFFLINE",

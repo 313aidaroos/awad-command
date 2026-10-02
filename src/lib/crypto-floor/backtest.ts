@@ -5,12 +5,15 @@
  */
 import { buildBooks, emptyBook, markBook, tradeStats, type ClosedTrade } from "./ledger";
 import { HOUR_MS } from "./market";
-import { STRATEGIES } from "./strategies";
+import { STRATEGIES, strategyWarmup } from "./strategies";
+import type { CustomSpec } from "./strategy/custom-v1";
 import type { Bar, OrderRow, StrategyId, StrategyParams } from "./types";
 
 export type BacktestInput = {
   strategy: StrategyId;
   params: StrategyParams;
+  /** custom-v1: the strategy under test (its universe should match `universe`). */
+  spec?: CustomSpec | null;
   bars: Map<string, Bar[]>;
   universe: string[];
   capital: number;
@@ -20,6 +23,7 @@ export type BacktestInput = {
 export type BacktestResult = {
   strategy: StrategyId;
   params: StrategyParams;
+  specName?: string | null;
   from: string | null;
   to: string | null;
   hours: number;
@@ -39,6 +43,7 @@ export type BacktestResult = {
 
 export function runBacktest(input: BacktestInput): BacktestResult {
   const def = STRATEGIES[input.strategy];
+  const warmup = strategyWarmup(input.strategy, input.spec ?? null);
   const slip = (input.slippageBps ?? 5) / 10_000;
   const book = "backtest";
   const times = Array.from(
@@ -69,10 +74,13 @@ export function runBacktest(input: BacktestInput): BacktestResult {
     equity = marked.equity;
     peak = Math.max(peak, equity);
     maxDd = Math.max(maxDd, peak > 0 ? ((peak - equity) / peak) * 100 : 0);
-    if (Math.min(...input.universe.map((s) => sliced.get(s)?.length ?? 0)) < def.warmupBars) continue;
+    // Core strategies wait for every coin's warm-up; custom specs check warm-up per coin themselves.
+    const ready = input.spec ? Math.max(...input.universe.map((s) => sliced.get(s)?.length ?? 0)) >= warmup : Math.min(...input.universe.map((s) => sliced.get(s)?.length ?? 0)) >= warmup;
+    if (!ready) continue;
 
     const signals = def.run({
       params: input.params,
+      spec: input.spec ?? null,
       universe: input.universe,
       bars: sliced,
       positions: marked.positions,
@@ -122,6 +130,7 @@ export function runBacktest(input: BacktestInput): BacktestResult {
   return {
     strategy: input.strategy,
     params: input.params,
+    specName: input.spec?.name ?? null,
     from: times.length ? new Date(times[0]).toISOString() : null,
     to: times.length ? new Date(times[times.length - 1] + HOUR_MS).toISOString() : null,
     hours: times.length,
@@ -144,5 +153,5 @@ export function runBacktest(input: BacktestInput): BacktestResult {
 export function backtestLine(r: BacktestResult): string {
   const p = (n: number | null) => (n === null ? "—" : `${n >= 0 ? "+" : ""}${n.toFixed(2)}%`);
   const days = Math.round(r.hours / 24);
-  return `${r.strategy} over ${days}d: ${p(r.returnPct)} return, ${r.trades} trades, win ${r.winRate === null ? "—" : `${Math.round(r.winRate * 100)}%`}, avg trade ${p(r.avgTradePct)}, max drawdown ${r.maxDrawdownPct.toFixed(2)}%${r.openAtEnd ? `, ${r.openAtEnd} still open` : ""}. Buy-and-hold: ${Object.entries(r.benchmark).map(([s, v]) => `${s.split("/")[0]} ${p(v)}`).join(", ")}.`;
+  return `${r.specName ? `"${r.specName}"` : r.strategy} over ${days}d: ${p(r.returnPct)} return, ${r.trades} trades, win ${r.winRate === null ? "—" : `${Math.round(r.winRate * 100)}%`}, avg trade ${p(r.avgTradePct)}, max drawdown ${r.maxDrawdownPct.toFixed(2)}%${r.openAtEnd ? `, ${r.openAtEnd} still open` : ""}. Buy-and-hold: ${Object.entries(r.benchmark).map(([s, v]) => `${s.split("/")[0]} ${p(v)}`).join(", ")}.`;
 }

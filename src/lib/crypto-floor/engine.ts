@@ -9,7 +9,8 @@
  * - Kill switch (params.halted): no orders of any kind, no shadow fills.
  * - Stale market data: no new entries in that coin (all coins if the data fetch failed); exits still run.
  * - Floor day loss ≤ halt_day_loss_pct of the floor's start-of-day equity: no new entries until next UTC day.
- * - Desk day loss ≤ halt_day_loss_pct of the desk's start-of-day equity: that desk pauses entries until next UTC day.
+ * - Desk day loss ≤ the desk's limit (risk.dayLossPct, else halt_day_loss_pct) of its start-of-day equity: that desk
+ *   pauses entries until next UTC day. RONIN (higher risk) has its own −5%; the floor-wide limit still covers it.
  * - Max open positions across all desks; max paper orders per tick (exits first); buying power for buys.
  * - One open order per book+symbol at a time (never stack orders while a previous one is unresolved).
  * - Sells only what the desk's own ledger holds AND the broker can deliver (shared account safety).
@@ -17,7 +18,8 @@
  */
 import { buildBooks, emptyBook, markBook, type Book, type MarkedBook } from "./ledger";
 import { nextUtcMidnight } from "./market";
-import { STRATEGIES, effectiveParams } from "./strategies";
+import { STRATEGIES, effectiveParams, resolveSpec, strategyUniverse } from "./strategies";
+import type { CustomSpec } from "./strategy/custom-v1";
 import type {
   Bar,
   DeskRow,
@@ -41,6 +43,7 @@ export type PlanInput = {
   params: FloorParamsRow;
   desks: DeskRow[];
   experiments: ExperimentRow[];
+  /** Core desks' coins. custom-v1 desks/tests trade their spec's own coins (bars must include them). */
   universe: string[];
   /** Closed hourly bars, oldest first. */
   bars: Map<string, Bar[]>;
@@ -94,6 +97,9 @@ export type DeskPlan = {
   strategy: StrategyId;
   enabled: boolean;
   params: StrategyParams;
+  spec: CustomSpec | null;
+  universe: string[];
+  dayLossLimitPct: number;
   marked: MarkedBook;
   startEquity: number;
   dayPnl: number;
@@ -120,7 +126,7 @@ export type TickPlan = {
   desks: DeskPlan[];
   deskPauses: Array<{ desk: string; until: string; reason: string }>;
   deskResumes: string[];
-  experiments: Array<{ id: string; marked: MarkedBook; params: StrategyParams }>;
+  experiments: Array<{ id: string; marked: MarkedBook; params: StrategyParams; spec: CustomSpec | null }>;
   experimentsToStop: Array<{ id: string; reason: string }>;
   signals: SignalOutcome[];
   orders: PlannedOrder[];
@@ -147,6 +153,18 @@ export function recentEntriesFor(book: string, orders: OrderRow[], strategy: str
   return orders
     .filter((o) => o.book === book && o.side === "buy" && o.intent === "entry" && o.status !== "rejected")
     .map((o) => ({ symbol: o.symbol, timestamp: o.created_at, strategy }));
+}
+
+/** A desk's own day-loss limit (%), when set and sane (−0.5…−25); otherwise the floor's. */
+export function deskDayLossLimit(desk: Pick<DeskRow, "risk">, floorLimit: number): number {
+  const v = Number(desk.risk?.dayLossPct);
+  return Number.isFinite(v) && v <= -0.5 && v >= -25 ? v : floorLimit;
+}
+
+/** Coins + spec a desk or test trades. */
+export function deskTrading(strategy: StrategyId, storedSpec: unknown, coreUniverse: string[]) {
+  const spec = resolveSpec(strategy, storedSpec);
+  return { spec, universe: strategy === "custom-v1" ? strategyUniverse(strategy, spec) : coreUniverse };
 }
 
 const sortExitsFirst = (a: SignalOutcome, b: SignalOutcome) =>
@@ -176,6 +194,7 @@ export function planTick(input: PlanInput): TickPlan {
     const startEquity = baseline(desk.id, marked.equity);
     const dayPnl = marked.equity - startEquity;
     const dayPnlPct = startEquity > 0 ? (dayPnl / startEquity) * 100 : 0;
+    const deskLimit = deskDayLossLimit(desk, lossLimit);
     let pausedUntil = desk.paused_until;
     let pauseReason = desk.pause_reason;
     if (pausedUntil && Date.parse(pausedUntil) <= now) {
@@ -183,9 +202,9 @@ export function planTick(input: PlanInput): TickPlan {
       pausedUntil = null;
       pauseReason = null;
     }
-    if (!pausedUntil && dayPnlPct <= lossLimit) {
+    if (!pausedUntil && dayPnlPct <= deskLimit) {
       pausedUntil = midnight;
-      pauseReason = `Desk day P&L ${dayPnlPct.toFixed(2)}% ≤ ${lossLimit}% — new entries paused until next UTC day`;
+      pauseReason = `Desk day P&L ${dayPnlPct.toFixed(2)}% ≤ ${deskLimit}% — new entries paused until next UTC day`;
       deskPauses.push({ desk: desk.id, until: pausedUntil, reason: pauseReason });
     }
     deskPlans.push({
@@ -194,6 +213,8 @@ export function planTick(input: PlanInput): TickPlan {
       strategy,
       enabled: desk.enabled,
       params: effectiveParams(strategy, desk.params),
+      ...deskTrading(strategy, desk.spec, input.universe),
+      dayLossLimitPct: deskLimit,
       marked,
       startEquity,
       dayPnl,
@@ -251,7 +272,8 @@ export function planTick(input: PlanInput): TickPlan {
               : null;
     const signals = STRATEGIES[d.strategy].run({
       params: d.params,
-      universe: input.universe,
+      spec: d.spec,
+      universe: d.universe,
       bars: input.bars,
       positions: d.marked.positions,
       recentEntries: recentEntriesFor(d.id, input.recentOrders, d.strategy),
@@ -334,12 +356,14 @@ export function planTick(input: PlanInput): TickPlan {
     }
     const book = `exp:${exp.id}`;
     const p = effectiveParams(exp.strategy, exp.params);
+    const t = deskTrading(exp.strategy, exp.spec, input.universe);
     const marked = markBook(books.get(book) ?? emptyBook(book), Number(exp.capital_usd), input.prices);
-    experiments.push({ id: exp.id, marked, params: p });
+    experiments.push({ id: exp.id, marked, params: p, spec: t.spec });
     if (halted) continue;
     const signals = STRATEGIES[exp.strategy].run({
       params: p,
-      universe: input.universe,
+      spec: t.spec,
+      universe: t.universe,
       bars: input.bars,
       positions: marked.positions,
       recentEntries: recentEntriesFor(book, input.recentOrders, exp.strategy),

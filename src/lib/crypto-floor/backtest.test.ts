@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { backtestLine, runBacktest } from "./backtest";
 import { STRATEGIES } from "./strategies";
+import type { CustomSpec } from "./strategy/custom-v1";
 import type { Bar } from "./types";
 
 const H = 3_600_000;
@@ -42,3 +43,23 @@ describe("runBacktest", () => {
     expect(r.maxDrawdownPct).toBeGreaterThanOrEqual(0);
   });
 });
+
+describe("runBacktest with a RONIN strategy spec", () => {
+  it("trades the spec's coins with a trailing stop", () => {
+    const spec: CustomSpec = {
+      name: "Two green hours",
+      thesis: "test",
+      universe: ["DOGE/USD"],
+      entry: { all: [{ ind: { kind: "greenStreak" }, op: ">=", value: 2 }] },
+      exit: { takeProfitPct: 20, stopLossPct: -5, trailingStopPct: 2 },
+      sizing: { positionSizePct: 10, maxOpenPositions: 1, minEntryIntervalHours: 0 },
+    };
+    const closes = [1, 1, 1, 1.01, 1.02, 1.05, 1.08, 1.05, 1.04, 1.04];
+    const r = runBacktest({ strategy: "custom-v1", params: {}, spec, bars: new Map([["DOGE/USD", series("DOGE/USD", closes)]]), universe: ["DOGE/USD"], capital: 10_000, slippageBps: 0 });
+    expect(r.trades).toBeGreaterThanOrEqual(1);
+    expect(r.recentTrades[0].entryPrice).toBe(1.02);
+    expect(r.recentTrades[0].exitReason).toMatch(/Trailing stop/);
+    expect(backtestLine(r)).toMatch(/^"Two green hours" over/);
+  });
+});
+

@@ -230,7 +230,10 @@ export async function runLiveStep(opts: {
   day: string;
   params: FloorParamsRow;
   desks: DeskRow[];
+  /** Every coin the floor trades (Coinbase quotes/products). */
   universe: string[];
+  /** Core desks' coins (custom-v1 desks use their spec's coins). Defaults to `universe`. */
+  coreUniverse?: string[];
   bars: Map<string, Bar[]>;
   prices: Map<string, number>;
   dataStale: boolean;
@@ -247,7 +250,7 @@ export async function runLiveStep(opts: {
   const counts = { planned: 0, submitted: 0, filled: 0, rejected: 0 };
   let plan: LivePlan | null = null;
   if (hasLive) {
-    plan = planLive({ now: opts.now, params: opts.params, desks: opts.desks, universe: opts.universe, bars: opts.bars, prices: opts.prices, dataStale: opts.dataStale, staleSymbols: opts.staleSymbols, filledOrders: opts.filledOrders, recentOrders: opts.recentOrders, baselines: opts.baselines, coinbase: state });
+    plan = planLive({ now: opts.now, params: opts.params, desks: opts.desks, universe: opts.coreUniverse ?? opts.universe, bars: opts.bars, prices: opts.prices, dataStale: opts.dataStale, staleSymbols: opts.staleSymbols, filledOrders: opts.filledOrders, recentOrders: opts.recentOrders, baselines: opts.baselines, coinbase: state });
     await writeBaselines(db, opts.day, plan.baselinesToWrite);
     if (plan.pause) {
       await db.from("crypto_floor_params").update({ live_paused_until: plan.pause.until, live_pause_reason: plan.pause.reason }).eq("id", 1);

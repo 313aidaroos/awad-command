@@ -8,14 +8,31 @@ export const DESK_STRATEGY: Record<DeskId, StrategyId> = {
   neon: "dip-v1",
   orbit: "swing-v1",
   phantom: "breakout-v1",
+  ronin: "custom-v1",
 };
 
 export type AgentRole = (typeof roles)[number];
 
 export type DeskAgent = { name: string; role: AgentRole; desk: DeskId; deskName: string };
 
+type Roster = { id: DeskId; name: string; color: string; symbol: string; names: readonly string[] };
+
+/**
+ * Every desk's team. The four core desks come from the floor art (model.ts); RONIN, the higher-risk team that
+ * invents its own strategies, is not in the art yet (its design comes later), so its roster lives here.
+ * Names are in role order: Scout, Analyst (desk lead), Trader, Risk Officer.
+ */
+export const ROSTERS: Roster[] = [
+  ...visualDesks.map((d) => ({ id: d.id as DeskId, name: d.name, color: d.color, symbol: d.symbol, names: d.names })),
+  { id: "ronin", name: "RONIN", color: "#ffb547", symbol: "浪", names: ["JIN", "KAEDE", "RYU", "TORA"] },
+];
+
+export function deskRoster(desk: string): Roster | null {
+  return ROSTERS.find((x) => x.id === desk) ?? null;
+}
+
 export function deskAgents(desk: DeskId): DeskAgent[] {
-  const d = visualDesks.find((x) => x.id === desk);
+  const d = deskRoster(desk);
   if (!d) return [];
   return roles.map((role, i) => ({ name: d.names[i], role, desk, deskName: d.name }));
 }
@@ -27,16 +44,16 @@ export function deskLead(desk: DeskId): DeskAgent {
 
 export function findAgent(name: string): DeskAgent | null {
   const key = name.trim().toUpperCase();
-  for (const d of visualDesks) {
-    const i = (d.names as readonly string[]).indexOf(key);
-    if (i >= 0) return { name: d.names[i], role: roles[i], desk: d.id as DeskId, deskName: d.name };
+  for (const d of ROSTERS) {
+    const i = d.names.indexOf(key);
+    if (i >= 0) return { name: d.names[i], role: roles[i], desk: d.id, deskName: d.name };
   }
   return null;
 }
 
 /** Robot event type + role → the agent who "did" it on the floor. */
 export function agentForEvent(desk: string | null, agentRole: string): string | null {
-  const d = visualDesks.find((x) => x.id === desk);
+  const d = desk ? deskRoster(desk) : null;
   if (!d) return null;
   const idx = { scout: 0, analyst: 1, trader: 2, risk: 3 }[agentRole];
   return idx === undefined ? null : d.names[idx];
