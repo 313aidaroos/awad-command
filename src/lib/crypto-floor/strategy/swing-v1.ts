@@ -7,6 +7,7 @@
  * EXIT:  fast EMA crosses BELOW slow EMA, OR P&L ≤ stopLossPct, OR P&L ≥ takeProfitPct.
  */
 import { ema } from "../market";
+import { lastCross } from "./indicators";
 import type { Bar, Position, RecentEntry, Signal } from "../types";
 
 export type SwingConfig = {
@@ -18,6 +19,10 @@ export type SwingConfig = {
   positionSizePct: number;
   maxOpenPositions: number;
   minEntryIntervalHours: number;
+  /** 2026-10-02: also enter when the up-cross happened within the last N closed bars (1 = only the last bar, v1). */
+  crossLookbackBars?: number;
+  /** 2026-10-02: also enter on a green hour that closes above the fast EMA while fast > slow (trend continuation). */
+  trendEntry?: boolean;
 };
 
 export const defaultSwingConfig: SwingConfig = {
@@ -77,21 +82,32 @@ export function runSwingStrategy(
   if (positions.length >= config.maxOpenPositions) return { signals };
   const cutoff = now - config.minEntryIntervalHours * 60 * 60 * 1000;
 
+  let room = config.maxOpenPositions - positions.length;
   for (const symbol of config.universe) {
+    if (room <= 0) break;
     if (positions.some((p) => p.symbol === symbol)) continue;
     if (recentEntries.some((e) => e.symbol === symbol && Date.parse(e.timestamp) > cutoff)) continue;
     const bars = bars1h.get(symbol) ?? [];
     const { cross, fast, slow } = emaCross(bars, config.fastEma, config.slowEma);
-    if (cross !== "up") continue;
     const last = bars[bars.length - 1];
+    if (!last) continue;
+    let reason: string | null = null;
+    if (cross === "up") {
+      reason = `EMA${config.fastEma} (${fast?.toFixed(2)}) crossed above EMA${config.slowEma} (${slow?.toFixed(2)})`;
+    } else if (fast !== null && slow !== null && fast > slow && bars.length > config.slowEma) {
+      const lookback = Math.max(1, Math.floor(config.crossLookbackBars ?? 1));
+      const recent = lookback > 1 ? lastCross(bars, config.fastEma, config.slowEma, lookback) : null;
+      const prev = bars[bars.length - 2];
+      if (recent?.dir === "up" && last.close > fast) {
+        reason = `EMA${config.fastEma} crossed above EMA${config.slowEma} ${recent.barsAgo}h ago, price still above EMA${config.fastEma}`;
+      } else if (config.trendEntry && last.close > fast && last.close > last.open && prev && last.close > prev.close) {
+        reason = `Uptrend continuation: EMA${config.fastEma} (${fast.toFixed(2)}) > EMA${config.slowEma} (${slow.toFixed(2)}), green hour above EMA${config.fastEma}`;
+      }
+    }
+    if (!reason) continue;
     const qty = (equity * (config.positionSizePct / 100)) / last.close;
-    signals.push({
-      type: "entry",
-      symbol,
-      side: "buy",
-      reason: `EMA${config.fastEma} (${fast?.toFixed(2)}) crossed above EMA${config.slowEma} (${slow?.toFixed(2)})`,
-      qty,
-    });
+    signals.push({ type: "entry", symbol, side: "buy", reason, qty });
+    room--;
   }
   return { signals };
 }

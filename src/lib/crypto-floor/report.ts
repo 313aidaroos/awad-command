@@ -16,10 +16,23 @@ export function reportSubject(s: ReviewSummary): string {
   return `Crypto Floor ${s.day} · ${pnl} · ${f.trades24h} closed trade${f.trades24h === 1 ? "" : "s"} · robot ${s.robot.status.toLowerCase()} ${Math.round(s.robot.uptimePct)}%`.slice(0, 240);
 }
 
+const hold = (h: number | null) => (h === null ? "—" : h < 1 ? `${Math.round(h * 60)}m` : `${h.toFixed(1)}h`);
+const winPct = (w: number | null) => (w === null ? "—" : `${Math.round(w * 100)}%`);
+
+/** Per-strategy daily comparison (text). One line per desk lane: 24h and 7d trades, win rate, P/L, max DD, avg hold. */
+export function strategyLines(s: ReviewSummary): string[] {
+  const d7 = new Map(s.strategies.d7.map((r) => [`${r.desk}|${r.strategy}`, r]));
+  return s.strategies.d1.map((r) => {
+    const w = d7.get(`${r.desk}|${r.strategy}`);
+    return `- ${r.desk.toUpperCase()} ${r.strategy} (${r.label}, ${r.assetClasses.join("/")}): 24h ${r.trades} trades, win ${winPct(r.winRate)}, P/L ${usd(r.pnl, true)}, max DD ${usd(-r.maxDrawdown)}, avg hold ${hold(r.avgHoldHours)} · 7d ${w?.trades ?? 0} trades, win ${winPct(w?.winRate ?? null)}, P/L ${usd(w?.pnl ?? 0, true)}, max DD ${usd(-(w?.maxDrawdown ?? 0))}, avg hold ${hold(w?.avgHoldHours ?? null)} · open ${r.open}`;
+  });
+}
+
 export function reportText(s: ReviewSummary): string {
   const lines: string[] = [];
   lines.push(`THE CRYPTO FLOOR — DAILY BRIEF (${s.day}, paper money)`);
   lines.push("");
+  if (s.robot.noOwnAccount) lines.push("NO OWN ACCOUNT — the floor is NOT trading. Set CRYPTO_FLOOR_ALPACA_API_KEY / CRYPTO_FLOOR_ALPACA_SECRET_KEY (new Alpaca paper account). No fallback to AwadBot's keys.");
   lines.push(`Robot: ${s.robot.status} · ${s.robot.ticks24h} ticks in 24h (${Math.round(s.robot.uptimePct)}% uptime) · last tick ${s.robot.lastTickAt ?? "never"}`);
   if (s.killSwitch.halted) lines.push(`KILL SWITCH ON: ${s.killSwitch.reason ?? "no reason given"}`);
   lines.push(`Floor equity ${usd(s.floor.equity)} on ${usd(s.floor.capital)} paper capital · 24h ${usd(s.floor.pnl24h, true)} (${pct(s.floor.pnl24hPct)})`);
@@ -35,10 +48,13 @@ export function reportText(s: ReviewSummary): string {
   lines.push("");
   lines.push("DESKS");
   for (const d of s.desks) {
-    lines.push(`- ${d.name} (${d.label}, v${d.version}${d.enabled ? "" : ", OFF"}${d.pausedUntil ? `, paused until ${d.pausedUntil}` : ""}): equity ${usd(d.equity)} · 24h ${usd(d.pnl24h, true)} · trades 24h ${d.stats24h.trades} · 7d ${d.stats7d.trades} trades, win ${d.stats7d.winRate === null ? "—" : `${Math.round(d.stats7d.winRate * 100)}%`}, expectancy ${usd(d.stats7d.expectancy, true)}`);
+    lines.push(`- ${d.name} (${d.label}, v${d.version}${d.enabled ? "" : ", OFF"}${d.atLossCap ? `, LOSS CAP HIT (${d.lossCapPct}%)` : `, loss cap ${d.lossCapPct}%`}${d.pausedUntil ? `, paused until ${d.pausedUntil}` : ""}): equity ${usd(d.equity)} · 24h ${usd(d.pnl24h, true)} · trades 24h ${d.stats24h.trades} · 7d ${d.stats7d.trades} trades, win ${d.stats7d.winRate === null ? "—" : `${Math.round(d.stats7d.winRate * 100)}%`}, expectancy ${usd(d.stats7d.expectancy, true)}`);
     for (const p of d.open) lines.push(`    open ${p.symbol} ${p.qty.toPrecision(6)} @ ${usd(p.entry)} → ${usd(p.price)} (${pct(p.pnlPct)})`);
     if (d.tuning) lines.push(`    LEARNED: ${d.tuning.reason}`);
   }
+  lines.push("");
+  lines.push("STRATEGY COMPARISON (24h · 7d, closed trades from the floor's own ledger)");
+  lines.push(...strategyLines(s));
   if (s.trades24h.length) {
     lines.push("");
     lines.push("CLOSED TRADES (24h)");
@@ -85,7 +101,7 @@ export function reportHtml(s: ReviewSummary): string {
   const deskRows = s.desks
     .map(
       (d) => `<tr>
-<td style="${cell}"><b>${esc(d.name)}</b><br><span style="color:#8ca8bc">${esc(d.label)} · v${d.version}${d.enabled ? "" : " · OFF"}${d.pausedUntil ? " · paused" : ""}</span></td>
+<td style="${cell}"><b>${esc(d.name)}</b><br><span style="color:#8ca8bc">${esc(d.label)} · v${d.version}${d.enabled ? "" : " · OFF"}${d.atLossCap ? ` · <b style="color:#ff5470">LOSS CAP HIT (${d.lossCapPct}%)</b>` : ` · cap ${d.lossCapPct}%`}${d.pausedUntil ? " · paused" : ""}</span></td>
 <td style="${cell}">${usd(d.equity)}</td>
 <td style="${cell};color:${color(d.pnl24h)}">${usd(d.pnl24h, true)}</td>
 <td style="${cell}">${d.stats24h.trades} / ${d.stats7d.trades}</td>
@@ -104,6 +120,13 @@ export function reportHtml(s: ReviewSummary): string {
     .map((e) => `<li><b>${esc(e.name)}</b> (${esc(e.desk)}/${esc(e.strategy)}, ${esc(e.status)}): ${e.trades} trades, ${pct(e.returnPct)} vs desk ${pct(e.deskReturnPct)} — ${esc(e.recommendation)}</li>`)
     .join("");
   const issues = s.issues.map((i) => `<li>${esc(i)}</li>`).join("");
+  const d7 = new Map(s.strategies.d7.map((r) => [`${r.desk}|${r.strategy}`, r]));
+  const stratRows = s.strategies.d1
+    .map((r) => {
+      const w = d7.get(`${r.desk}|${r.strategy}`);
+      return `<tr><td style="${cell}"><b>${esc(r.desk.toUpperCase())}</b> ${esc(r.strategy)}<br><span style="color:#8ca8bc">${esc(r.label)} · ${esc(r.assetClasses.join("/"))}</span></td><td style="${cell}">${r.trades} / ${w?.trades ?? 0}</td><td style="${cell}">${winPct(r.winRate)} / ${winPct(w?.winRate ?? null)}</td><td style="${cell};color:${color(r.pnl)}">${usd(r.pnl, true)}</td><td style="${cell};color:${color(w?.pnl ?? 0)}">${usd(w?.pnl ?? 0, true)}</td><td style="${cell}">${usd(-(w?.maxDrawdown ?? 0))}</td><td style="${cell}">${hold(w?.avgHoldHours ?? null)}</td></tr>`;
+    })
+    .join("");
   const ln = s.learning;
   const learned = [
     ...ln.adopted.map((a) => `<li><b style="color:#21eaaa">ADOPTED · ${esc(a.desk.toUpperCase())}</b> — ${esc(a.reason)}</li>`),
@@ -117,6 +140,7 @@ export function reportHtml(s: ReviewSummary): string {
 <div style="font-size:11px;letter-spacing:2px;color:#42d5ff">AWAD COMMAND · THE CRYPTO FLOOR · PAPER</div>
 <h1 style="margin:6px 0 2px;font-size:22px">Daily brief — ${esc(s.day)}</h1>
 <p style="margin:0 0 14px;color:#8ca8bc">Robot ${esc(s.robot.status)} · ${s.robot.ticks24h} ticks / 24h (${Math.round(s.robot.uptimePct)}% uptime) · last tick ${esc(s.robot.lastTickAt ?? "never")}</p>
+${s.robot.noOwnAccount ? `<p style="background:#3a0d16;border:1px solid #ff5470;padding:10px;border-radius:6px"><b>NO OWN ACCOUNT — the floor is not trading.</b> Set CRYPTO_FLOOR_ALPACA_API_KEY / CRYPTO_FLOOR_ALPACA_SECRET_KEY (new Alpaca paper account). No fallback to AwadBot's keys.</p>` : ""}
 ${s.killSwitch.halted ? `<p style="background:#3a0d16;border:1px solid #ff5470;padding:10px;border-radius:6px"><b>KILL SWITCH ON</b> — ${esc(s.killSwitch.reason ?? "")}</p>` : ""}
 <table style="width:100%;border-collapse:collapse;margin-bottom:12px"><tr>
 <td style="${cell}"><span style="color:#8ca8bc">Floor equity</span><br><b style="font-size:18px">${usd(s.floor.equity)}</b></td>
@@ -128,6 +152,8 @@ ${watching ? `<p style="color:#8ca8bc;margin:0 0 14px">Watching: ${watching}</p>
 ${s.aiNote ? `<div style="border-left:3px solid #42d5ff;padding:8px 12px;margin:0 0 16px;background:#081622"><div style="font-size:11px;color:#42d5ff;letter-spacing:1px">FLOOR MANAGER'S NOTE</div><p style="margin:6px 0 0;white-space:pre-wrap">${esc(s.aiNote)}</p></div>` : ""}
 <h2 style="font-size:15px;margin:18px 0 6px">Desks</h2>
 <table style="width:100%;border-collapse:collapse"><tr><th style="${cell}">Desk</th><th style="${cell}">Equity</th><th style="${cell}">24h</th><th style="${cell}">Trades 24h/7d</th><th style="${cell}">Win 7d</th><th style="${cell}">Open</th></tr>${deskRows}</table>
+<h2 style="font-size:15px;margin:18px 0 6px">Strategy comparison (24h / 7d)</h2>
+<table style="width:100%;border-collapse:collapse"><tr><th style="${cell}">Strategy</th><th style="${cell}">Trades 24h/7d</th><th style="${cell}">Win 24h/7d</th><th style="${cell}">P/L 24h</th><th style="${cell}">P/L 7d</th><th style="${cell}">Max DD 7d</th><th style="${cell}">Avg hold 7d</th></tr>${stratRows}</table>
 ${trades ? `<h2 style="font-size:15px;margin:18px 0 6px">Closed trades (24h)</h2><table style="width:100%;border-collapse:collapse">${trades}</table>` : `<p style="color:#8ca8bc">No closed trades in the last 24h.</p>`}
 <h2 style="font-size:15px;margin:18px 0 6px">Real money (Coinbase)</h2>
 <p style="margin:0;color:${s.realMoney.enabledDesks.length ? "#ff9aa9" : "#8ca8bc"}">${

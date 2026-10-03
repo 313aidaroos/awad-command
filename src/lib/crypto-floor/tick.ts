@@ -9,11 +9,21 @@
  *  4. Build every desk's ledger, plan the tick (engine.ts, pure).
  *  5. Write pauses/resumes, signals, send paper orders, record shadow fills, heartbeat, snapshot.
  * Any error → `system` event + JSON error. The route always answers 200 so the cron never retries a half tick.
+ *
+ * 2026-10-02 riskier floor: the floor runs ONLY on its own Alpaca paper account (CRYPTO_FLOOR_ALPACA_*). Without it
+ * (alpaca = null) the tick makes no broker call at all, logs "no own account" (once an hour) and writes a heartbeat
+ * that the UI, health and the daily email show. Stocks (regular + extended hours) and options (regular hours, long
+ * premium) join crypto (24/7). Every tick reconciles the floor's own books against its own broker holdings (no sells).
+ * 2026-10-03 CYCLE desk: ~1 year of daily bars for its cycle screen (every tick while the desk exists) and, on
+ * Mondays in the regular session, 21–35 DTE chains for the week's straddle underlyings it still has room for.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { AlpacaClient, AlpacaHttpError, formatQty, mapAlpacaStatus, roundQty, type AlpacaOrder } from "./alpaca";
-import { agentForEvent } from "./desks";
-import { planTick, type PlannedOrder, type TickPlan } from "./engine";
+import { AlpacaClient, AlpacaHttpError, NO_OWN_ACCOUNT_MESSAGE, formatQty, mapAlpacaStatus, roundQty, type AlpacaOrder } from "./alpaca";
+import { OPTION_UNDERLYINGS, STOCK_UNIVERSE, assetClass, parseOcc, sessionWithClock, type Session } from "./assets";
+import { agentForEvent, deskAssets, deskLanes } from "./desks";
+import { OPTION_DTE_MAX, OPTION_DTE_MIN, STRADDLE_DTE_MAX, STRADDLE_DTE_MIN, planTick, recentEntriesFor, type OptionCandidate, type PlannedOrder, type TickPlan } from "./engine";
+import { buildBooks } from "./ledger";
+import { floorOwnedOrder } from "./reconcile";
 import { EventLog } from "./events";
 import { HOUR_MS, closedBars, normalizePair, utcDay, watchStat, watchLine } from "./market";
 import {
@@ -28,7 +38,8 @@ import {
   releaseTickLease,
   writeBaselines,
 } from "./store";
-import { DEFAULT_UNIVERSE, floorUniverse } from "./strategies";
+import { CYCLE_SCREEN, DEFAULT_UNIVERSE, effectiveParams, floorUniverse } from "./strategies";
+import { groupStraddles, isNyMonday, scanCycles } from "./strategy/cycle-straddle-v1";
 import { CoinbaseClient, coinbaseConfig } from "./coinbase";
 import { runLiveStep, type LiveSummary } from "./liveRun";
 import type { Bar, OrderRow, WatchStat } from "./types";
@@ -52,13 +63,18 @@ export type TickResult = {
   floor?: TickPlan["floor"];
   watching?: string;
   dedicatedAccount?: boolean;
+  /** true = CRYPTO_FLOOR_ALPACA_* keys missing: no broker calls, no trading. */
+  noOwnAccount?: boolean;
+  reconciled_positions?: number;
+  session?: Session;
   coinbase?: Pick<LiveSummary, "configured" | "ok" | "error" | "canTrade" | "canTransfer" | "enabledDesks" | "blocked" | "orders">;
   durationMs: number;
 };
 
 type TickDeps = {
   db: SupabaseClient;
-  alpaca: AlpacaClient;
+  /** The floor's OWN paper account; null = keys missing → "no own account" mode (no broker calls). */
+  alpaca: AlpacaClient | null;
   /** REAL MONEY venue. undefined → built from env; null → not connected. */
   coinbase?: CoinbaseClient | null;
   now?: () => number;
@@ -68,6 +84,8 @@ type TickDeps = {
 
 const STALE_BAR_MS = 3 * HOUR_MS;
 const STALE_TRADE_MS = 2 * HOUR_MS;
+const STOCK_STALE_TRADE_MS = 30 * 60_000;
+const MIN15_MS = 15 * 60_000;
 
 function blank(): Omit<TickResult, "ok" | "durationMs"> {
   return { signals: 0, ordersPlanned: 0, ordersSubmitted: 0, ordersFilled: 0, ordersRejected: 0, shadowFills: 0, reconciled: 0, eventsWritten: 0, eventErrors: 0 };
@@ -169,7 +187,7 @@ async function placePaperOrder(
     qty: Number(formatQty(o.qty)),
     status: "pending_submit",
     reason: o.reason,
-    signal: o.signal,
+    signal: { ...o.signal, assetClass: o.assetClass, orderType: o.orderType, timeInForce: o.timeInForce, extendedHours: o.extendedHours, limitPrice: o.limitPrice ?? null, maxLossUsd: o.maxLossUsd ?? null },
   });
   if (claim.error) {
     if (claim.error.code === "23505") return "duplicate";
@@ -196,7 +214,16 @@ async function placePaperOrder(
   const base = { desk: o.desk, strategy: o.strategy, symbol: o.symbol, side: o.side, orderId: o.clientOrderId };
   let remote: AlpacaOrder;
   try {
-    remote = await alpaca.submitOrder({ symbol: o.symbol, qty: formatQty(o.qty), side: o.side, clientOrderId: o.clientOrderId });
+    remote = await alpaca.submitOrder({
+      symbol: o.symbol,
+      qty: formatQty(o.qty),
+      side: o.side,
+      clientOrderId: o.clientOrderId,
+      type: o.orderType,
+      timeInForce: o.timeInForce,
+      limitPrice: o.limitPrice,
+      extendedHours: o.extendedHours,
+    });
   } catch (err) {
     const definitive = err instanceof AlpacaHttpError && err.status >= 400 && err.status < 500;
     const message = err instanceof Error ? err.message : String(err);
@@ -226,10 +253,10 @@ async function placePaperOrder(
     ...base,
     type: "order_submitted",
     agentRole: "trader",
-    title: `${o.desk.toUpperCase()} ${o.side.toUpperCase()} ${formatQty(o.qty)} ${o.symbol} (~$${(o.qty * o.refPrice).toFixed(2)}) — ${o.reason}`,
+    title: `${o.desk.toUpperCase()} ${o.side.toUpperCase()} ${formatQty(o.qty)} ${o.symbol} [${o.assetClass}${o.extendedHours ? ", extended hours" : ""}] (~$${(o.qty * o.refPrice).toFixed(2)}${o.maxLossUsd ? `, max loss $${o.maxLossUsd.toFixed(2)}` : ""}) — ${o.reason}`,
     qty: o.qty,
     price: o.refPrice,
-    payload: { alpaca_order_id: remote.id, intent: o.intent, reason: o.reason, agent: agentForEvent(o.desk, "trader") },
+    payload: { alpaca_order_id: remote.id, intent: o.intent, reason: o.reason, agent: agentForEvent(o.desk, "trader"), assetClass: o.assetClass, orderType: o.orderType, timeInForce: o.timeInForce, extendedHours: o.extendedHours, limitPrice: o.limitPrice ?? null, maxLossUsd: o.maxLossUsd ?? null },
   });
   await sleep(1500);
   try {
@@ -245,7 +272,69 @@ function heartbeatTitle(plan: TickPlan, watching: string, submitted: number, sta
   const f = plan.floor;
   const pnl = `${f.dayPnl >= 0 ? "+" : "−"}$${Math.abs(f.dayPnl).toFixed(2)}`;
   if (plan.halted) return `Kill switch ON — watching only · ${watching}`;
-  return `Tick · ${submitted} order${submitted === 1 ? "" : "s"} · floor today ${pnl} · ${f.openPositions} open${stale ? " · DATA STALE" : ""} · ${watching}`;
+  const capped = plan.desks.filter((d) => d.atLossCap).map((d) => d.name);
+  return `Tick · ${submitted} order${submitted === 1 ? "" : "s"} · floor today ${pnl} · ${f.openPositions} open · US stocks ${plan.session}${capped.length ? ` · LOSS CAP: ${capped.join(", ")}` : ""}${stale ? " · DATA STALE" : ""} · ${watching}`;
+}
+
+/** Desk audit fields stored on the heartbeat row (log only; the UI computes desk views from the ledger in state.ts). */
+function heartbeatDesks(plan: TickPlan) {
+  return plan.desks.map((d) => ({
+    id: d.id,
+    strategy: d.strategy,
+    spec: d.spec ? d.spec.name : null,
+    dayLossLimitPct: d.dayLossLimitPct,
+    atLossCap: d.atLossCap,
+    enabled: d.enabled,
+    equity: d.marked.equity,
+    dayPnl: d.dayPnl,
+    dayPnlPct: d.dayPnlPct,
+    openPositions: d.marked.positions.length,
+    pausedUntil: d.pausedUntil,
+    entriesBlocked: d.entriesBlocked,
+  }));
+}
+
+/**
+ * NO OWN ACCOUNT: the floor's Alpaca keys are missing. No broker call of any kind; desks are marked at cost from
+ * their own ledgers so the UI keeps showing them; a heartbeat + (hourly) system event make the state visible.
+ */
+async function runWithoutAccount(db: SupabaseClient, log: EventLog, now: number, started: number, clock: () => number) {
+  const [params, desks, filledOrders, recentOrders, baselines] = await Promise.all([
+    loadParams(db),
+    loadDesks(db),
+    loadFilledOrders(db),
+    loadRecentOrders(db, new Date(now - 72 * HOUR_MS).toISOString()),
+    loadBaselines(db, utcDay(now)),
+  ]);
+  // Planned with the kill switch forced on and no market data: produces desk views only, never an order.
+  const plan = planTick({ now, params: { ...params, halted: true }, desks, experiments: [], universe: [], bars: new Map(), prices: new Map(), dataStale: true, dataStaleReason: "no own account", filledOrders, recentOrders, baselines, brokerQty: new Map(), brokerKnown: false, buyingPower: null });
+  const { data: last } = await db.from("crypto_floor_events").select("ts").eq("type", "system").contains("payload", { noOwnAccount: true }).gte("ts", new Date(now - HOUR_MS).toISOString()).limit(1);
+  if (!last?.length) await log.log({ type: "system", agentRole: "system", title: `Floor not trading — ${NO_OWN_ACCOUNT_MESSAGE}`, payload: { noOwnAccount: true } });
+  await log.log({
+    type: "heartbeat",
+    agentRole: "system",
+    title: "NO OWN ACCOUNT — floor not trading. Set CRYPTO_FLOOR_ALPACA_API_KEY / CRYPTO_FLOOR_ALPACA_SECRET_KEY (new Alpaca paper account).",
+    payload: {
+      noOwnAccount: true,
+      dedicatedAccount: false,
+      noOwnAccountMessage: NO_OWN_ACCOUNT_MESSAGE,
+      watching: [],
+      watchingWide: [],
+      prices: {},
+      dataStale: false,
+      staleSymbols: [],
+      dataStaleReason: null,
+      halted: params.halted,
+      session: plan.session,
+      floor: plan.floor,
+      desks: heartbeatDesks(plan),
+      account: null,
+      orders: { planned: 0, submitted: 0, filled: 0, rejected: 0, shadow: 0 },
+      reconciled: 0,
+      durationMs: clock() - started,
+    },
+  });
+  return plan;
 }
 
 export async function runTick(deps: TickDeps): Promise<TickResult> {
@@ -275,16 +364,23 @@ export async function runTick(deps: TickDeps): Promise<TickResult> {
     leased = await acquireTickLease(db, holder, started);
     if (!leased) return finish({ ok: true, skipped: "Another tick is running (lease held)" });
 
+    if (!alpaca) {
+      const plan = await runWithoutAccount(db, log, clock(), started, clock);
+      return finish({ ok: true, noOwnAccount: true, dedicatedAccount: false, floor: plan.floor, session: plan.session, skipped: NO_OWN_ACCOUNT_MESSAGE });
+    }
+
     result.reconciled = await reconcile(db, alpaca, log, started);
 
     const now = clock();
     const params = await loadParams(db);
-    const [desks, experiments, account, brokerPositions] = await Promise.all([
+    const [desks, experiments, account, brokerPositions, marketClock] = await Promise.all([
       loadDesks(db),
       loadExperiments(db, ["running"]),
       alpaca.account(),
       alpaca.positions(),
+      alpaca.clock().catch(() => null),
     ]);
+    const session = sessionWithClock(now, marketClock ? marketClock.is_open === true : null);
     // Only coins Alpaca lists (Awad's watch list may include coins Alpaca doesn't carry — those are skipped, not "stale").
     const wanted = floorUniverse([...desks, ...experiments]);
     const universe = await alpaca.listedPairs(wanted);
@@ -330,13 +426,71 @@ export async function runTick(deps: TickDeps): Promise<TickResult> {
         staleNotes.push(`${s}: last trade older than 2h`);
       }
     }
+    // 15-minute crypto bars (scalp-v1), 2 days, closed bars only. Failure → scalping just sees no bars.
+    const bars15m = new Map<string, Bar[]>();
+    try {
+      const raw15 = await alpaca.bars(coreUniverse, new Date(now - 2 * 24 * HOUR_MS), "15Min");
+      for (const s of coreUniverse) bars15m.set(s, closedBars(raw15.get(s) ?? [], now, MIN15_MS));
+    } catch {
+      // no scalp entries this tick
+    }
+
+    // Stocks (desks with stocks + the options lane's underlyings). Failure → those symbols are stale, crypto unaffected.
+    const wantsStocks = desks.some((d) => d.enabled && (deskAssets(d.id).stocks || deskAssets(d.id).options));
+    // Stock-trading lanes only see STOCK_UNIVERSE + the options underlyings; CYCLE's extra screen names are fetched for
+    // their prices (straddle strikes) but are never offered to a lane that buys shares.
+    const laneStocks = new Set<string>([...STOCK_UNIVERSE, ...OPTION_UNDERLYINGS]);
+    const stockSymbols = wantsStocks ? [...new Set<string>([...laneStocks, ...(desks.some((d) => d.strategy === "cycle-straddle-v1") ? CYCLE_SCREEN : [])])] : [];
+    const stockUniverse: string[] = [];
+    if (stockSymbols.length) {
+      let sBars = new Map<string, Bar[]>();
+      let sTrades = new Map<string, { price: number; at: string }>();
+      try {
+        sBars = await alpaca.stockBars(stockSymbols, new Date(now - 8 * 24 * HOUR_MS));
+      } catch (err) {
+        staleNotes.push(`stocks: bars fetch failed (${err instanceof Error ? err.message.slice(0, 80) : "error"})`);
+      }
+      try {
+        sTrades = await alpaca.latestStockTrades(stockSymbols);
+      } catch {
+        // prices fall back to the last closed bar
+      }
+      for (const s of stockSymbols) {
+        const b = closedBars(sBars.get(s) ?? [], now);
+        if (!b.length) continue;
+        bars.set(s, b);
+        if (laneStocks.has(s)) stockUniverse.push(s);
+        const t = sTrades.get(s) ?? null;
+        const stat = watchStat(s, b, t);
+        watching.push(stat);
+        if (stat.price) prices.set(s, stat.price);
+        if (session !== "closed" && (!t || now - Date.parse(t.at) > STOCK_STALE_TRADE_MS)) {
+          staleSymbols.add(s);
+          staleNotes.push(`${s}: no trade in 30 min during the ${session} session`);
+        }
+      }
+    }
+    // CYCLE: ~1 year of closed daily bars for the cycle detector. Failure → only SPY/QQQ qualify (no screen).
+    const cycleDesk = desks.find((d) => deskLanes(d.id, d.strategy).includes("cycle-straddle-v1")) ?? null;
+    const barsDaily = new Map<string, Bar[]>();
+    if (cycleDesk) {
+      try {
+        const raw = await alpaca.stockBars(CYCLE_SCREEN, new Date(now - 400 * 24 * HOUR_MS), "1Day");
+        for (const sym of CYCLE_SCREEN) barsDaily.set(sym, (raw.get(sym) ?? []).filter((b) => Date.parse(b.timestamp) + 24 * HOUR_MS <= now));
+      } catch (err) {
+        staleNotes.push(`cycle screen: daily bars fetch failed (${err instanceof Error ? err.message.slice(0, 80) : "error"})`);
+      }
+    }
     if (!dataStale && staleNotes.length) dataStaleReason = staleNotes.join("; ");
 
+    // Broker holdings of the floor's OWN account, LONG only, keyed by floor symbol. Used only to cap the floor's own
+    // sells and to reconcile its own books — a symbol the floor never opened is never looked up.
     const brokerQty = new Map<string, number>();
     for (const p of brokerPositions) {
-      const pair = normalizePair(p.symbol);
-      if (!universe.includes(pair)) continue;
-      brokerQty.set(pair, Number(p.qty_available ?? p.qty) || 0);
+      const sym = (p.asset_class ?? "").includes("crypto") || p.symbol.includes("/") ? normalizePair(p.symbol) : p.symbol.toUpperCase();
+      const q = Number(p.qty_available ?? p.qty) || 0;
+      if (p.side === "short" || q <= 0) continue;
+      brokerQty.set(sym, q);
     }
     const bp = Number(account.non_marginable_buying_power ?? account.cash);
 
@@ -346,6 +500,69 @@ export async function runTick(deps: TickDeps): Promise<TickResult> {
       loadRecentOrders(db, new Date(now - 72 * HOUR_MS).toISOString()),
       loadBaselines(db, day),
     ]);
+
+    // Options: quotes for contracts the floor holds (per-contract price = mid × 100), and chains for new entries.
+    const heldOptions = new Set<string>();
+    const ownBooks = buildBooks(filledOrders.filter(floorOwnedOrder));
+    for (const [id, book] of ownBooks) {
+      if (id.startsWith("exp:") || id.startsWith("live:")) continue;
+      for (const sym of book.positions.keys()) if (assetClass(sym) === "option") heldOptions.add(sym);
+    }
+    if (heldOptions.size) {
+      try {
+        const snaps = await alpaca.optionSnapshots([...heldOptions]);
+        for (const [sym, q] of snaps) {
+          const px = q.mid ?? (q.bid > 0 ? q.bid : null);
+          if (px) prices.set(sym, px * 100);
+        }
+      } catch {
+        // held options keep their cost (unrealized 0) this tick
+      }
+    }
+    const optionChains = new Map<string, OptionCandidate[]>();
+    const optionsDeskOn = desks.some((d) => d.enabled && deskLanes(d.id, d.strategy).includes("options-v1") && !d.paused_until);
+    if (session === "regular" && optionsDeskOn && !params.halted) {
+      const ymd = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+      for (const u of OPTION_UNDERLYINGS) {
+        const px = prices.get(u);
+        if (!px) continue;
+        try {
+          const snaps = await alpaca.optionChain(u, { expirationGte: ymd(now + OPTION_DTE_MIN * 86_400_000), expirationLte: ymd(now + OPTION_DTE_MAX * 86_400_000), strikeGte: Math.floor(px * 0.95), strikeLte: Math.ceil(px * 1.05) });
+          optionChains.set(u, snaps.flatMap((q) => {
+            const occ = parseOcc(q.symbol);
+            return occ ? [{ symbol: q.symbol, right: occ.right, strike: occ.strike, expiration: occ.expiration, bid: q.bid, ask: q.ask }] : [];
+          }));
+        } catch {
+          // no options entries on this underlying this tick
+        }
+      }
+    }
+
+    // CYCLE straddle chains: Mondays, regular session, desk on and not paused, while it has room for another straddle,
+    // for every screened underlying it doesn't hold or just bought (the engine opens them in order until full).
+    const straddleChains = new Map<string, OptionCandidate[]>();
+    if (cycleDesk && cycleDesk.enabled && !(cycleDesk.paused_until && Date.parse(cycleDesk.paused_until) > now) && session === "regular" && !params.halted && isNyMonday(now)) {
+      const ymd = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+      const book = ownBooks.get(cycleDesk.id);
+      const legs = [...(book?.positions.values() ?? [])].filter((p) => (p.strategy ?? cycleDesk.strategy) === "cycle-straddle-v1").map((p) => ({ symbol: p.symbol, qty: p.qty, avgEntryPrice: p.avgEntryPrice, currentPrice: p.avgEntryPrice, unrealizedPnl: 0, unrealizedPnlPct: 0, enteredAt: p.openedAt }));
+      const open = groupStraddles(legs, now);
+      const held = new Set(open.map((x) => x.underlying));
+      const recent = new Set(recentEntriesFor(cycleDesk.id, recentOrders, "cycle-straddle-v1", cycleDesk.strategy).filter((e) => Date.parse(e.timestamp) > now - 4 * 24 * HOUR_MS).map((e) => parseOcc(e.symbol)?.underlying ?? e.symbol));
+      const room = Number(effectiveParams("cycle-straddle-v1", cycleDesk.params).maxOpenStraddles) - open.length;
+      const wantChains = room > 0 ? scanCycles(barsDaily).underlyings.filter((u) => !held.has(u) && !recent.has(u) && prices.has(u)) : [];
+      for (const u of wantChains) {
+        const px = prices.get(u)!;
+        try {
+          const snaps = await alpaca.optionChain(u, { expirationGte: ymd(now + STRADDLE_DTE_MIN * 86_400_000), expirationLte: ymd(now + STRADDLE_DTE_MAX * 86_400_000), strikeGte: Math.floor(px * 0.97), strikeLte: Math.ceil(px * 1.03) });
+          straddleChains.set(u, snaps.flatMap((q) => {
+            const occ = parseOcc(q.symbol);
+            return occ ? [{ symbol: q.symbol, right: occ.right, strike: occ.strike, expiration: occ.expiration, bid: q.bid, ask: q.ask }] : [];
+          }));
+        } catch {
+          // no straddle on this underlying this tick (the engine logs "no liquid ATM straddle")
+        }
+      }
+    }
 
     const plan = planTick({
       now,
@@ -362,22 +579,55 @@ export async function runTick(deps: TickDeps): Promise<TickResult> {
       recentOrders,
       baselines,
       brokerQty,
+      brokerKnown: true,
       buyingPower: Number.isFinite(bp) ? bp : null,
+      stockUniverse,
+      bars15m,
+      session,
+      optionChains,
+      barsDaily,
+      straddleChains,
     });
 
     await writeBaselines(db, day, plan.baselinesToWrite);
 
+    // Broker reconcile (floor positions only): record cleared ghost claims BEFORE any order. No sell is sent.
+    for (const [i, row] of plan.reconcileRows.entries()) {
+      const a = plan.reconcile[i];
+      const ins = await db.from("crypto_floor_orders").insert({
+        client_order_id: row.client_order_id,
+        book: row.book,
+        desk: row.desk,
+        strategy: row.strategy,
+        mode: "paper",
+        venue: "sim",
+        symbol: row.symbol,
+        side: "sell",
+        intent: "exit",
+        qty: row.qty,
+        status: "filled",
+        filled_qty: row.filled_qty,
+        filled_avg_price: row.filled_avg_price,
+        filled_at: row.filled_at,
+        reason: row.reason,
+        signal: { reconcile: true, claimedQty: a.claimedQty, bookQty: a.bookQty, brokerQty: a.brokerQty },
+      });
+      if (ins.error && ins.error.code !== "23505") {
+        await log.log({ type: "system", agentRole: "system", desk: a.book, symbol: a.symbol, title: `Reconcile write failed for ${a.book} ${a.symbol}: ${ins.error.message}` });
+        continue;
+      }
+      await log.log({ type: "reconcile", agentRole: "risk", desk: a.book === "manual" ? null : a.book, strategy: a.strategy, symbol: a.symbol, side: "sell", qty: a.reduceBy, price: a.price, orderId: row.client_order_id, title: `${a.book.toUpperCase()}: ${a.reason}`, payload: { claimedQty: a.claimedQty, bookQty: a.bookQty, brokerQty: a.brokerQty, reduceBy: a.reduceBy, noBrokerOrder: true, agent: agentForEvent(a.book, "risk") } });
+    }
+
     // Pauses / resumes
-    if (plan.floorPause) {
-      await db.from("crypto_floor_params").update({ day_paused_until: plan.floorPause.until, day_pause_reason: plan.floorPause.reason }).eq("id", 1);
-      await log.log({ type: "halt", agentRole: "risk", title: plan.floorPause.reason, payload: { scope: "floor", until: plan.floorPause.until, dayPnlPct: plan.floor.dayPnlPct } });
-    } else if (plan.floorResume) {
+    if (plan.floorResume) {
+      // The floor-wide day pause is retired (2026-10-02): only per-desk loss caps + the kill switch pause trading.
       await db.from("crypto_floor_params").update({ day_paused_until: null, day_pause_reason: null }).eq("id", 1);
-      await log.log({ type: "resume", agentRole: "risk", title: "New UTC day — floor entries resume", payload: { scope: "floor" } });
+      await log.log({ type: "resume", agentRole: "risk", title: "Floor-wide day pause retired — per-desk loss caps now guard each desk", payload: { scope: "floor" } });
     }
     for (const p of plan.deskPauses) {
       await db.from("crypto_floor_desks").update({ paused_until: p.until, pause_reason: p.reason, updated_at: new Date().toISOString() }).eq("id", p.desk);
-      await log.log({ type: "halt", agentRole: "risk", desk: p.desk, title: `${p.desk.toUpperCase()}: ${p.reason}`, payload: { scope: "desk", until: p.until, agent: agentForEvent(p.desk, "risk") } });
+      await log.log({ type: "halt", agentRole: "risk", desk: p.desk, title: `${p.desk.toUpperCase()}: ${p.reason}`, payload: { scope: "desk", lossCap: true, until: p.until, agent: agentForEvent(p.desk, "risk") } });
     }
     for (const d of plan.deskResumes) {
       await db.from("crypto_floor_desks").update({ paused_until: null, pause_reason: null, updated_at: new Date().toISOString() }).eq("id", d);
@@ -428,7 +678,7 @@ export async function runTick(deps: TickDeps): Promise<TickResult> {
     // Paper orders
     result.ordersPlanned = plan.orders.length;
     for (const o of plan.orders) {
-      const rule = assetRules?.get(o.symbol);
+      const rule = o.assetClass === "crypto" ? assetRules?.get(o.symbol) : undefined;
       if (rule) {
         o.qty = roundQty(o.qty, rule.minTradeIncrement);
         if (!(o.qty > 0) || o.qty < rule.minOrderSize) {
@@ -538,19 +788,10 @@ export async function runTick(deps: TickDeps): Promise<TickResult> {
         dataStaleReason,
         halted: plan.halted,
         floor: plan.floor,
-        desks: plan.desks.map((d) => ({
-          id: d.id,
-          strategy: d.strategy,
-          spec: d.spec ? d.spec.name : null,
-          dayLossLimitPct: d.dayLossLimitPct,
-          enabled: d.enabled,
-          equity: d.marked.equity,
-          dayPnl: d.dayPnl,
-          dayPnlPct: d.dayPnlPct,
-          openPositions: d.marked.positions.length,
-          pausedUntil: d.pausedUntil,
-          entriesBlocked: d.entriesBlocked,
-        })),
+        noOwnAccount: false,
+        session: plan.session,
+        desks: heartbeatDesks(plan),
+        cycleScan: plan.cycleScan,
         experiments: plan.experiments.map((e) => ({ id: e.id, equity: e.marked.equity, open: e.marked.positions.length })),
         account: { cash: Number(account.cash), equity: Number(account.equity), buyingPower: Number.isFinite(bp) ? bp : null },
         dedicatedAccount: alpaca.dedicated,
@@ -578,6 +819,9 @@ export async function runTick(deps: TickDeps): Promise<TickResult> {
       floor: plan.floor,
       watching: line,
       dedicatedAccount: alpaca.dedicated,
+      noOwnAccount: false,
+      session: plan.session,
+      reconciled_positions: plan.reconcile.length,
       coinbase: live ? { configured: live.configured, ok: live.ok, error: live.error, canTrade: live.canTrade, canTransfer: live.canTransfer, enabledDesks: live.enabledDesks, blocked: live.blocked, orders: live.orders } : undefined,
     });
   } catch (err) {

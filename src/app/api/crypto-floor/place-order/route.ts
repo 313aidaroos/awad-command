@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { AlpacaClient, AlpacaHttpError, floorAlpacaConfig, formatQty, mapAlpacaStatus } from "@/lib/crypto-floor/alpaca";
+import { AlpacaClient, AlpacaHttpError, NO_OWN_ACCOUNT_MESSAGE, floorAlpacaConfig, formatQty, mapAlpacaStatus } from "@/lib/crypto-floor/alpaca";
 import { createCryptoFloorDb } from "@/lib/crypto-floor/db";
 import { EventLog } from "@/lib/crypto-floor/events";
 import { normalizePair } from "@/lib/crypto-floor/market";
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : "Alpaca config refused" }, { status: 503 });
   }
-  if (!cfg) return NextResponse.json({ error: "Alpaca paper keys are not configured." }, { status: 503 });
+  if (!cfg) return NextResponse.json({ error: NO_OWN_ACCOUNT_MESSAGE }, { status: 503 });
   const db = createCryptoFloorDb();
   if (!db) return NextResponse.json({ error: "Crypto Floor database is not configured." }, { status: 503 });
   const alpaca = new AlpacaClient(cfg);

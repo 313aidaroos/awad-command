@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { AlpacaClient, floorAlpacaConfig } from "@/lib/crypto-floor/alpaca";
+import { AlpacaClient, NO_OWN_ACCOUNT_MESSAGE, floorAlpacaConfig } from "@/lib/crypto-floor/alpaca";
 import { backtestLine } from "@/lib/crypto-floor/backtest";
 import { createCryptoFloorDb } from "@/lib/crypto-floor/db";
 import { LabError, backtestDesk } from "@/lib/crypto-floor/lab";
@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
 const schema = z.object({
-  desk: z.enum(["samurai", "neon", "orbit", "phantom", "ronin"]),
+  desk: z.enum(["samurai", "neon", "orbit", "phantom", "ronin", "cycle"]),
   overrides: z.record(z.union([z.number(), z.boolean()])).default({}),
   spec: z.record(z.unknown()).optional(),
   days: z.number().int().min(3).max(90).default(30),
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : "Alpaca config refused" }, { status: 503 });
   }
-  if (!cfg) return NextResponse.json({ error: "Alpaca paper keys are not configured." }, { status: 503 });
+  if (!cfg) return NextResponse.json({ error: NO_OWN_ACCOUNT_MESSAGE }, { status: 503 });
   try {
     const r = await backtestDesk({ db, alpaca: new AlpacaClient(cfg), desk: parsed.data.desk, overrides: parsed.data.overrides, spec: parsed.data.spec, days: parsed.data.days });
     return NextResponse.json({

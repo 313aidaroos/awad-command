@@ -22,6 +22,8 @@ export type Position = {
   unrealizedPnlPct: number;
   enteredAt?: string;
   tranches?: number;
+  /** Strategy (lane) that opened the position. null/undefined = the desk's primary strategy (legacy rows). */
+  strategy?: string | null;
 };
 
 export type RecentEntry = {
@@ -41,14 +43,26 @@ export type Signal = {
   [extra: string]: unknown;
 };
 
-export type StrategyId = "momentum-v1" | "dip-v1" | "swing-v1" | "breakout-v1" | "custom-v1";
+export type StrategyId =
+  | "momentum-v1"
+  | "dip-v1"
+  | "swing-v1"
+  | "breakout-v1"
+  | "custom-v1"
+  // 2026-10-02 riskier floor: side-by-side lanes (each runs on one desk, next to its primary strategy).
+  | "trend-v1"
+  | "meanrev-v1"
+  | "scalp-v1"
+  | "options-v1"
+  // 2026-10-03: CYCLE desk (6th) — weekly long ATM straddles on a ~3-week cycle.
+  | "cycle-straddle-v1";
 
 export type ParamValue = number | boolean;
 export type StrategyParams = Record<string, ParamValue>;
 
-export type DeskId = "samurai" | "neon" | "orbit" | "phantom" | "ronin";
+export type DeskId = "samurai" | "neon" | "orbit" | "phantom" | "ronin" | "cycle";
 
-export const DESK_IDS: DeskId[] = ["samurai", "neon", "orbit", "phantom", "ronin"];
+export const DESK_IDS: DeskId[] = ["samurai", "neon", "orbit", "phantom", "ronin", "cycle"];
 
 /**
  * Awad's coins (his Robinhood holdings, 2026-10-02: "have all them watch these and buy more of these").
@@ -61,8 +75,13 @@ export const ROBOT_UNIVERSE = [...OWNER_COINS, "BTC/USD", "ETH/USD"] as const;
 
 /** Per-desk risk overrides (crypto_floor_desks.risk). Set by migration/owner only, never by an agent. */
 export type DeskRisk = {
-  /** Desk day-loss pause, % of the desk's start-of-day equity (default: floor halt_day_loss_pct). */
+  /**
+   * Hard desk daily loss cap, % of the desk's start-of-day equity (negative). Owner/migration only; bounded in
+   * risk.ts (DESK_DAY_LOSS_CAP). Missing or out of bounds → the default cap. Agents and the lab never write this.
+   */
   dayLossPct?: number;
+  /** Max loss per options position in USD (premium paid × 100 × contracts). Owner/migration only; bounded in risk.ts. */
+  optionMaxLossUsd?: number;
 };
 
 export type OrderStatus =

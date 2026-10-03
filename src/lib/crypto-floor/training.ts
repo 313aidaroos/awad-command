@@ -10,10 +10,11 @@ import type { AgentRole } from "./desks";
 import { RONIN_LIMITS, RONIN_UNIVERSE } from "./strategy/custom-v1";
 import type { DeskId } from "./types";
 
-export const TRAINING_VERSION = "2026-10-02";
+export const TRAINING_VERSION = "2026-10-03";
 
 /** Newest first. Every agent reads these in every meeting. */
 export const TRAINING_UPDATES: string[] = [
+  "2026-10-03: CYCLE joined the floor as the sixth desk (team TIDE, LUMA, KITE, ONYX). It trades only options: every Monday one long ATM straddle (call + put, ~4 weeks) on SPY, QQQ and stocks with a real ~15-trading-day cycle; each leg sells at +50%, the rest at −50% combined or trading day 15; max $500 per straddle, 4 open, never sells to open. Paper only. Its lessons are about volatility and timing, not coins.",
   "2026-10-02: Awad's own coins (his Robinhood holdings): XRP, BILL, HBAR, DOGE, PEPE, XLM, SOL. He wants every team to watch them closely and buy more of them when your strategy sees a setup — they are first on every desk's coin list. (Paper here; his Robinhood account is not connected.) Coins Alpaca doesn't carry are skipped automatically.",
   "2026-10-02: RONIN joined the floor (own strategies, higher risk, 8 coins). Every team now holds meetings, keeps a journal, and can adopt a change on paper once the code-checked evidence gate passes (24h cooldown). Real-money desks only propose.",
 ];
@@ -72,6 +73,8 @@ export const TEAM_PLAYBOOK: Record<DeskId, string> = {
     `Limits (code-enforced): coins ${RONIN_UNIVERSE.join(", ")}; up to ${RONIN_LIMITS.maxPositionSizePct}% of the desk per trade; up to ${RONIN_LIMITS.maxOpenPositions} positions; a stop on every trade (no wider than ${RONIN_LIMITS.minStopLossPct}%); desk pauses new buys for the day at −5%.`,
     "Mandate: be bold in ideas and strict in evidence. Explore different families (momentum, mean reversion, breakouts, volatility filters, trend filters, multi-coin rotation) instead of fine-tuning one idea forever. Keep a strategy long enough to judge it (≥5 test trades), and write down why it worked or failed so the lesson survives.",
   ].join(" "),
+  cycle:
+    "CYCLE — Awad's 3-week cycle idea, on options. Every Monday (regular session) it buys one long ATM straddle (a call and a put, same strike, ~4 weeks out) on SPY, QQQ and stocks whose 1-year daily bars show a real ~15-trading-day cycle (autocorrelation + spectral screen). Each leg sells on its own at +50%; the rest goes when the straddle is down 50% combined or on trading day 15. Max $500 debit per straddle, 4 open, long premium only — it never sells to open. Wins when the underlying swings hard either way inside three weeks; loses to time decay when it goes quiet. Levers (only safer than the spec): leg target, combined stop, the exit day, fewer open straddles. The lab cannot backtest options, so CYCLE learns from its own closed straddles.",
 };
 
 export const RULE_LANGUAGE_DOC = [

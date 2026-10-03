@@ -49,8 +49,8 @@ describe("validateSpec", () => {
       const all = v.errors.join(" | ");
       expect(all).toMatch(/SHIB\/USD/);
       expect(all).toMatch(/stopLossPct/);
-      expect(all).toMatch(/positionSizePct must be 0.5–10/);
-      expect(all).toMatch(/maxOpenPositions must be 1–4/);
+      expect(all).toMatch(/positionSizePct must be 0.5–12/);
+      expect(all).toMatch(/maxOpenPositions must be 1–6/);
     }
   });
 

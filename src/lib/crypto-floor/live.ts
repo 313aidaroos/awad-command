@@ -11,6 +11,7 @@
  * A desk switched off keeps managing (selling) the live coins it already holds; it never buys.
  * AI never reaches this: agents have no tool that changes live switches or limits.
  */
+import { deskAssets } from "./desks";
 import { OPEN_STATUSES, deskTrading, recentEntriesFor, stamp, type SignalOutcome } from "./engine";
 import { buildBooks, emptyBook, markBook, type MarkedBook } from "./ledger";
 import { nextUtcMidnight } from "./market";
@@ -114,7 +115,8 @@ export function planLive(input: LivePlanInput): LivePlan {
   const prices = new Map(input.prices);
   for (const [pair, p] of cb.prices) prices.set(pair, p);
 
-  const enabled = input.desks.filter((d) => d.live_enabled === true);
+  // Real money is crypto only: a desk without crypto (CYCLE, options on stocks) never trades on Coinbase.
+  const enabled = input.desks.filter((d) => d.live_enabled === true && deskAssets(d.id).crypto);
   const holding = input.desks.filter((d) => !d.live_enabled && (books.get(liveBook(d.id))?.positions.size ?? 0) > 0);
   const liveDesks = [...enabled, ...holding];
 

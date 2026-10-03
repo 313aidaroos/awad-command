@@ -21,7 +21,7 @@ export const desks = [
   {
     id: "orbit",
     name: "ORBIT",
-    strategy: "Swing Trading",
+    strategy: "Swing + Options",
     color: "#40ef8e",
     symbol: "星",
     names: ["ATLAS", "LUNA", "SOL", "VEGA"],
@@ -29,7 +29,7 @@ export const desks = [
   {
     id: "phantom",
     name: "PHANTOM",
-    strategy: "Volume Breakout",
+    strategy: "Breakout + Scalp",
     color: "#be6dff",
     symbol: "影",
     names: ["ECHO", "MIRA", "ZERO", "SAGE"],

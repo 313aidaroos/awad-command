@@ -16,6 +16,8 @@ import { buildBooks, emptyBook, markBook, tradeStats, type ClosedTrade, type Tra
 import { loadMeetings, loadNotes } from "./notes";
 import { loadDesks, loadExperiments, loadFilledOrders, loadParams } from "./store";
 import { STRATEGIES, effectiveParams, resolveSpec } from "./strategies";
+import { deskDailyLossCap } from "./risk";
+import { strategyComparison, type StrategyResult } from "./strategyStats";
 import type { DeskRow, StrategyId, StrategyParams, WatchStat } from "./types";
 
 export const MIN_TRADES_TO_TUNE = 3;
@@ -38,8 +40,9 @@ export function tuneParams(
   if (strategy === "momentum-v1") {
     const cur = Number(params.entryThresholdPct);
     let v = cur;
+    // 2026-10-02: the winning-streak step never RAISES the threshold (the old 1.5% floor would have undone the riskier 0.75%).
     if (exp < 0) v = Math.min(4, cur + 0.5);
-    else if (wr > 0.6 && exp > 0) v = Math.max(1.5, cur - 0.25);
+    else if (wr > 0.6 && exp > 0) v = Math.min(cur, Math.max(bounds.entryThresholdPct.min, cur - 0.25));
     v = Math.min(bounds.entryThresholdPct.max, Math.max(bounds.entryThresholdPct.min, round2(v)));
     if (v === cur) return null;
     next.entryThresholdPct = v;
@@ -54,7 +57,7 @@ export function tuneParams(
     const cur = Number(params.dipThresholdPct);
     let v = cur;
     if (exp < 0) v = Math.max(-8, cur - 1);
-    else if (wr > 0.6 && exp > 0) v = Math.min(-2.5, cur + 0.5);
+    else if (wr > 0.6 && exp > 0) v = Math.max(cur, Math.min(-1.5, cur + 0.5)); // never deepens on a winning streak
     v = Math.min(bounds.dipThresholdPct.max, Math.max(bounds.dipThresholdPct.min, round2(v)));
     if (v === cur) return null;
     next.dipThresholdPct = v;
@@ -75,6 +78,9 @@ export type DeskReview = {
   label: string;
   enabled: boolean;
   pausedUntil: string | null;
+  /** Hard daily loss cap (%) and whether the desk hit it today. */
+  lossCapPct: number;
+  atLossCap: boolean;
   version: number;
   capital: number;
   equity: number;
@@ -107,13 +113,15 @@ export type ReviewSummary = {
   day: string;
   generatedAt: string;
   siteUrl: string;
-  robot: { status: "RUNNING" | "STALE" | "HALTED" | "NO DATA"; lastTickAt: string | null; ticks24h: number; uptimePct: number; staleTicks: number; dedicatedAccount: boolean | null };
+  robot: { status: "RUNNING" | "STALE" | "HALTED" | "NO DATA"; lastTickAt: string | null; ticks24h: number; uptimePct: number; staleTicks: number; dedicatedAccount: boolean | null; noOwnAccount: boolean };
   killSwitch: { halted: boolean; reason: string | null };
   watching: WatchStat[];
   floor: { capital: number; equity: number; pnl24h: number | null; pnl24hPct: number | null; openPositions: number; trades24h: number; winRate24h: number | null; realized24h: number };
   desks: DeskReview[];
   trades24h: Array<ClosedTrade & { desk: string }>;
   experiments: ExperimentReview[];
+  /** Daily per-strategy comparison (24h and 7d): trades, win rate, P/L, max drawdown, avg hold. */
+  strategies: { d1: StrategyResult[]; d7: StrategyResult[] };
   /** REAL MONEY (Coinbase). OFF unless the owner switched a desk on. */
   realMoney: { connected: boolean; ok: boolean; totalUsd: number | null; enabledDesks: string[]; pnl: number; trades24h: number; limits: { maxTotalUsd: number; maxTradeUsd: number; dayLossUsd: number }; note: string | null };
   /** What the teams learned in 24h: meetings held, changes adopted, journal lessons. */
@@ -131,10 +139,11 @@ type HeartbeatPayload = {
   coinbase?: { configured?: boolean; ok?: boolean; error?: string | null; totalUsd?: number; canTransfer?: boolean; blocked?: string | null } | null;
   prices?: Record<string, number>;
   watching?: WatchStat[];
-  desks?: Array<{ id: string; equity: number }>;
   floor?: { equity: number };
   dataStale?: boolean;
   dedicatedAccount?: boolean;
+  noOwnAccount?: boolean;
+  desks?: Array<{ id: string; equity: number; atLossCap?: boolean }>;
 };
 
 async function heartbeatNear(db: SupabaseClient, iso: string, before = true) {
@@ -186,6 +195,8 @@ export async function buildReview(db: SupabaseClient, now: number, siteUrl: stri
       label: strategy === "custom-v1" ? `Own strategy: "${resolveSpec(strategy, d.spec)?.name ?? "—"}"` : STRATEGIES[strategy].label,
       enabled: d.enabled,
       pausedUntil: d.paused_until,
+      lossCapPct: deskDailyLossCap(d),
+      atLossCap: (latest?.payload.desks ?? []).some((x) => x.id === d.id && x.atLossCap === true),
       version: d.version,
       capital: d.capital_usd,
       equity: marked.equity,
@@ -231,7 +242,9 @@ export async function buildReview(db: SupabaseClient, now: number, siteUrl: stri
   if (count("order_rejected")) issues.push(`${count("order_rejected")} order(s) rejected by Alpaca.`);
   if (count("system")) issues.push(`${count("system")} system error(s): ${String((evs.find((e) => e.type === "system")?.payload as Record<string, unknown>)?.title ?? "").slice(0, 160)}`);
   if (staleTicks) issues.push(`Market data was stale on ${staleTicks} tick(s); entries were blocked then.`);
-  if (latest?.payload.dedicatedAccount === false) issues.push("The floor still trades the Alpaca paper account it shares with AwadBot. Add CRYPTO_FLOOR_ALPACA_API_KEY / CRYPTO_FLOOR_ALPACA_SECRET_KEY (a separate paper account) to isolate it.");
+  if (latest?.payload.noOwnAccount === true) issues.push("NO OWN ACCOUNT: the floor is not trading. Create the floor's own Alpaca paper account and set CRYPTO_FLOOR_ALPACA_API_KEY / CRYPTO_FLOOR_ALPACA_SECRET_KEY (there is no fallback to AwadBot's keys).");
+  const capped = deskReviews.filter((d) => d.atLossCap).map((d) => d.name);
+  if (capped.length) issues.push(`Daily loss cap hit: ${capped.join(", ")} — no new positions until the next UTC day.`);
 
   const cbp = latest?.payload.coinbase ?? null;
   const liveBooks = desks.map((d) => markBook(books.get(`live:${d.id}`) ?? emptyBook(`live:${d.id}`), 0, prices));
@@ -276,6 +289,7 @@ export async function buildReview(db: SupabaseClient, now: number, siteUrl: stri
       uptimePct: Math.min(100, (tickCount / 288) * 100),
       staleTicks,
       dedicatedAccount: latest?.payload.dedicatedAccount ?? null,
+      noOwnAccount: latest?.payload.noOwnAccount === true,
     },
     killSwitch: { halted: params.halted, reason: params.halt_reason },
     watching: latest?.payload.watching ?? [],
@@ -293,6 +307,11 @@ export async function buildReview(db: SupabaseClient, now: number, siteUrl: stri
     desks: deskReviews,
     trades24h: trades24h.sort((a, b) => b.exitAt.localeCompare(a.exitAt)),
     experiments: expReviews,
+    strategies: (() => {
+      const all = desks.flatMap((d) => (books.get(d.id)?.closedTrades ?? []).map((t) => ({ ...t, desk: d.id })));
+      const open = deskReviews.flatMap((d) => (books.get(d.id) ? [...books.get(d.id)!.positions.values()] : []).map((p) => ({ desk: d.id, symbol: p.symbol, strategy: p.strategy })));
+      return { d1: strategyComparison(desks, all, open, since24), d7: strategyComparison(desks, all, open, since7d) };
+    })(),
     realMoney,
     learning,
     issues,

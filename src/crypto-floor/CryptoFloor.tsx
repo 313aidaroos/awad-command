@@ -341,7 +341,7 @@ export default function CryptoFloor() {
           }
         } else {
           setRemote(disconnectedSnapshot());
-          setStatusNote(body.error || "Alpaca API not connected. Configure ALPACA_API_KEY in Vercel.");
+          setStatusNote(body.error || "Robot data not available yet. The floor trades only its own Alpaca paper account (CRYPTO_FLOOR_ALPACA_API_KEY / CRYPTO_FLOOR_ALPACA_SECRET_KEY).");
         }
         
         setSimFills(
@@ -759,9 +759,11 @@ export default function CryptoFloor() {
               {demo
                 ? "VISUAL PREVIEW · Illustrated agent roster and sample paper data. No trading engine or live money is connected."
                 : paper
-                  ? robot?.coinbase.enabledDesks.length
+                  ? robot?.noOwnAccount
+                    ? "ALPACA PAPER · NOT TRADING: the floor has no own Alpaca paper account yet (CRYPTO_FLOOR_ALPACA_* not set). No fallback to AwadBot's keys. Real money (Coinbase) is OFF."
+                    : robot?.coinbase.enabledDesks.length
                     ? `REAL MONEY ON for ${robot.coinbase.enabledDesks.map((d) => d.toUpperCase()).join(", ")} (Coinbase, max $${robot.coinbase.limits.maxTotalUsd}). Every desk also trades Alpaca paper 24/7, every 5 minutes.`
-                    : "ALPACA PAPER · The robot trades five desks 24/7 with paper money, every 5 minutes. Real money (Coinbase) is OFF."
+                    : "ALPACA PAPER · Six desks trade the floor's own paper account: crypto 24/7, US stocks regular + extended hours, options regular hours (long premium only; CYCLE buys weekly straddles). Real money (Coinbase) is OFF."
                   : "CONNECTION STATUS · No Crypto Floor engine is linked. Characters remain visible; trading data is unavailable."}
             </span>
             <Link href="/agents">
@@ -1639,7 +1641,7 @@ export default function CryptoFloor() {
                       : "Stored on the server (crypto_floor_params.halted). While on, the robot sends no orders at all and strategy tests pause. Only you can reset it. It does not touch AwadBot."}
                   </p>
                   <p>
-                    Day-loss guard: a desk that loses {Math.abs(robot?.limits.dayLossPct ?? 2)}% in a UTC day pauses new entries until midnight UTC; the whole floor pauses at the same limit.
+                    Daily loss cap (hard, owner-only): each desk has its own cap (default {Math.abs(robot?.limits.dayLossPct ?? 4)}%; {robot?.desks.map((d) => `${d.name} ${d.lossCap.atCap ? "HALTED" : `${d.lossCap.pct}%`}`).join(", ") || "—"}). At the cap a desk opens nothing new until midnight UTC; exits keep running. Crypto trades 24/7; there is no floor-wide pause.
                   </p>
                 </Panel>
                 <Panel title="Execution safeguards">

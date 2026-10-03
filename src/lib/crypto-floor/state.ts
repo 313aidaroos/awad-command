@@ -6,8 +6,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { desks as visualDesks, emptyMetrics, type FloorEvent, type Snapshot } from "@/crypto-floor/model";
 import { anthropicApiKey } from "@/lib/env";
-import { agentForEvent, deskAgents, deskRoster } from "./desks";
-import { deskDayLossLimit, deskTrading } from "./engine";
+import { NO_OWN_ACCOUNT_MESSAGE } from "./alpaca";
+import { assetClass, marketSession, type AssetClass, type Session } from "./assets";
+import { agentForEvent, deskAgents, deskAssets, deskLanes, deskRoster, type DeskAssets } from "./desks";
+import { STRADDLE_DTE_MAX, STRADDLE_DTE_MIN, deskDayLossLimit, deskTrading } from "./engine";
+import { DESK_DAY_LOSS_CAP, STRADDLE_MAX_DEBIT_USD, effectiveFloorLimits, optionMaxLossUsd } from "./risk";
+import { strategyComparison, type StrategyResult } from "./strategyStats";
 import { loadMeetings, loadNotes, type MeetingRow, type NoteRow } from "./notes";
 import { strategyCatalog } from "./lab";
 import { buildBooks, emptyBook, markBook, tradeStats, type TradeStats } from "./ledger";
@@ -15,6 +19,7 @@ import { utcDay, watchLine } from "./market";
 import { loadBaselines, loadDesks, loadExperiments, loadFilledOrders, loadParams, toOrderRow } from "./store";
 import { DEFAULT_UNIVERSE, STRATEGIES, effectiveParams, strategySummary } from "./strategies";
 import type { CustomSpec } from "./strategy/custom-v1";
+import { groupStraddles, nextEntryMonday, type CycleRead, type CycleScan, type OpenStraddle } from "./strategy/cycle-straddle-v1";
 import type { ExperimentRow, OrderRow, Position, StrategyParams, WatchStat } from "./types";
 
 export const TICK_EVERY_SEC = 300;
@@ -39,6 +44,21 @@ export type RobotEventView = {
   payload: Record<string, unknown>;
 };
 
+/** CYCLE desk only (cycle-straddle-v1): the weekly cycle screen, its open straddles and its fixed rules. */
+export type CycleDeskView = {
+  /** Last tick that ran the screen (null before the first tick with the desk). */
+  scanAt: string | null;
+  /** This week's straddle underlyings: SPY, QQQ, then cycle-qualified stocks. */
+  underlyings: string[];
+  /** Detector read per screened symbol (1y daily bars). */
+  reads: CycleRead[];
+  /** Open straddles (legs grouped by underlying + strike + expiry), marked to the last tick. */
+  straddles: OpenStraddle[];
+  rules: { maxDebitUsd: number; maxOpenStraddles: number; legTakePct: number; comboStopPct: number; timeExitDay: number; dteMin: number; dteMax: number };
+  /** New York date of the next Monday entry window. */
+  nextEntryDay: string;
+};
+
 export type DeskView = {
   id: string;
   name: string;
@@ -53,6 +73,13 @@ export type DeskView = {
   spec: CustomSpec | null;
   universe: string[];
   dayLossLimitPct: number;
+  /** Hard daily loss cap status (owner-only limit; agents/lab can't loosen it). */
+  lossCap: { pct: number; usd: number | null; remainingUsd: number | null; atCap: boolean; status: "OK" | "HALTED" };
+  /** Max loss per options position (USD). Only meaningful when assets.options. */
+  optionMaxLossUsd: number;
+  assets: DeskAssets;
+  /** Primary strategy first, then the side-by-side lanes. */
+  lanes: Array<{ strategy: string; label: string }>;
   capital: number;
   equity: number;
   startEquity: number | null;
@@ -62,12 +89,14 @@ export type DeskView = {
   unrealizedPnl: number;
   pausedUntil: string | null;
   pauseReason: string | null;
-  positions: Position[];
+  positions: Array<Position & { assetClass: AssetClass }>;
   stats7d: Stats;
   statsAll: Stats;
-  recentTrades: Array<{ symbol: string; entryAt: string; exitAt: string; pnl: number; pnlPct: number; exitReason: string | null }>;
+  recentTrades: Array<{ symbol: string; assetClass: AssetClass; strategy: string; entryAt: string; exitAt: string; pnl: number; pnlPct: number; exitReason: string | null }>;
   lastEvent: { ts: string; title: string } | null;
   agents: Array<{ name: string; role: string }>;
+  /** CYCLE desk: screen, straddles, rules. null on every other desk. */
+  cycle: CycleDeskView | null;
   /** REAL MONEY (Coinbase) for this desk. */
   live: { enabled: boolean; enabledAt: string | null; enabledBy: string | null; positions: Position[]; realizedPnl: number; unrealizedPnl: number; trades: number };
 };
@@ -105,9 +134,17 @@ export type RobotState = {
   dataStale: boolean;
   dataStaleReason: string | null;
   dedicatedAccount: boolean | null;
+  /** true = CRYPTO_FLOOR_ALPACA_* keys missing at the last tick: the floor is not trading. null = no tick yet. */
+  noOwnAccount: boolean | null;
+  noOwnAccountMessage: string | null;
+  /** US equity session at the last tick (crypto trades 24/7 regardless). */
+  session: Session;
+  /** Per-strategy results, side by side (7 days and all time), from the floor's own ledger. */
+  strategies: { d7: StrategyResult[]; all: StrategyResult[] };
   aiConnected: boolean;
   killSwitch: { halted: boolean; reason: string | null; at: string | null; by: string | null };
   floorPause: { until: string; reason: string | null } | null;
+  /** dayLossPct = default desk loss cap (each desk's own cap is on its DeskView). */
   limits: { dayLossPct: number; maxOpenPositionsTotal: number; maxOrdersPerTick: number };
   watching: WatchStat[];
   watchLine: string;
@@ -128,6 +165,24 @@ export type RobotState = {
   /** RONIN's wider coin list, as of the last tick. */
   watchingWide: WatchStat[];
 };
+
+/** The heartbeat's cycle screen (tick.ts writes plan.cycleScan). Anything malformed → null. */
+function readCycleScan(raw: unknown): CycleScan | null {
+  const r = raw as Partial<CycleScan> | null | undefined;
+  return r && Array.isArray(r.underlyings) && Array.isArray(r.reads) ? { underlyings: r.underlyings.map(String), reads: r.reads } : null;
+}
+
+function cycleView(stored: StrategyParams, positions: Position[], scan: CycleScan | null, scanAt: string | null, now: number): CycleDeskView {
+  const p = effectiveParams("cycle-straddle-v1", stored);
+  return {
+    scanAt: scan ? scanAt : null,
+    underlyings: scan?.underlyings ?? [],
+    reads: scan?.reads ?? [],
+    straddles: groupStraddles(positions.filter((x) => (x.strategy ?? "cycle-straddle-v1") === "cycle-straddle-v1"), now),
+    rules: { maxDebitUsd: STRADDLE_MAX_DEBIT_USD, maxOpenStraddles: Number(p.maxOpenStraddles), legTakePct: Number(p.legTakePct), comboStopPct: Number(p.comboStopPct), timeExitDay: Number(p.timeExitDay), dteMin: STRADDLE_DTE_MIN, dteMax: STRADDLE_DTE_MAX },
+    nextEntryDay: nextEntryMonday(now),
+  };
+}
 
 const iso = (ts: string) => {
   const t = Date.parse(ts);
@@ -184,6 +239,7 @@ export async function loadRobotState(db: SupabaseClient, now = Date.now()): Prom
   const events = (eventsRes.data ?? []).map(toEventView);
   const since7 = now - 7 * 86_400_000;
 
+  const cycleScan = readCycleScan(hp.cycleScan);
   const deskViews: DeskView[] = desks.map((d) => {
     const marked = markBook(books.get(d.id) ?? emptyBook(d.id), d.capital_usd, prices);
     const start = baselines.get(d.id) ?? null;
@@ -191,6 +247,11 @@ export async function loadRobotState(db: SupabaseClient, now = Date.now()): Prom
     const last = events.find((e) => e.desk === d.id);
     const s = STRATEGIES[d.strategy];
     const t = deskTrading(d.strategy, d.spec, DEFAULT_UNIVERSE);
+    const capPct = deskDayLossLimit(d);
+    const capUsd = start !== null ? (start * capPct) / 100 : null;
+    const dayPnl = start !== null ? marked.equity - start : null;
+    const paused = d.paused_until && Date.parse(d.paused_until) > now ? d.paused_until : null;
+    const atCap = (start ? ((marked.equity - start) / start) * 100 <= capPct : false) || Boolean(paused && /loss cap|day P&L/i.test(d.pause_reason ?? ""));
     return {
       id: d.id,
       name: d.name,
@@ -203,7 +264,11 @@ export async function loadRobotState(db: SupabaseClient, now = Date.now()): Prom
       params: effectiveParams(d.strategy, d.params),
       spec: t.spec,
       universe: t.universe,
-      dayLossLimitPct: deskDayLossLimit(d, params.halt_day_loss_pct),
+      dayLossLimitPct: capPct,
+      lossCap: { pct: capPct, usd: capUsd, remainingUsd: capUsd !== null && dayPnl !== null ? Math.max(0, dayPnl - capUsd) : null, atCap, status: atCap ? "HALTED" : "OK" },
+      optionMaxLossUsd: optionMaxLossUsd(d),
+      assets: deskAssets(d.id),
+      lanes: deskLanes(d.id, d.strategy).map((x) => ({ strategy: x, label: STRATEGIES[x].label })),
       capital: d.capital_usd,
       equity: marked.equity,
       startEquity: start,
@@ -213,12 +278,13 @@ export async function loadRobotState(db: SupabaseClient, now = Date.now()): Prom
       unrealizedPnl: marked.unrealizedPnl,
       pausedUntil: d.paused_until && Date.parse(d.paused_until) > now ? d.paused_until : null,
       pauseReason: d.paused_until && Date.parse(d.paused_until) > now ? d.pause_reason : null,
-      positions: marked.positions,
+      positions: marked.positions.map((p) => ({ ...p, assetClass: assetClass(p.symbol) })),
       stats7d: lite(tradeStats(marked.closedTrades, since7)),
       statsAll: lite(tradeStats(marked.closedTrades)),
-      recentTrades: marked.closedTrades.slice(-10).reverse().map((x) => ({ symbol: x.symbol, entryAt: x.entryAt, exitAt: x.exitAt, pnl: x.pnl, pnlPct: x.pnlPct, exitReason: x.exitReason })),
+      recentTrades: marked.closedTrades.slice(-10).reverse().map((x) => ({ symbol: x.symbol, assetClass: assetClass(x.symbol), strategy: x.strategy ?? d.strategy, entryAt: x.entryAt, exitAt: x.exitAt, pnl: x.pnl, pnlPct: x.pnlPct, exitReason: x.exitReason })),
       lastEvent: last ? { ts: last.ts, title: last.title } : null,
       agents: deskAgents(d.id).map((a) => ({ name: a.name, role: a.role })),
+      cycle: d.strategy === "cycle-straddle-v1" ? cycleView(d.params, marked.positions, cycleScan, lastTickAt, now) : null,
       live: (() => {
         const lm = markBook(books.get(`live:${d.id}`) ?? emptyBook(`live:${d.id}`), 0, prices);
         return { enabled: d.live_enabled === true, enabledAt: d.live_enabled_at ?? null, enabledBy: d.live_enabled_by ?? null, positions: lm.positions, realizedPnl: lm.realizedPnl, unrealizedPnl: lm.unrealizedPnl, trades: lm.closedTrades.length };
@@ -237,6 +303,10 @@ export async function loadRobotState(db: SupabaseClient, now = Date.now()): Prom
   const floorStart = desks.every((d) => baselines.has(d.id)) ? desks.reduce((s, d) => s + (baselines.get(d.id) ?? 0), 0) : baselines.get("floor") ?? null;
   const account = (hp.account as RobotState["account"]) ?? null;
   const ticks24h = ticks.count ?? 0;
+  const limits = effectiveFloorLimits(params);
+  const allTrades = desks.flatMap((d) => (books.get(d.id)?.closedTrades ?? []).map((t) => ({ ...t, desk: d.id })));
+  const openAll = deskViews.flatMap((d) => d.positions.map((p) => ({ desk: d.id, symbol: p.symbol, strategy: p.strategy })));
+  const noOwnAccount = typeof hp.noOwnAccount === "boolean" ? hp.noOwnAccount : null;
 
   return {
     generatedAt: new Date(now).toISOString(),
@@ -250,10 +320,14 @@ export async function loadRobotState(db: SupabaseClient, now = Date.now()): Prom
     dataStale: hp.dataStale === true,
     dataStaleReason: (hp.dataStaleReason as string) ?? null,
     dedicatedAccount: typeof hp.dedicatedAccount === "boolean" ? hp.dedicatedAccount : null,
+    noOwnAccount,
+    noOwnAccountMessage: noOwnAccount ? (typeof hp.noOwnAccountMessage === "string" ? hp.noOwnAccountMessage : NO_OWN_ACCOUNT_MESSAGE) : null,
+    session: hp.session === "regular" || hp.session === "extended" || hp.session === "closed" ? hp.session : marketSession(now),
+    strategies: { d7: strategyComparison(desks, allTrades, openAll, since7), all: strategyComparison(desks, allTrades, openAll) },
     aiConnected: anthropicApiKey().length > 0,
     killSwitch: { halted: params.halted, reason: params.halt_reason, at: params.halted_at, by: params.halted_by },
     floorPause: params.day_paused_until && Date.parse(params.day_paused_until) > now ? { until: params.day_paused_until, reason: params.day_pause_reason } : null,
-    limits: { dayLossPct: params.halt_day_loss_pct, maxOpenPositionsTotal: params.max_open_positions_total, maxOrdersPerTick: params.max_orders_per_tick },
+    limits: { dayLossPct: DESK_DAY_LOSS_CAP.defaultPct, maxOpenPositionsTotal: limits.maxOpenPositions, maxOrdersPerTick: limits.maxOrdersPerTick },
     watching,
     watchLine: watching.length ? watchLine(watching) : "",
     account,
@@ -353,20 +427,21 @@ export function toFloorSnapshot(s: RobotState): Snapshot {
   const now = s.generatedAt;
   const health: Snapshot["health"] = [
     { name: "Robot (5-min tick)", status: s.status === "RUNNING" || s.status === "HALTED" ? "ONLINE" : s.lastTickAt ? "STALE" : "OFFLINE", detail: s.lastTickAt ? `Last tick ${Math.round((s.tickAgeSec ?? 0) / 60)} min ago · ${s.ticks24h} ticks/24h` : "No tick recorded" },
-    { name: "Alpaca paper", status: s.account ? "ONLINE" : "UNKNOWN", detail: s.account ? `Account equity $${(s.account.equity ?? 0).toFixed(2)} · cash $${(s.account.cash ?? 0).toFixed(2)}` : "No account read yet" },
+    { name: "Alpaca paper (floor's own account)", status: s.noOwnAccount ? "OFFLINE" : s.account ? "ONLINE" : "UNKNOWN", detail: s.noOwnAccount ? "NO OWN ACCOUNT — set CRYPTO_FLOOR_ALPACA_API_KEY / CRYPTO_FLOOR_ALPACA_SECRET_KEY. Not trading." : s.account ? `Account equity $${(s.account.equity ?? 0).toFixed(2)} · cash $${(s.account.cash ?? 0).toFixed(2)} · US stocks ${s.session}` : "No account read yet" },
     { name: "Market data", status: !s.lastTickAt ? "UNKNOWN" : s.dataStale ? "STALE" : "ONLINE", detail: s.dataStale ? s.dataStaleReason ?? "Stale" : s.watchLine || "—" },
     { name: "Supabase event store", status: "ONLINE", detail: `${s.events.length} recent events` },
     { name: "AI provider (desk chat)", status: s.aiConnected ? "ONLINE" : "OFFLINE", detail: s.aiConnected ? "Desk leads can answer" : "ANTHROPIC_API_KEY not set" },
     { name: "Daily email", status: s.report?.email_status === "sent" ? "ONLINE" : s.report ? "STALE" : "UNKNOWN", detail: s.report ? `${s.report.day}: ${s.report.email_status}${s.report.error ? ` (${s.report.error.slice(0, 80)})` : ""}` : "First brief goes out at 13:00 UTC" },
     { name: "Coinbase (real money)", status: s.coinbase.ok ? "ONLINE" : s.coinbase.configured ? "STALE" : "UNKNOWN", detail: !s.coinbase.configured ? "Not connected — add COINBASE_API_KEY_NAME / COINBASE_API_PRIVATE_KEY" : s.coinbase.ok ? `$${s.coinbase.totalUsd.toFixed(2)} · real money ${s.coinbase.enabledDesks.length ? `ON for ${s.coinbase.enabledDesks.join(", ")}` : "OFF"}${s.coinbase.canTransfer ? " · KEY CAN TRANSFER — trading refused" : ""}` : `Error: ${s.coinbase.error ?? "unknown"}` },
-    { name: "Account isolation", status: s.dedicatedAccount ? "ONLINE" : s.dedicatedAccount === false ? "STALE" : "UNKNOWN", detail: s.dedicatedAccount ? "Floor has its own paper account" : "Shares AwadBot's paper account — desks use their own ledgers" },
+    { name: "Account isolation", status: s.noOwnAccount ? "OFFLINE" : s.dedicatedAccount ? "ONLINE" : "UNKNOWN", detail: s.noOwnAccount ? "No own account — floor not trading (no fallback to AwadBot's keys)" : s.dedicatedAccount ? "Floor trades its own paper account only (cf- orders)" : "No tick yet" },
+    { name: "Desk loss caps", status: s.desks.some((d) => d.lossCap.atCap) ? "STALE" : "ONLINE", detail: s.desks.map((d) => `${d.name} ${d.lossCap.atCap ? "HALTED" : d.lossCap.remainingUsd !== null ? `$${d.lossCap.remainingUsd.toFixed(0)} left` : `${d.lossCap.pct}%`}`).join(" · ") },
   ];
   const teams: Snapshot["teams"] = visualDesks.map((vd) => {
     const d = s.desks.find((x) => x.id === vd.id);
     if (!d) {
       return { id: vd.id, status: "PAPER LEAGUE", mode: "PAPER", metrics: { ...emptyMetrics }, pnl: null, openTrades: 0, risk: "UNKNOWN" };
     }
-    const frozen = !d.enabled || d.pausedUntil !== null || s.killSwitch.halted;
+    const frozen = !d.enabled || d.pausedUntil !== null || d.lossCap.atCap || s.killSwitch.halted || s.noOwnAccount === true;
     return {
       id: d.id,
       status: frozen ? "FROZEN" : "PAPER LEAGUE",

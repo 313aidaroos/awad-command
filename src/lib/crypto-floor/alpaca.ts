@@ -10,33 +10,42 @@ import type { Bar } from "./types";
 /**
  * Alpaca client for the Crypto Floor robot. Paper trading origin only (guard.ts refuses live hosts).
  *
- * Keys: CRYPTO_FLOOR_ALPACA_API_KEY / CRYPTO_FLOOR_ALPACA_SECRET_KEY when set (a paper account of the
- * floor's own), otherwise the shared ALPACA_API_KEY / ALPACA_SECRET_KEY book that AwadBot also trades.
+ * Keys (2026-10-02): the floor's OWN paper account ONLY — CRYPTO_FLOOR_ALPACA_API_KEY / CRYPTO_FLOOR_ALPACA_SECRET_KEY.
+ * There is NO fallback to AwadBot's ALPACA_API_KEY / ALPACA_SECRET_KEY (sharing that account let AwadBot's flatten
+ * sell the floor's PEPE). Missing keys → floorAlpacaConfig() returns null and the floor runs in the reported
+ * "no own account" state: no broker calls, no trading, a clear banner in the UI, health and the daily email.
  */
+
+export const FLOOR_KEY_ENV = ["CRYPTO_FLOOR_ALPACA_API_KEY", "CRYPTO_FLOOR_ALPACA_SECRET_KEY"] as const;
+export const NO_OWN_ACCOUNT_MESSAGE =
+  "No own Alpaca paper account: CRYPTO_FLOOR_ALPACA_API_KEY / CRYPTO_FLOOR_ALPACA_SECRET_KEY are not set. The floor is not trading (no fallback to AwadBot's keys).";
 
 export type AlpacaConfig = {
   keyId: string;
   secret: string;
   tradeBase: string;
   dataBase: string;
-  /** true when the floor has its own paper account (not shared with AwadBot). */
+  /** Always true now: the floor only ever runs on its own paper account. Kept for the heartbeat/UI field. */
   dedicated: boolean;
 };
 
+/** The floor's own paper-account config, or null when its keys are missing. Never reads ALPACA_API_KEY / ALPACA_SECRET_KEY. */
 export function floorAlpacaConfig(env: NodeJS.ProcessEnv = process.env): AlpacaConfig | null {
-  const dedicatedKey = env.CRYPTO_FLOOR_ALPACA_API_KEY?.trim();
-  const dedicatedSecret = env.CRYPTO_FLOOR_ALPACA_SECRET_KEY?.trim();
-  const dedicated = Boolean(dedicatedKey && dedicatedSecret);
-  const keyId = dedicated ? dedicatedKey : env.ALPACA_API_KEY?.trim();
-  const secret = dedicated ? dedicatedSecret : env.ALPACA_SECRET_KEY?.trim();
+  const keyId = env.CRYPTO_FLOOR_ALPACA_API_KEY?.trim();
+  const secret = env.CRYPTO_FLOOR_ALPACA_SECRET_KEY?.trim();
   if (!keyId || !secret) return null;
   return {
     keyId,
     secret,
     tradeBase: assertAlpacaPaperBase(env.ALPACA_PAPER_BASE_URL || ALPACA_PAPER_ORIGIN),
     dataBase: assertAlpacaDataBase(ALPACA_DATA_ORIGIN),
-    dedicated,
+    dedicated: true,
   };
+}
+
+/** Which of the floor's key env vars are missing (names only, never values). */
+export function missingFloorKeys(env: NodeJS.ProcessEnv = process.env): string[] {
+  return FLOOR_KEY_ENV.filter((k) => !env[k]?.trim());
 }
 
 export type AlpacaAccount = {
@@ -45,8 +54,11 @@ export type AlpacaAccount = {
   portfolio_value: string;
   buying_power?: string;
   non_marginable_buying_power?: string;
+  options_buying_power?: string;
   status?: string;
 };
+
+export type OptionSnapshot = { symbol: string; bid: number; ask: number; mid: number | null };
 
 export type AlpacaPosition = {
   symbol: string;
@@ -58,6 +70,7 @@ export type AlpacaPosition = {
   unrealized_pl: string;
   unrealized_plpc: string;
   asset_class?: string;
+  side?: "long" | "short";
 };
 
 export type AlpacaOrder = {
@@ -197,19 +210,100 @@ export class AlpacaClient {
     return out;
   }
 
-  /** Crypto market order. Crypto accepts only gtc/ioc; "day" is rejected ("invalid crypto time_in_force"). */
-  submitOrder(input: { symbol: string; qty: string; side: "buy" | "sell"; clientOrderId: string; notional?: string }) {
+  /**
+   * Submit an order. Defaults to a crypto market order (crypto accepts only gtc/ioc; "day" is rejected).
+   * Stocks: market/day in regular hours; limit/day + extended_hours outside. Options: limit or market, day only.
+   */
+  submitOrder(input: {
+    symbol: string;
+    qty: string;
+    side: "buy" | "sell";
+    clientOrderId: string;
+    notional?: string;
+    type?: "market" | "limit";
+    timeInForce?: "gtc" | "day";
+    limitPrice?: number;
+    extendedHours?: boolean;
+  }) {
+    const isCrypto = input.symbol.includes("/");
+    const type = input.type ?? "market";
     return this.request<AlpacaOrder>(this.cfg.tradeBase, "/v2/orders", {
       method: "POST",
       body: JSON.stringify({
-        symbol: normalizePair(input.symbol),
+        symbol: isCrypto ? normalizePair(input.symbol) : input.symbol,
         ...(input.notional ? { notional: input.notional } : { qty: input.qty }),
         side: input.side,
-        type: "market",
-        time_in_force: "gtc",
+        type,
+        time_in_force: input.timeInForce ?? (isCrypto ? "gtc" : "day"),
+        ...(type === "limit" && input.limitPrice ? { limit_price: String(input.limitPrice) } : {}),
+        ...(input.extendedHours ? { extended_hours: true } : {}),
         client_order_id: input.clientOrderId,
       }),
     });
+  }
+
+  /** Alpaca market clock (is_open = US regular session right now). */
+  clock() {
+    return this.request<{ is_open: boolean; next_open?: string; next_close?: string; timestamp?: string }>(this.cfg.tradeBase, "/v2/clock");
+  }
+
+  /** Hourly (or other) stock bars, IEX feed (works on free paper accounts), oldest first, all pages. */
+  async stockBars(symbols: string[], start: Date, timeframe = "1Hour"): Promise<Map<string, Bar[]>> {
+    const out = new Map<string, Bar[]>(symbols.map((s) => [s, []]));
+    if (!symbols.length) return out;
+    let pageToken: string | null = null;
+    for (let page = 0; page < 20; page++) {
+      const q = new URLSearchParams({ symbols: symbols.join(","), timeframe, start: start.toISOString(), limit: "10000", sort: "asc", feed: "iex", adjustment: "raw" });
+      if (pageToken) q.set("page_token", pageToken);
+      const body: { bars?: Record<string, BarWire[]>; next_page_token?: string | null } = await this.request(this.cfg.dataBase, `/v2/stocks/bars?${q}`);
+      for (const [symbol, rows] of Object.entries(body.bars ?? {})) {
+        const list = out.get(symbol) ?? [];
+        for (const b of rows) list.push({ symbol, timestamp: b.t, open: b.o, high: b.h, low: b.l, close: b.c, volume: b.v });
+        out.set(symbol, list);
+      }
+      pageToken = body.next_page_token ?? null;
+      if (!pageToken) break;
+    }
+    return out;
+  }
+
+  async latestStockTrades(symbols: string[]): Promise<Map<string, { price: number; at: string }>> {
+    if (!symbols.length) return new Map();
+    const q = new URLSearchParams({ symbols: symbols.join(","), feed: "iex" });
+    const body: { trades?: Record<string, { p: number; t: string }> } = await this.request(this.cfg.dataBase, `/v2/stocks/trades/latest?${q}`);
+    const out = new Map<string, { price: number; at: string }>();
+    for (const [symbol, t] of Object.entries(body.trades ?? {})) if (Number.isFinite(t.p) && t.p > 0) out.set(symbol, { price: t.p, at: t.t });
+    return out;
+  }
+
+  /** Option chain snapshots for one underlying (calls+puts near the money, an expiry window). Indicative feed. Follows next_page_token (at most 5 pages). */
+  async optionChain(underlying: string, opts: { expirationGte: string; expirationLte: string; strikeGte: number; strikeLte: number }): Promise<OptionSnapshot[]> {
+    const out: OptionSnapshot[] = [];
+    let pageToken: string | null = null;
+    for (let page = 0; page < 5; page++) {
+      const q = new URLSearchParams({
+        feed: "indicative",
+        limit: "1000",
+        expiration_date_gte: opts.expirationGte,
+        expiration_date_lte: opts.expirationLte,
+        strike_price_gte: String(opts.strikeGte),
+        strike_price_lte: String(opts.strikeLte),
+      });
+      if (pageToken) q.set("page_token", pageToken);
+      const body: { snapshots?: Record<string, { latestQuote?: { bp?: number; ap?: number } }>; next_page_token?: string | null } = await this.request(this.cfg.dataBase, `/v1beta1/options/snapshots/${encodeURIComponent(underlying)}?${q}`);
+      out.push(...snapshotList(body.snapshots ?? {}));
+      pageToken = body.next_page_token ?? null;
+      if (!pageToken) break;
+    }
+    return out;
+  }
+
+  /** Quotes for specific option contracts (held positions), keyed by OCC symbol. */
+  async optionSnapshots(symbols: string[]): Promise<Map<string, OptionSnapshot>> {
+    if (!symbols.length) return new Map();
+    const q = new URLSearchParams({ symbols: symbols.join(","), feed: "indicative" });
+    const body: { snapshots?: Record<string, { latestQuote?: { bp?: number; ap?: number } }> } = await this.request(this.cfg.dataBase, `/v1beta1/options/snapshots?${q}`);
+    return new Map(snapshotList(body.snapshots ?? {}).map((s) => [s.symbol, s]));
   }
 
   /** null when Alpaca has no order with this client_order_id. */
@@ -230,6 +324,14 @@ export class AlpacaClient {
       method: "DELETE",
     });
   }
+}
+
+function snapshotList(raw: Record<string, { latestQuote?: { bp?: number; ap?: number } }>): OptionSnapshot[] {
+  return Object.entries(raw).map(([symbol, v]) => {
+    const bid = Number(v.latestQuote?.bp ?? 0) || 0;
+    const ask = Number(v.latestQuote?.ap ?? 0) || 0;
+    return { symbol, bid, ask, mid: bid > 0 && ask > 0 ? (bid + ask) / 2 : null };
+  });
 }
 
 /** Format a crypto quantity for Alpaca: at most 9 decimals, always rounded down. */

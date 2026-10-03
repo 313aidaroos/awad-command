@@ -1,55 +1,28 @@
 import { NextResponse } from "next/server";
+import { AlpacaClient, NO_OWN_ACCOUNT_MESSAGE, floorAlpacaConfig, missingFloorKeys } from "@/lib/crypto-floor/alpaca";
 
-const ALPACA_PAPER_URL = process.env.ALPACA_PAPER_BASE_URL || "https://paper-api.alpaca.markets";
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 /**
- * Health check: verify Alpaca paper API is reachable
- * Public endpoint (no auth) for monitoring
+ * Health check for the Crypto Floor's OWN Alpaca paper account (CRYPTO_FLOOR_ALPACA_*). Public (no auth), no secrets.
+ * 2026-10-02: never reads AwadBot's ALPACA_API_KEY / ALPACA_SECRET_KEY. Missing keys → { noOwnAccount: true }.
  */
 export async function GET() {
-  // Verify required env vars exist
-  if (!process.env.ALPACA_API_KEY || !process.env.ALPACA_SECRET_KEY) {
-    return NextResponse.json(
-      { 
-        healthy: false, 
-        error: "Alpaca API keys not configured",
-        mode: null,
-      },
-      { status: 503 }
-    );
-  }
-
+  const mode = (process.env.TRADE_MODE || "").trim().toLowerCase() || null;
+  let cfg;
   try {
-    const res = await fetch(`${ALPACA_PAPER_URL}/v2/account`, {
-      headers: {
-        "APCA-API-KEY-ID": process.env.ALPACA_API_KEY,
-        "APCA-API-SECRET-KEY": process.env.ALPACA_SECRET_KEY,
-      },
-      signal: AbortSignal.timeout(5000), // 5s timeout
-    });
-
-    if (!res.ok) {
-      return NextResponse.json(
-        { 
-          healthy: false, 
-          error: `Alpaca returned HTTP ${res.status}`,
-          mode: process.env.TRADE_MODE || "unknown",
-        },
-        { status: 503 }
-      );
-    }
-
-    return NextResponse.json({ 
-      healthy: true, 
-      mode: process.env.TRADE_MODE || "paper",
-      url: ALPACA_PAPER_URL,
-    });
-
-  } catch (err: unknown) {
-    const error = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json(
-      { healthy: false, error, mode: null },
-      { status: 503 }
-    );
+    cfg = floorAlpacaConfig();
+  } catch (err) {
+    return NextResponse.json({ healthy: false, noOwnAccount: false, error: err instanceof Error ? err.message : "Alpaca config refused", mode }, { status: 503 });
+  }
+  if (!cfg) {
+    return NextResponse.json({ healthy: false, noOwnAccount: true, missing: missingFloorKeys(), error: NO_OWN_ACCOUNT_MESSAGE, mode }, { status: 503 });
+  }
+  try {
+    const account = await new AlpacaClient(cfg, fetch, 5000).account();
+    return NextResponse.json({ healthy: true, noOwnAccount: false, mode: mode ?? "unknown", url: cfg.tradeBase, accountStatus: account.status ?? null });
+  } catch (err) {
+    return NextResponse.json({ healthy: false, noOwnAccount: false, error: err instanceof Error ? err.message.slice(0, 200) : "Unknown error", mode }, { status: 503 });
   }
 }

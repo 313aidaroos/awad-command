@@ -1,3 +1,4 @@
+import { contractMultiplier } from "./assets";
 import type { OrderRow, Position } from "./types";
 
 /**
@@ -7,6 +8,8 @@ import type { OrderRow, Position } from "./types";
  * also holds AwadBot's coins. So each desk's positions come from its own fills, never from Alpaca's
  * position list. Average-cost accounting; a position whose remainder is worth less than `dustUsd` is
  * closed (Alpaca charges crypto fees in the coin, so a full sell can leave a few satoshis behind).
+ * 2026-10-02: positions remember the strategy (lane) that opened them, and options are valued per contract
+ * (Alpaca's per-share premium × 100), so qty × price is dollars for crypto, stocks and options alike.
  */
 
 export type BookPosition = {
@@ -17,6 +20,8 @@ export type BookPosition = {
   openedAt: string;
   lastEntryAt: string;
   tranches: number;
+  /** Strategy of the opening fill (null on legacy rows = the desk's primary strategy). */
+  strategy: string | null;
 };
 
 export type ClosedTrade = {
@@ -30,6 +35,8 @@ export type ClosedTrade = {
   pnl: number;
   pnlPct: number;
   exitReason: string | null;
+  /** Strategy (lane) that opened the trade. */
+  strategy?: string | null;
 };
 
 export type Book = {
@@ -60,7 +67,7 @@ export function buildBooks(orders: OrderRow[], dustUsd = 1): Map<string, Book> {
       books.set(o.book, book);
     }
     book.fills++;
-    const price = Number(o.filled_avg_price);
+    const price = Number(o.filled_avg_price) * contractMultiplier(o.symbol);
     const qty = Number(o.filled_qty);
     const at = fillTime(o);
     const key = `${o.book}|${o.symbol}`;
@@ -76,6 +83,7 @@ export function buildBooks(orders: OrderRow[], dustUsd = 1): Map<string, Book> {
           openedAt: at,
           lastEntryAt: at,
           tranches: 1,
+          strategy: o.strategy ?? null,
         });
         trips.set(key, { boughtQty: qty, soldQty: 0, soldValue: 0, entryValue: 0, realized: 0 });
       } else {
@@ -127,6 +135,7 @@ export function buildBooks(orders: OrderRow[], dustUsd = 1): Map<string, Book> {
         pnl: trip.realized,
         pnlPct: trip.entryValue > 0 ? (trip.realized / trip.entryValue) * 100 : 0,
         exitReason: o.reason,
+        strategy: pos.strategy,
       });
       book.positions.delete(o.symbol);
       trips.delete(key);
@@ -168,6 +177,7 @@ export function markBook(book: Book, capital: number, prices: Map<string, number
       unrealizedPnlPct: p.avgEntryPrice > 0 ? ((price - p.avgEntryPrice) / p.avgEntryPrice) * 100 : 0,
       enteredAt: p.openedAt,
       tranches: p.tranches,
+      strategy: p.strategy,
     });
   }
   return {

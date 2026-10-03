@@ -1,5 +1,14 @@
 # Crypto Floor — Robot Spec (from Awad via @hermes, 2026-09-28)
 
+> **2026-10-02 status (riskier floor, PR "Crypto floor: riskier 5-desk paper floor, stocks/options, own Alpaca keys"):**
+> 5 desks, crypto 24/7 + US stocks (regular + extended) + long options (ORBIT, regular hours), side-by-side strategy lanes,
+> per-desk hard daily loss caps, defined max loss per options position, floor-owned reconcile, and the floor's own
+> Alpaca paper keys only (`CRYPTO_FLOOR_ALPACA_API_KEY` / `CRYPTO_FLOOR_ALPACA_SECRET_KEY`, no fallback).
+> Details: [`RISKIER-FLOOR.md`](./RISKIER-FLOOR.md). Paper only; no live path.
+> **2026-10-03:** 6th desk **CYCLE** (`cycle-straddle-v1`, Awad's ~3-week-cycle idea): Mondays only, one long ATM straddle (~4 weeks)
+> on SPY/QQQ + stocks with a detected ~15-trading-day cycle; each leg sells at +50%, the rest at −50% combined or trading day 15;
+> max $500 debit per straddle, max 4 open, long premium only, paper only. See RISKIER-FLOOR.md § CYCLE.
+
 > ## ✅ STATUS 2026-10-02 (Claude) — robot v2 built; read this before the older blocks below
 > Awad asked (2026-10-02): fix everything, four teams testing strategies 24/7, talk to the leads, daily email to awad@apixis.dev, all visible in COMMAND. Full log: `NOTES/CLAUDE.md`.
 > - **Why v1 never traded:** bars fetched with `limit=2` and no `start` (= first two hours of the UTC day, all day) and keyed `BTCUSD` (v1beta3 keys are `BTC/USD`); dip-v1 never called; `order_id` UNIQUE blocked `order_filled`; account equity (shared with AwadBot) drove the halt; halt never resumed. 18 events lifetime, 0 orders.
