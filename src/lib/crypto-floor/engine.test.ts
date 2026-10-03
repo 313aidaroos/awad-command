@@ -28,7 +28,7 @@ let seq = 0;
 function filled(book: string, symbol: string, side: "buy" | "sell", qty: number, price: number, at = NOW - 10 * H): OrderRow {
   seq++;
   const iso = new Date(at).toISOString();
-  return { client_order_id: `f${seq}`, created_at: iso, book, desk: book, strategy: null, mode: "paper", symbol, side, intent: side === "buy" ? "entry" : "exit", qty, status: "filled", alpaca_order_id: "a", filled_qty: qty, filled_avg_price: price, filled_at: iso, reason: null };
+  return { client_order_id: `cf-f${seq}`, created_at: iso, book, desk: book, strategy: null, mode: "paper", symbol, side, intent: side === "buy" ? "entry" : "exit", qty, status: "filled", alpaca_order_id: "a", filled_qty: qty, filled_avg_price: price, filled_at: iso, reason: null };
 }
 
 function input(over: Partial<PlanInput> = {}): PlanInput {
@@ -52,14 +52,17 @@ function input(over: Partial<PlanInput> = {}): PlanInput {
 }
 
 describe("planTick", () => {
-  it("turns a momentum signal into one idempotent paper order sized at 2% of desk equity", () => {
+  it("turns a momentum signal into one idempotent paper order sized at 4% of desk equity (riskier default)", () => {
     const plan = planTick(input());
     expect(plan.orders).toHaveLength(1);
     const o = plan.orders[0];
     expect(o.clientOrderId).toBe("cf-momentum-v1-BTCUSD-buy-202610021205");
     expect(o.clientOrderId).toBe(clientOrderId("momentum-v1", "BTC/USD", "buy", NOW));
-    expect(o.qty * 103_000).toBeCloseTo(500, 0);
+    expect(o.qty * 103_000).toBeCloseTo(1000, 0);
     expect(o.intent).toBe("entry");
+    expect(o.assetClass).toBe("crypto");
+    expect(o.orderType).toBe("market");
+    expect(o.timeInForce).toBe("gtc");
   });
 
   it("kill switch: no orders at all, every signal is skipped", () => {
@@ -89,11 +92,11 @@ describe("planTick", () => {
     expect(other.orders).toHaveLength(1);
   });
 
-  it("pauses a desk whose day P&L hits the loss limit, and resumes it the next UTC day", () => {
+  it("pauses a desk whose day P&L hits the loss cap, and resumes it the next UTC day", () => {
     const fills = [filled("samurai", "SOL/USD", "buy", 100, 200)]; // $20k of SOL
     const plan = planTick(input({
       filledOrders: fills,
-      prices: new Map([["BTC/USD", 103_000], ["ETH/USD", 4000], ["SOL/USD", 194]]), // −$600 = −2.4%
+      prices: new Map([["BTC/USD", 103_000], ["ETH/USD", 4000], ["SOL/USD", 188]]), // −$1,200 = −4.8% (cap −4%)
       brokerQty: new Map([["SOL/USD", 100]]),
       params: { ...params, halt_day_loss_pct: -2 },
       baselines: new Map([["samurai", 25_000], ["floor", 1_000_000]]),
@@ -108,12 +111,14 @@ describe("planTick", () => {
     expect(next.orders).toHaveLength(1);
   });
 
-  it("floor-wide day loss pauses all entries", () => {
-    // SAMURAI −1.5% (under its −2% limit), RONIN −3% (under its −5%): floor −2.25% → floor pause, no desk pause.
+  it("no floor-wide day pause any more: only the per-desk caps (and the kill switch) stop entries", () => {
+    // SAMURAI −1.5%, RONIN −3%: floor −2.25% used to pause everything. Now neither desk is at its cap → entries run.
     const plan = planTick(input({ desks: [desk("samurai"), desk("ronin", { spec: RONIN_SEED_SPEC, risk: { dayLossPct: -5 } })], baselines: new Map([["samurai", 25_000 / 0.985], ["ronin", 25_000 / 0.97]]) }));
     expect(plan.deskPauses).toHaveLength(0);
-    expect(plan.floorPause?.until).toBe("2026-10-03T00:00:00.000Z");
-    expect(plan.orders).toHaveLength(0);
+    expect(plan.floorPause).toBeNull();
+    expect(plan.orders.length).toBeGreaterThan(0);
+    // a leftover floor pause row is cleared
+    expect(planTick(input({ params: { ...params, day_paused_until: "2026-10-03T00:00:00.000Z", day_pause_reason: "old" } })).floorResume).toBe(true);
   });
 
   it("sells only what the broker can deliver and skips when it holds nothing", () => {
@@ -121,9 +126,14 @@ describe("planTick", () => {
     const prices = new Map([["BTC/USD", 100_000], ["ETH/USD", 3900], ["SOL/USD", 200]]);
     const capped = planTick(input({ filledOrders: fills, prices, brokerQty: new Map([["ETH/USD", 0.9975]]) }));
     expect(capped.orders.find((o) => o.side === "sell")?.qty).toBeCloseTo(0.9975);
+    // Broker holds none: the claim is reconciled away (no sell sent).
     const none = planTick(input({ filledOrders: fills, prices, brokerQty: new Map() }));
     expect(none.orders.find((o) => o.side === "sell")).toBeUndefined();
-    expect(none.signals.find((s) => s.signal.side === "sell")?.skipReason).toMatch(/nothing to sell/);
+    expect(none.reconcile.map((a) => a.symbol)).toEqual(["ETH/USD"]);
+    // Broker holdings unknown (no reconcile): the sell is still capped at what the broker can deliver.
+    const unknown = planTick(input({ filledOrders: fills, prices, brokerQty: new Map(), brokerKnown: false }));
+    expect(unknown.orders.find((o) => o.side === "sell")).toBeUndefined();
+    expect(unknown.signals.find((s) => s.signal.side === "sell")?.skipReason).toMatch(/nothing to sell/);
   });
 
   it("never stacks an order on an unresolved one for the same desk and coin", () => {
@@ -135,20 +145,22 @@ describe("planTick", () => {
   });
 
   it("respects max open positions, max orders per tick (exits first) and buying power", () => {
-    const full = planTick(input({ params: { ...params, max_open_positions_total: 0 } }));
-    expect(full.orders).toHaveLength(0);
+    // DB limits below the riskier minimums are raised (10 orders/tick, 30 open), never above the hard ceilings.
+    const low = planTick(input({ params: { ...params, max_open_positions_total: 0, max_orders_per_tick: 1 } }));
+    expect(low.limits).toEqual({ maxOrdersPerTick: 10, maxOpenPositions: 30 });
+    const high = planTick(input({ params: { ...params, max_open_positions_total: 500, max_orders_per_tick: 500 } }));
+    expect(high.limits).toEqual({ maxOrdersPerTick: 20, maxOpenPositions: 50 });
     const poor = planTick(input({ buyingPower: 100 }));
     expect(poor.signals[0].skipReason).toMatch(/buying power/);
 
+    // Exits are planned before entries.
     const fills = ["ETH/USD", "SOL/USD"].map((s) => filled("samurai", s, "buy", 1, s === "ETH/USD" ? 4000 : 200));
-    const one = planTick(input({
-      params: { ...params, max_orders_per_tick: 1 },
+    const both = planTick(input({
       filledOrders: fills,
       prices: new Map([["BTC/USD", 103_000], ["ETH/USD", 3900], ["SOL/USD", 195]]),
       brokerQty: new Map([["ETH/USD", 1], ["SOL/USD", 1]]),
     }));
-    expect(one.orders).toHaveLength(1);
-    expect(one.orders[0].side).toBe("sell");
+    expect(both.orders.map((o) => o.side)).toEqual(["sell", "sell", "buy"]);
   });
 
   it("writes missing start-of-day baselines", () => {
@@ -189,7 +201,7 @@ describe("RONIN (custom-v1, higher risk)", () => {
   }
   const ronin = desk("ronin", { spec: RONIN_SEED_SPEC, risk: { dayLossPct: -5 } });
 
-  it("trades its own coins with its own sizing (8% of the desk)", () => {
+  it("trades its own coins with its own sizing (10% of the desk, riskier seed)", () => {
     const xrp = ignition("XRP/USD", 2);
     const plan = planTick(
       input({
@@ -203,19 +215,19 @@ describe("RONIN (custom-v1, higher risk)", () => {
     expect(o).toBeDefined();
     expect(o!.book).toBe("ronin");
     expect(o!.clientOrderId).toBe(clientOrderId("custom-v1", "XRP/USD", "buy", NOW));
-    expect(o!.qty * o!.refPrice).toBeCloseTo(2000, 0);
+    expect(o!.qty * o!.refPrice).toBeCloseTo(2500, 0);
     expect(plan.desks[0].universe).toContain("DOGE/USD");
   });
 
-  it("has its own day-loss limit (−5%) while core desks keep the floor's (−2%)", () => {
-    expect(deskDayLossLimit(ronin, -2)).toBe(-5);
-    expect(deskDayLossLimit(desk("samurai"), -2)).toBe(-2);
-    expect(deskDayLossLimit(desk("ronin", { risk: { dayLossPct: -90 } }), -2)).toBe(-2);
-    // Both desks down 3% today: SAMURAI pauses, RONIN keeps trading.
+  it("has its own loss cap (−5%) while core desks use the default cap (−4%)", () => {
+    expect(deskDayLossLimit(ronin)).toBe(-5);
+    expect(deskDayLossLimit(desk("samurai"))).toBe(-4); // riskier default cap
+    expect(deskDayLossLimit(desk("ronin", { risk: { dayLossPct: -90 } }))).toBe(-4); // out of bounds → default, never looser
+    // Both desks down 4.5% today: SAMURAI (−4%) pauses, RONIN (−5%) keeps trading.
     const plan = planTick(
       input({
         desks: [desk("samurai"), ronin],
-        baselines: new Map([["samurai", 25_773], ["ronin", 25_773], ["floor", 40_000]]),
+        baselines: new Map([["samurai", 26_178], ["ronin", 26_178], ["floor", 40_000]]),
       }),
     );
     expect(plan.deskPauses.map((p) => p.desk)).toEqual(["samurai"]);

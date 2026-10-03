@@ -54,8 +54,8 @@ export type SpecLimits = {
 export const RONIN_UNIVERSE = ["XRP/USD", "DOGE/USD", "SOL/USD", "PEPE/USD", "XLM/USD", "HBAR/USD", "BILL/USD", "BTC/USD", "ETH/USD", "AVAX/USD", "LINK/USD", "LTC/USD"];
 export const RONIN_LIMITS: SpecLimits = {
   allowedUniverse: RONIN_UNIVERSE,
-  maxPositionSizePct: 10,
-  maxOpenPositions: 4,
+  maxPositionSizePct: 12,
+  maxOpenPositions: 6,
   minStopLossPct: -25,
   maxTakeProfitPct: 50,
   maxConditions: 6,
@@ -335,11 +335,12 @@ export const RONIN_SEED_SPEC: CustomSpec = {
   universe: RONIN_UNIVERSE,
   entry: {
     all: [
-      { ind: { kind: "return", hours: 3 }, op: ">", value: 1.5 },
-      { ind: { kind: "volumeRatio", hours: 24 }, op: ">", value: 1.5 },
-      { ind: { kind: "rsi", period: 14 }, op: "<", value: 78 },
+      // 2026-10-02 riskier floor: was return > 1.5 / volumeRatio > 1.5 / rsi < 78.
+      { ind: { kind: "return", hours: 3 }, op: ">", value: 1.0 },
+      { ind: { kind: "volumeRatio", hours: 24 }, op: ">", value: 1.2 },
+      { ind: { kind: "rsi", period: 14 }, op: "<", value: 80 },
     ],
   },
   exit: { takeProfitPct: 6, stopLossPct: -4, trailingStopPct: 2.5, maxHoldHours: 48 },
-  sizing: { positionSizePct: 8, maxOpenPositions: 4, minEntryIntervalHours: 6 },
+  sizing: { positionSizePct: 10, maxOpenPositions: 5, minEntryIntervalHours: 4 },
 };

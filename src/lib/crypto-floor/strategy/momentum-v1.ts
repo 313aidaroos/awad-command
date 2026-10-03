@@ -156,8 +156,10 @@ export function runStrategy(
     return { signals, shouldHalt: false, dayPnlPct };
   }
   
-  // Scan universe for entry opportunities
+  // Scan universe for entry opportunities (never more new entries than open slots)
+  let room = config.maxOpenPositions - positions.length;
   for (const symbol of config.universe) {
+    if (room <= 0) break;
     // Skip if already have position
     if (positions.some((p) => p.symbol === symbol)) continue;
     
@@ -187,6 +189,7 @@ export function runStrategy(
         qty,
         currentReturn: returnPct,
       });
+      room--;
     }
   }
   

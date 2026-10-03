@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { AlpacaClient, floorAlpacaConfig } from "@/lib/crypto-floor/alpaca";
+import { AlpacaClient, NO_OWN_ACCOUNT_MESSAGE, floorAlpacaConfig } from "@/lib/crypto-floor/alpaca";
 import { backtestLine } from "@/lib/crypto-floor/backtest";
 import { createCryptoFloorDb } from "@/lib/crypto-floor/db";
 import { LabError, backtestDesk } from "@/lib/crypto-floor/lab";
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : "Alpaca config refused" }, { status: 503 });
   }
-  if (!cfg) return NextResponse.json({ error: "Alpaca paper keys are not configured." }, { status: 503 });
+  if (!cfg) return NextResponse.json({ error: NO_OWN_ACCOUNT_MESSAGE }, { status: 503 });
   try {
     const r = await backtestDesk({ db, alpaca: new AlpacaClient(cfg), desk: parsed.data.desk, overrides: parsed.data.overrides, spec: parsed.data.spec, days: parsed.data.days });
     return NextResponse.json({

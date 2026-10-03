@@ -30,9 +30,8 @@ export async function POST(request: Request) {
   } catch (err) {
     return NextResponse.json({ ok: false, error: err instanceof Error ? err.message : "Alpaca config refused" }, { status: 503 });
   }
-  if (!cfg) {
-    return NextResponse.json({ ok: false, error: "Alpaca paper keys are not configured." }, { status: 503 });
-  }
-  const result = await runTick({ db, alpaca: new AlpacaClient(cfg) });
+  // No CRYPTO_FLOOR_ALPACA_* keys → the tick still runs in "no own account" mode: no broker call, no trading,
+  // a heartbeat + event that the UI, health and the daily email show. Never falls back to AwadBot's ALPACA_* keys.
+  const result = await runTick({ db, alpaca: cfg ? new AlpacaClient(cfg) : null });
   return NextResponse.json(result, { status: 200, headers: { "Cache-Control": "no-store" } });
 }

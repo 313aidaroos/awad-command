@@ -341,7 +341,7 @@ export default function CryptoFloor() {
           }
         } else {
           setRemote(disconnectedSnapshot());
-          setStatusNote(body.error || "Alpaca API not connected. Configure ALPACA_API_KEY in Vercel.");
+          setStatusNote(body.error || "Robot data not available yet. The floor trades only its own Alpaca paper account (CRYPTO_FLOOR_ALPACA_API_KEY / CRYPTO_FLOOR_ALPACA_SECRET_KEY).");
         }
         
         setSimFills(
@@ -1639,7 +1639,7 @@ export default function CryptoFloor() {
                       : "Stored on the server (crypto_floor_params.halted). While on, the robot sends no orders at all and strategy tests pause. Only you can reset it. It does not touch AwadBot."}
                   </p>
                   <p>
-                    Day-loss guard: a desk that loses {Math.abs(robot?.limits.dayLossPct ?? 2)}% in a UTC day pauses new entries until midnight UTC; the whole floor pauses at the same limit.
+                    Daily loss cap (hard, owner-only): each desk has its own cap (default {Math.abs(robot?.limits.dayLossPct ?? 4)}%; {robot?.desks.map((d) => `${d.name} ${d.lossCap.atCap ? "HALTED" : `${d.lossCap.pct}%`}`).join(", ") || "—"}). At the cap a desk opens nothing new until midnight UTC; exits keep running. Crypto trades 24/7; there is no floor-wide pause.
                   </p>
                 </Panel>
                 <Panel title="Execution safeguards">

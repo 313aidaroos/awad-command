@@ -11,6 +11,40 @@ export const DESK_STRATEGY: Record<DeskId, StrategyId> = {
   ronin: "custom-v1",
 };
 
+/**
+ * 2026-10-02 riskier floor: side-by-side lanes. Each desk runs its primary strategy plus these, all on the desk's own
+ * book (one ledger, one loss cap). A position belongs to the lane that opened it; only that lane exits it.
+ * Each lane strategy runs on exactly one desk, so client_order_ids (cf-<strategy>-…) stay unique.
+ */
+export const DESK_LANES: Record<DeskId, StrategyId[]> = {
+  samurai: ["trend-v1"],
+  neon: ["meanrev-v1"],
+  orbit: ["options-v1"],
+  phantom: ["scalp-v1"],
+  ronin: [],
+};
+
+export type DeskAssets = { crypto: true; stocks: boolean; options: boolean };
+
+/** Asset classes per desk. Crypto everywhere (24/7); stocks on SAMURAI/NEON/PHANTOM; options (long premium) on ORBIT. */
+export const DESK_ASSETS: Record<DeskId, DeskAssets> = {
+  samurai: { crypto: true, stocks: true, options: false },
+  neon: { crypto: true, stocks: true, options: false },
+  orbit: { crypto: true, stocks: false, options: true },
+  phantom: { crypto: true, stocks: true, options: false },
+  ronin: { crypto: true, stocks: false, options: false },
+};
+
+/** Primary first, then the desk's lanes (no duplicates). */
+export function deskLanes(desk: string, primary: StrategyId): StrategyId[] {
+  const extra = (DESK_LANES as Record<string, StrategyId[]>)[desk] ?? [];
+  return [primary, ...extra.filter((s) => s !== primary)];
+}
+
+export function deskAssets(desk: string): DeskAssets {
+  return (DESK_ASSETS as Record<string, DeskAssets>)[desk] ?? { crypto: true, stocks: false, options: false };
+}
+
 export type AgentRole = (typeof roles)[number];
 
 export type DeskAgent = { name: string; role: AgentRole; desk: DeskId; deskName: string };

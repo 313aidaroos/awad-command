@@ -48,3 +48,7 @@ Entry format:
 ## 2026-10-02 — Claude (Trades & P/L box moved down)
 - Changed: `CryptoFloor.tsx` — the Trades & P/L box now sits below the floor illustrations (above the footer) instead of under the status bar.
 - Why: Awad wants the illustrations first, then scroll down to trades and P/L.
+
+## 2026-10-02 — Grok (Developer Bot, for Awad; branch grok/crypto-floor-riskier-2026-10-02)
+- Changed: Crypto floor made riskier on paper: 5 desks with side-by-side strategy lanes (new `trend-v1`, `meanrev-v1`, `scalp-v1`, `options-v1`), US stocks (regular + extended hours) and long options on ORBIT (regular hours), looser entry rules and bigger sizes, per-desk hard daily loss caps (owner-only), defined max loss per options position, floor-owned reconcile, own Alpaca keys only (`CRYPTO_FLOOR_ALPACA_*`, no fallback to `ALPACA_*`). UI (robot bar, desk cards, strategy results, log) shows all of it plus a "no own account" banner. Docs: `docs/crypto-floor/RISKIER-FLOOR.md`, `.env.example`, `NOTES/GROK.md`. No env set, no migration, no deploy.
+- Why: Awad asked for a riskier floor that trades crypto, stocks and options on its own paper account with hard per-desk loss limits. Undo: revert the PR.

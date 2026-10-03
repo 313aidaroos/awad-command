@@ -75,6 +75,8 @@ export async function loadDesks(db: SupabaseClient): Promise<DeskRow[]> {
     live_enabled: d.live_enabled === true,
     live_enabled_at: d.live_enabled_at ?? null,
     live_enabled_by: d.live_enabled_by ?? null,
+    // Owner/migration-set hard risk limits (desk loss cap %, options max loss). Read-only for agents and the lab.
+    risk: d.risk && typeof d.risk === "object" ? (d.risk as DeskRow["risk"]) : null,
     updated_at: d.updated_at,
   })) as DeskRow[];
   return rows.sort((a, b) => DESK_IDS.indexOf(a.id) - DESK_IDS.indexOf(b.id));
