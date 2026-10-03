@@ -120,8 +120,10 @@ Grok Bot (Developer Bot hub + product leads) notes. Every change Grok Bot makes 
 - Who: Dashboard Lead via cloud agent, for Awad.
 - Undo: revert PR #54 (`NOTES/GROK.md` only).
 
-## 2026-10-02 06:20 PM CT — PR opened (not merged): riskier 5-desk paper crypto floor
+## 2026-10-02 10:10 PM CT — PR opened (not merged): riskier 5-desk paper crypto floor
 - What: Riskier floor per `crypto-floor-riskier-2026-10-02` spec: 5 desks with side-by-side strategy lanes (trend-v1, meanrev-v1, options-v1, scalp-v1), US stocks (regular + extended) and long options (ORBIT, regular hours), per-desk hard daily loss caps (default −4%, owner-only), options max loss per position (default $250), floor-owned reconcile (cf-/rc- only, ledger-only adjustments), floor uses only `CRYPTO_FLOOR_ALPACA_API_KEY` / `CRYPTO_FLOOR_ALPACA_SECRET_KEY` (no fallback; missing → not trading + red banner). UI shows all 5 desks, asset classes, loss-cap status, options max loss and per-strategy results. Paper only; no env set, no migration, no deploy.
 - Where: `src/lib/crypto-floor/**`, `src/app/api/crypto-floor/{tick,health,place-order,lab}`, `src/crypto-floor/{RobotConsole,CryptoFloor}.tsx`, `src/crypto-floor/model.ts` (two desk labels), `docs/crypto-floor/{RISKIER-FLOOR,ROBOT-SPEC}.md`, `.env.example`, `AI_CHANGELOG.md`. Branch `grok/crypto-floor-riskier-2026-10-02`.
-- Who: Grok (Developer Bot) for Awad.
-- Undo: close the PR, or revert its merge commit if merged.
+- Who: Grok/Developer Bot, for Awad (finished an interrupted build on the same branch).
+- Verified: typecheck, lint (0 errors), all vitest suites, `next build`; local dev run against a mock DB with no floor keys (snapshot 200, "no own account" banner). Screenshots in `docs/crypto-floor/shots/2026-10-02/`.
+- Needs Awad: a NEW Alpaca paper account for the floor; then Developer Bot sets `CRYPTO_FLOOR_ALPACA_API_KEY` / `CRYPTO_FLOOR_ALPACA_SECRET_KEY` (not set by this PR).
+- Undo: revert the PR.

@@ -316,8 +316,8 @@ export function RobotStatusBar({
   const f = robot.floor;
   return (
     <div className="rc-bar">
-      <span className={`rc-pill ${status.toLowerCase()}`} title={robot.lastTickTitle ?? ""}>
-        <i /> ROBOT {status}
+      <span className={`rc-pill ${robot.noOwnAccount ? "halted" : status.toLowerCase()}`} title={robot.noOwnAccountMessage ?? robot.lastTickTitle ?? ""}>
+        <i /> ROBOT {robot.noOwnAccount ? "NOT TRADING · NO OWN ACCOUNT" : status}
       </span>
       <div className="rc-bar-main">
         <span>

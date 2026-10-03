@@ -759,9 +759,11 @@ export default function CryptoFloor() {
               {demo
                 ? "VISUAL PREVIEW · Illustrated agent roster and sample paper data. No trading engine or live money is connected."
                 : paper
-                  ? robot?.coinbase.enabledDesks.length
+                  ? robot?.noOwnAccount
+                    ? "ALPACA PAPER · NOT TRADING: the floor has no own Alpaca paper account yet (CRYPTO_FLOOR_ALPACA_* not set). No fallback to AwadBot's keys. Real money (Coinbase) is OFF."
+                    : robot?.coinbase.enabledDesks.length
                     ? `REAL MONEY ON for ${robot.coinbase.enabledDesks.map((d) => d.toUpperCase()).join(", ")} (Coinbase, max $${robot.coinbase.limits.maxTotalUsd}). Every desk also trades Alpaca paper 24/7, every 5 minutes.`
-                    : "ALPACA PAPER · The robot trades five desks 24/7 with paper money, every 5 minutes. Real money (Coinbase) is OFF."
+                    : "ALPACA PAPER · Five desks trade the floor's own paper account: crypto 24/7, US stocks regular + extended hours, options regular hours (long premium only). Real money (Coinbase) is OFF."
                   : "CONNECTION STATUS · No Crypto Floor engine is linked. Characters remain visible; trading data is unavailable."}
             </span>
             <Link href="/agents">
