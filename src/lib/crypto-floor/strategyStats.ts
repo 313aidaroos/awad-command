@@ -4,7 +4,7 @@
  * Used by the daily email/report (review.ts → report.ts) and the floor UI (state.ts → RobotConsole).
  */
 import { assetClass, type AssetClass } from "./assets";
-import { deskLanes } from "./desks";
+import { deskAssets, deskLanes } from "./desks";
 import { tradeStats, type ClosedTrade } from "./ledger";
 import { STRATEGIES } from "./strategies";
 import type { DeskId, StrategyId } from "./types";
@@ -39,21 +39,30 @@ export function strategyComparison(
       const list = trades.filter((t) => t.desk === d.id && own(t) && (since === undefined || Date.parse(t.exitAt) >= since));
       const st = tradeStats(list);
       const holds = list.map((t) => (Date.parse(t.exitAt) - Date.parse(t.entryAt)) / 3_600_000).filter((h) => Number.isFinite(h) && h >= 0);
-      const classes = new Set<AssetClass>(list.map((t) => assetClass(t.symbol)));
+      const openHere = openPositions.filter((p) => p.desk === d.id && (p.strategy ?? d.strategy) === lane);
+      // Traded in the window or held now; with neither, what the lane can trade on this desk.
+      const classes = new Set<AssetClass>([...list, ...openHere].map((t) => assetClass(t.symbol)));
+      if (!classes.size) for (const k of laneCapability(d.id, lane)) classes.add(k);
       rows.push({
         strategy: lane,
         label: STRATEGIES[lane]?.label ?? lane,
         desk: d.id as DeskId,
-        assetClasses: classes.size ? [...classes] : lane === "options-v1" ? ["option"] : ["crypto"],
+        assetClasses: [...classes],
         trades: st.trades,
         wins: st.wins,
         winRate: st.winRate,
         pnl: st.realized,
         maxDrawdown: st.maxDrawdown,
         avgHoldHours: holds.length ? holds.reduce((s, h) => s + h, 0) / holds.length : null,
-        open: openPositions.filter((p) => p.desk === d.id && (p.strategy ?? d.strategy) === lane).length,
+        open: openHere.length,
       });
     }
   }
   return rows.sort((a, b) => b.pnl - a.pnl || b.trades - a.trades);
+}
+
+/** Asset classes a lane can trade on its desk: options-v1 → options only; others → crypto (+ stocks where the desk trades them). */
+function laneCapability(desk: string, lane: string): AssetClass[] {
+  if (lane === "options-v1") return ["option"];
+  return deskAssets(desk).stocks ? ["crypto", "stock"] : ["crypto"];
 }

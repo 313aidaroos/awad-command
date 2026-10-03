@@ -361,6 +361,18 @@ describe("3b. side-by-side lanes and per-strategy results", () => {
     expect(rows.find((r) => r.strategy === "trend-v1")).toMatchObject({ trades: 1, pnl: 7 });
     expect(assetClass("NVDA")).toBe("stock");
   });
+
+  it("per-strategy asset classes come from trades and open positions, else from what the lane can trade", () => {
+    const rows = strategyComparison(
+      [{ id: "neon", strategy: "dip-v1" }, { id: "orbit", strategy: "swing-v1" }, { id: "ronin", strategy: "custom-v1" }],
+      [],
+      [{ desk: "neon", symbol: "AMD", strategy: "meanrev-v1" }],
+    );
+    expect(rows.find((r) => r.strategy === "meanrev-v1")).toMatchObject({ assetClasses: ["stock"], open: 1 });
+    expect(rows.find((r) => r.strategy === "dip-v1")!.assetClasses).toEqual(["crypto", "stock"]);
+    expect(rows.find((r) => r.strategy === "options-v1")!.assetClasses).toEqual(["option"]);
+    expect(rows.find((r) => r.strategy === "custom-v1")!.assetClasses).toEqual(["crypto"]);
+  });
 });
 
 /** Minimal chainable Supabase stand-in for runTick (records inserts). */
