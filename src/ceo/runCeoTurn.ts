@@ -1,4 +1,5 @@
 // Change note (Claude, Sep 2026): Wires the new Wallet/floor/mail tools into Cixy's turn. See docs/LAUNCH_NOTES.md.
+import { AI_CREDITS_MESSAGE, aiOutOfCredits } from "@/lib/aiError";
 import { buildContext } from "@/ceo/buildContext";
 import { demoResponder } from "@/ceo/demoResponder";
 import {
@@ -153,7 +154,7 @@ function anthropicFailure(err: unknown): CeoTurnResult {
     err instanceof Error && err.message.trim()
       ? err.message.trim()
       : "unknown error";
-  const error = `Anthropic CEO request failed: ${detail}`;
+  const error = aiOutOfCredits(err) ? AI_CREDITS_MESSAGE : `Anthropic CEO request failed: ${detail}`;
   return {
     text: error,
     provider: "error",
