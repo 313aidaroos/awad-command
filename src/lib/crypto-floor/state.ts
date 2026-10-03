@@ -9,8 +9,8 @@ import { anthropicApiKey } from "@/lib/env";
 import { NO_OWN_ACCOUNT_MESSAGE } from "./alpaca";
 import { assetClass, marketSession, type AssetClass, type Session } from "./assets";
 import { agentForEvent, deskAgents, deskAssets, deskLanes, deskRoster, type DeskAssets } from "./desks";
-import { deskDayLossLimit, deskTrading } from "./engine";
-import { DESK_DAY_LOSS_CAP, effectiveFloorLimits, optionMaxLossUsd } from "./risk";
+import { STRADDLE_DTE_MAX, STRADDLE_DTE_MIN, deskDayLossLimit, deskTrading } from "./engine";
+import { DESK_DAY_LOSS_CAP, STRADDLE_MAX_DEBIT_USD, effectiveFloorLimits, optionMaxLossUsd } from "./risk";
 import { strategyComparison, type StrategyResult } from "./strategyStats";
 import { loadMeetings, loadNotes, type MeetingRow, type NoteRow } from "./notes";
 import { strategyCatalog } from "./lab";
@@ -19,6 +19,7 @@ import { utcDay, watchLine } from "./market";
 import { loadBaselines, loadDesks, loadExperiments, loadFilledOrders, loadParams, toOrderRow } from "./store";
 import { DEFAULT_UNIVERSE, STRATEGIES, effectiveParams, strategySummary } from "./strategies";
 import type { CustomSpec } from "./strategy/custom-v1";
+import { groupStraddles, nextEntryMonday, type CycleRead, type CycleScan, type OpenStraddle } from "./strategy/cycle-straddle-v1";
 import type { ExperimentRow, OrderRow, Position, StrategyParams, WatchStat } from "./types";
 
 export const TICK_EVERY_SEC = 300;
@@ -41,6 +42,21 @@ export type RobotEventView = {
   agent: string | null;
   agentRole: string;
   payload: Record<string, unknown>;
+};
+
+/** CYCLE desk only (cycle-straddle-v1): the weekly cycle screen, its open straddles and its fixed rules. */
+export type CycleDeskView = {
+  /** Last tick that ran the screen (null before the first tick with the desk). */
+  scanAt: string | null;
+  /** This week's straddle underlyings: SPY, QQQ, then cycle-qualified stocks. */
+  underlyings: string[];
+  /** Detector read per screened symbol (1y daily bars). */
+  reads: CycleRead[];
+  /** Open straddles (legs grouped by underlying + strike + expiry), marked to the last tick. */
+  straddles: OpenStraddle[];
+  rules: { maxDebitUsd: number; maxOpenStraddles: number; legTakePct: number; comboStopPct: number; timeExitDay: number; dteMin: number; dteMax: number };
+  /** New York date of the next Monday entry window. */
+  nextEntryDay: string;
 };
 
 export type DeskView = {
@@ -79,6 +95,8 @@ export type DeskView = {
   recentTrades: Array<{ symbol: string; assetClass: AssetClass; strategy: string; entryAt: string; exitAt: string; pnl: number; pnlPct: number; exitReason: string | null }>;
   lastEvent: { ts: string; title: string } | null;
   agents: Array<{ name: string; role: string }>;
+  /** CYCLE desk: screen, straddles, rules. null on every other desk. */
+  cycle: CycleDeskView | null;
   /** REAL MONEY (Coinbase) for this desk. */
   live: { enabled: boolean; enabledAt: string | null; enabledBy: string | null; positions: Position[]; realizedPnl: number; unrealizedPnl: number; trades: number };
 };
@@ -148,6 +166,24 @@ export type RobotState = {
   watchingWide: WatchStat[];
 };
 
+/** The heartbeat's cycle screen (tick.ts writes plan.cycleScan). Anything malformed → null. */
+function readCycleScan(raw: unknown): CycleScan | null {
+  const r = raw as Partial<CycleScan> | null | undefined;
+  return r && Array.isArray(r.underlyings) && Array.isArray(r.reads) ? { underlyings: r.underlyings.map(String), reads: r.reads } : null;
+}
+
+function cycleView(stored: StrategyParams, positions: Position[], scan: CycleScan | null, scanAt: string | null, now: number): CycleDeskView {
+  const p = effectiveParams("cycle-straddle-v1", stored);
+  return {
+    scanAt: scan ? scanAt : null,
+    underlyings: scan?.underlyings ?? [],
+    reads: scan?.reads ?? [],
+    straddles: groupStraddles(positions.filter((x) => (x.strategy ?? "cycle-straddle-v1") === "cycle-straddle-v1"), now),
+    rules: { maxDebitUsd: STRADDLE_MAX_DEBIT_USD, maxOpenStraddles: Number(p.maxOpenStraddles), legTakePct: Number(p.legTakePct), comboStopPct: Number(p.comboStopPct), timeExitDay: Number(p.timeExitDay), dteMin: STRADDLE_DTE_MIN, dteMax: STRADDLE_DTE_MAX },
+    nextEntryDay: nextEntryMonday(now),
+  };
+}
+
 const iso = (ts: string) => {
   const t = Date.parse(ts);
   return Number.isFinite(t) ? new Date(t).toISOString() : new Date().toISOString();
@@ -203,6 +239,7 @@ export async function loadRobotState(db: SupabaseClient, now = Date.now()): Prom
   const events = (eventsRes.data ?? []).map(toEventView);
   const since7 = now - 7 * 86_400_000;
 
+  const cycleScan = readCycleScan(hp.cycleScan);
   const deskViews: DeskView[] = desks.map((d) => {
     const marked = markBook(books.get(d.id) ?? emptyBook(d.id), d.capital_usd, prices);
     const start = baselines.get(d.id) ?? null;
@@ -247,6 +284,7 @@ export async function loadRobotState(db: SupabaseClient, now = Date.now()): Prom
       recentTrades: marked.closedTrades.slice(-10).reverse().map((x) => ({ symbol: x.symbol, assetClass: assetClass(x.symbol), strategy: x.strategy ?? d.strategy, entryAt: x.entryAt, exitAt: x.exitAt, pnl: x.pnl, pnlPct: x.pnlPct, exitReason: x.exitReason })),
       lastEvent: last ? { ts: last.ts, title: last.title } : null,
       agents: deskAgents(d.id).map((a) => ({ name: a.name, role: a.role })),
+      cycle: d.strategy === "cycle-straddle-v1" ? cycleView(d.params, marked.positions, cycleScan, lastTickAt, now) : null,
       live: (() => {
         const lm = markBook(books.get(`live:${d.id}`) ?? emptyBook(`live:${d.id}`), 0, prices);
         return { enabled: d.live_enabled === true, enabledAt: d.live_enabled_at ?? null, enabledBy: d.live_enabled_by ?? null, positions: lm.positions, realizedPnl: lm.realizedPnl, unrealizedPnl: lm.unrealizedPnl, trades: lm.closedTrades.length };

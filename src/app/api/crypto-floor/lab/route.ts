@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
 const schema = z.object({
-  desk: z.enum(["samurai", "neon", "orbit", "phantom", "ronin"]),
+  desk: z.enum(["samurai", "neon", "orbit", "phantom", "ronin", "cycle"]),
   overrides: z.record(z.union([z.number(), z.boolean()])).default({}),
   spec: z.record(z.unknown()).optional(),
   days: z.number().int().min(3).max(90).default(30),

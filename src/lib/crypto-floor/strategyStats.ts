@@ -61,8 +61,8 @@ export function strategyComparison(
   return rows.sort((a, b) => b.pnl - a.pnl || b.trades - a.trades);
 }
 
-/** Asset classes a lane can trade on its desk: options-v1 → options only; others → crypto (+ stocks where the desk trades them). */
+/** Asset classes a lane can trade on its desk: options-v1 / cycle-straddle-v1 → options only; others → crypto (+ stocks where the desk trades them). */
 function laneCapability(desk: string, lane: string): AssetClass[] {
-  if (lane === "options-v1") return ["option"];
+  if (lane === "options-v1" || lane === "cycle-straddle-v1") return ["option"];
   return deskAssets(desk).stocks ? ["crypto", "stock"] : ["crypto"];
 }

@@ -6,10 +6,10 @@
  */
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { assetClass } from "@/lib/crypto-floor/assets";
-import type { DeskView, RobotState } from "@/lib/crypto-floor/state";
+import type { CycleDeskView, DeskView, RobotState } from "@/lib/crypto-floor/state";
 import type { StrategyResult } from "@/lib/crypto-floor/strategyStats";
 
-export type ChatTarget = { thread: "floor" | "samurai" | "neon" | "orbit" | "phantom" | "ronin"; agent: string | null };
+export type ChatTarget = { thread: "floor" | "samurai" | "neon" | "orbit" | "phantom" | "ronin" | "cycle"; agent: string | null };
 
 const usd = (n: number | null | undefined, sign = false) => {
   if (n === null || n === undefined || !Number.isFinite(n)) return "—";
@@ -58,6 +58,104 @@ function LossCapLine({ d }: { d: DeskView }) {
         </>
       )}
     </span>
+  );
+}
+
+const fixed = (n: number | null, d = 2) => (n === null || !Number.isFinite(n) ? "—" : n.toFixed(d));
+
+/** CYCLE desk card body: fixed straddle rules, this week's cycle screen and the open straddles leg by leg (DeskView.cycle). */
+function CycleBlock({ c }: { c: CycleDeskView }) {
+  const r = c.rules;
+  return (
+    <>
+      <p className="cf-footnote rc-losscap">
+        Straddles: max {usd(r.maxDebitUsd)} debit each · max {r.maxOpenStraddles} open · ATM call + put, {r.dteMin}–{r.dteMax} DTE · each leg sells at +{r.legTakePct}% · the rest at {r.comboStopPct}% combined or trading day {r.timeExitDay} · long premium only, never sells to open
+      </p>
+      <p className="cf-footnote">
+        Next entry: Monday {c.nextEntryDay} (regular session) · this week: <b>{c.underlyings.length ? c.underlyings.join(", ") : "—"}</b>
+        {c.scanAt ? ` · screened ${ago(c.scanAt)}` : " · no screen yet"}
+      </p>
+      {c.straddles.length > 0 ? (
+        <div className="cf-table-scroll" style={{ marginTop: 8 }}>
+          <table>
+            <thead>
+              <tr>
+                <th>Straddle</th>
+                <th>Legs</th>
+                <th>Cost → now</th>
+                <th>P&L</th>
+                <th>Day</th>
+              </tr>
+            </thead>
+            <tbody>
+              {c.straddles.map((s) => (
+                <tr key={s.key}>
+                  <td>
+                    {s.underlying} {s.strike} <AssetChip kind="option" />
+                    <br />
+                    <small style={{ color: "#7f9ab0" }}>
+                      exp {s.expiration} · {s.daysToExpiry === null ? "—" : `${s.daysToExpiry.toFixed(0)}d left`} · since {s.enteredAt ? dayHhmm(s.enteredAt) : "—"}
+                    </small>
+                  </td>
+                  <td>
+                    {s.legs.map((l) => (
+                      <div key={l.symbol} title={l.symbol}>
+                        {l.right.toUpperCase()} ×{l.qty} {usd(l.cost)} → {usd(l.value)} <span className={tone(l.pnlPct)}>({pct(l.pnlPct)})</span>
+                      </div>
+                    ))}
+                  </td>
+                  <td>
+                    {usd(s.cost)} → {usd(s.value)}
+                  </td>
+                  <td className={tone(s.pnlPct)}>{pct(s.pnlPct)}</td>
+                  <td>
+                    {s.tradingDaysHeld}/{r.timeExitDay}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p className="rc-note" style={{ marginTop: 8 }}>No open straddles.</p>
+      )}
+      <details className="rc-params">
+        <summary>Cycle screen (1y daily bars, ~15-day band)</summary>
+        {c.reads.length ? (
+          <div className="cf-table-scroll" style={{ marginTop: 6 }}>
+            <table>
+              <thead>
+                <tr>
+                  <th>Symbol</th>
+                  <th>Period</th>
+                  <th>Autocorr</th>
+                  <th>Spectral</th>
+                  <th>Score</th>
+                  <th>Bars</th>
+                  <th>Cycle</th>
+                </tr>
+              </thead>
+              <tbody>
+                {c.reads.map((x) => (
+                  <tr key={x.symbol}>
+                    <td>{x.symbol}</td>
+                    <td>{x.period === null ? "—" : `${x.period}d`}</td>
+                    <td>{fixed(x.autocorr)}</td>
+                    <td>{x.spectralShare === null ? "—" : `${Math.round(x.spectralShare * 100)}%`}</td>
+                    <td>{fixed(x.score)}</td>
+                    <td>{x.bars}</td>
+                    <td className={x.qualifies ? "cf-positive" : ""}>{x.qualifies ? "YES" : "no"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="cf-footnote">No screen yet — it runs on the next tick with the floor&apos;s own Alpaca account.</p>
+        )}
+        <p className="cf-footnote">SPY and QQQ are traded every week; a stock joins when its detrended price autocorrelates at a 12–18 day lag and that band holds a large share of the spectrum.</p>
+      </details>
+    </>
   );
 }
 
@@ -592,11 +690,13 @@ export function RobotView({
               </div>
               <p className="cf-footnote rc-losscap">
                 <LossCapLine d={d} />
-                {d.assets.options ? <> · options max loss {usd(d.optionMaxLossUsd)} per position (long premium only, regular hours)</> : null}
+                {d.assets.options && !d.cycle ? <> · options max loss {usd(d.optionMaxLossUsd)} per position (long premium only, regular hours)</> : null}
               </p>
               <p className="rc-summary">{d.summary}</p>
               {d.pauseReason && <p className="rc-warn" style={{ marginTop: 6 }}>{d.pauseReason}</p>}
-              {d.positions.length > 0 ? (
+              {d.cycle ? (
+                <CycleBlock c={d.cycle} />
+              ) : d.positions.length > 0 ? (
                 <div className="cf-table-scroll" style={{ marginTop: 8 }}>
                   <table>
                     <thead>
@@ -655,9 +755,11 @@ export function RobotView({
                 <button className="rc-btn primary small" onClick={() => onTalk({ thread: d.id as ChatTarget["thread"], agent: lead?.name ?? null })}>
                   Talk to {lead?.name ?? "the lead"}
                 </button>
-                <button className="rc-btn small" onClick={() => onLab(d.id)}>
-                  Backtest / test settings
-                </button>
+                {d.cycle ? null : (
+                  <button className="rc-btn small" onClick={() => onLab(d.id)}>
+                    Backtest / test settings
+                  </button>
+                )}
                 <button
                   className="rc-btn small"
                   disabled={busy !== null}
@@ -992,6 +1094,8 @@ function CoinbasePanel({ robot, onRefresh }: { robot: RobotState; onRefresh: () 
                     <button className="rc-btn small" disabled={busy !== null} onClick={() => void control(`off-${d.id}`, { action: "live_off", desk: d.id }, `${d.name} real money OFF. It keeps selling coins it holds; no new real buys.`)}>
                       Switch off
                     </button>
+                  ) : !d.assets.crypto ? (
+                    <span className="cf-footnote" title="Coinbase only trades coins; this desk trades options">Paper only</span>
                   ) : (
                     <button className="rc-btn danger small" disabled={busy !== null || !cb.configured} onClick={() => { setArming(d.id); setPhrase(""); setMsg(null); }}>
                       Go live…
@@ -1141,7 +1245,7 @@ export function ChatView({ robot, target, setTarget }: { robot: RobotState; targ
     }
   }
 
-  const threads: ChatTarget["thread"][] = ["floor", "samurai", "neon", "orbit", "phantom", "ronin"];
+  const threads: ChatTarget["thread"][] = ["floor", "samurai", "neon", "orbit", "phantom", "ronin", "cycle"];
   return (
     <Panel title={`Talk to ${target.thread === "floor" ? "the desk leads" : `${agentName} · ${desk?.name ?? ""}`}`} tag={robot.aiConnected ? "LIVE AGENTS · PAPER" : "AI NOT CONNECTED"}>
       <div className="rc-chat">
@@ -1151,7 +1255,7 @@ export function ChatView({ robot, target, setTarget }: { robot: RobotState; targ
               const d = robot.desks.find((x) => x.id === t);
               return (
                 <button key={t} aria-pressed={target.thread === t} style={d ? { color: d.color } : undefined} onClick={() => setTarget({ thread: t, agent: d?.agents[1]?.name ?? null })}>
-                  {t === "floor" ? "Whole floor (5 leads)" : d?.name ?? t.toUpperCase()}
+                  {t === "floor" ? "Whole floor (6 leads)" : d?.name ?? t.toUpperCase()}
                 </button>
               );
             })}
@@ -1171,7 +1275,7 @@ export function ChatView({ robot, target, setTarget }: { robot: RobotState; targ
           {messages.length === 0 && !sending && (
             <div className="rc-note">
               {target.thread === "floor"
-                ? "Ask the five desk leads anything — how the floor is doing, what the teams learned, what to test next, why a trade happened."
+                ? "Ask the six desk leads anything — how the floor is doing, what the teams learned, what to test next, why a trade happened."
                 : `${agentName} runs on live floor data and the team journal. They can backtest on real Alpaca history, start shadow tests, write notes, and adopt a change on paper when the evidence gate passes. Real money stays your switch.`}
               <div className="rc-suggestions" style={{ marginTop: 10 }}>
                 {(target.thread === "floor" ? SUGGESTIONS.floor : SUGGESTIONS.desk).map((s) => (
@@ -1232,7 +1336,9 @@ type BacktestResponse = {
 
 export function LabView({ robot, desk: initialDesk, onRefresh }: { robot: RobotState; desk: string; onRefresh: () => void }) {
   const [deskId, setDeskId] = useState(initialDesk);
-  const desk = robot.desks.find((d) => d.id === deskId) ?? robot.desks[0];
+  // CYCLE (option straddles) is not in the lab: backtests and shadow tests replay crypto hourly bars only.
+  const labDesks = robot.desks.filter((d) => !d.cycle);
+  const desk = labDesks.find((d) => d.id === deskId) ?? labDesks[0];
   const catalog = robot.catalog.find((c) => c.desk === desk?.id);
   const [values, setValues] = useState<Record<string, number | boolean>>(desk?.params ?? {});
   const [days, setDays] = useState(30);
@@ -1357,7 +1463,7 @@ export function LabView({ robot, desk: initialDesk, onRefresh }: { robot: RobotS
           <label className="rc-field">
             Desk
             <select className="rc-input" value={desk.id} onChange={(e) => setDeskId(e.target.value)}>
-              {robot.desks.map((d) => (
+              {labDesks.map((d) => (
                 <option key={d.id} value={d.id}>
                   {d.name} — {d.strategyLabel}
                 </option>
@@ -1495,7 +1601,7 @@ function JournalPanel({ robot, onRefresh }: { robot: RobotState; onRefresh: () =
   return (
     <Panel title="Team journals & meetings" tag="LEARNING">
       <p className="rc-note">
-        Every team meets on its own (RONIN every other hour, the others three times a day, all-hands at 11:20 UTC), writes down what it learns, and adopts a change on paper only when the code&apos;s evidence gate passes.
+        Every team meets on its own (RONIN every other hour, CYCLE daily at 21:20 UTC, the others three times a day, all-hands at 11:20 UTC), writes down what it learns, and adopts a change on paper only when the code&apos;s evidence gate passes.
       </p>
       <div className="rc-row" style={{ marginTop: 8 }}>
         <select className="rc-input" style={{ maxWidth: 180 }} value={who} onChange={(e) => setWho(e.target.value)} aria-label="Show notes for">

@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-const threadSchema = z.enum(["floor", "samurai", "neon", "orbit", "phantom", "ronin"]);
+const threadSchema = z.enum(["floor", "samurai", "neon", "orbit", "phantom", "ronin", "cycle"]);
 const headers = { "Cache-Control": "no-store" };
 
 /** OWNER: conversation history for a thread ('floor' or a desk). */

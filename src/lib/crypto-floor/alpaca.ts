@@ -276,18 +276,26 @@ export class AlpacaClient {
     return out;
   }
 
-  /** Option chain snapshots for one underlying (calls+puts near the money, an expiry window). Indicative feed. */
+  /** Option chain snapshots for one underlying (calls+puts near the money, an expiry window). Indicative feed. Follows next_page_token (at most 5 pages). */
   async optionChain(underlying: string, opts: { expirationGte: string; expirationLte: string; strikeGte: number; strikeLte: number }): Promise<OptionSnapshot[]> {
-    const q = new URLSearchParams({
-      feed: "indicative",
-      limit: "250",
-      expiration_date_gte: opts.expirationGte,
-      expiration_date_lte: opts.expirationLte,
-      strike_price_gte: String(opts.strikeGte),
-      strike_price_lte: String(opts.strikeLte),
-    });
-    const body: { snapshots?: Record<string, { latestQuote?: { bp?: number; ap?: number } }> } = await this.request(this.cfg.dataBase, `/v1beta1/options/snapshots/${encodeURIComponent(underlying)}?${q}`);
-    return snapshotList(body.snapshots ?? {});
+    const out: OptionSnapshot[] = [];
+    let pageToken: string | null = null;
+    for (let page = 0; page < 5; page++) {
+      const q = new URLSearchParams({
+        feed: "indicative",
+        limit: "1000",
+        expiration_date_gte: opts.expirationGte,
+        expiration_date_lte: opts.expirationLte,
+        strike_price_gte: String(opts.strikeGte),
+        strike_price_lte: String(opts.strikeLte),
+      });
+      if (pageToken) q.set("page_token", pageToken);
+      const body: { snapshots?: Record<string, { latestQuote?: { bp?: number; ap?: number } }>; next_page_token?: string | null } = await this.request(this.cfg.dataBase, `/v1beta1/options/snapshots/${encodeURIComponent(underlying)}?${q}`);
+      out.push(...snapshotList(body.snapshots ?? {}));
+      pageToken = body.next_page_token ?? null;
+      if (!pageToken) break;
+    }
+    return out;
   }
 
   /** Quotes for specific option contracts (held positions), keyed by OCC symbol. */

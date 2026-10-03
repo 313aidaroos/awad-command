@@ -11,6 +11,7 @@
  * - HARD desk daily loss cap (risk.ts, owner-only, all asset classes): a desk at its cap opens nothing new until the
  *   next UTC day; exits and stops keep running. 2026-10-02: this (plus the kill switch) is the ONLY automatic pause —
  *   the floor-wide day pause, quiet hours and day-pauses are gone. Crypto is planned 24/7.
+ * - CYCLE straddles (2026-10-03): both legs or nothing; same strike + expiry, 21–35 DTE, whole debit ≤ $500 (risk.ts).
  * - Asset sessions (assets.ts): stocks regular (market/day) + extended (limit/day/extended_hours, whole shares);
  *   options regular hours only, long premium only, sized so premium × 100 × contracts ≤ the desk's options max loss.
  * - Broker reconcile (reconcile.ts): books only count floor orders (cf-/rc-); claims the broker can't back are cleared
@@ -25,8 +26,9 @@ import { deskAssets, deskLanes, type DeskAssets } from "./desks";
 import { buildBooks, emptyBook, markBook, type Book, type MarkedBook } from "./ledger";
 import { nextUtcMidnight } from "./market";
 import { floorOwnedOrder, planReconcile, reconcileRow, type ReconcileAdjustment } from "./reconcile";
-import { atLossCap, deskDailyLossCap, effectiveFloorLimits, optionMaxLossUsd, sizeLongOption } from "./risk";
-import { OPTIONS_UNIVERSE, STRATEGIES, effectiveParams, resolveSpec, strategyUniverse } from "./strategies";
+import { STRADDLE_MAX_DEBIT_USD, atLossCap, deskDailyLossCap, effectiveFloorLimits, optionMaxLossUsd, sizeLongOption, sizeStraddle } from "./risk";
+import { CYCLE_SCREEN, OPTIONS_UNIVERSE, STRATEGIES, effectiveParams, resolveSpec, strategyUniverse } from "./strategies";
+import { CYCLE_BASE_UNDERLYINGS, groupStraddles, scanCycles, type CycleScan } from "./strategy/cycle-straddle-v1";
 import { RONIN_UNIVERSE, type CustomSpec } from "./strategy/custom-v1";
 import type {
   Bar,
@@ -81,6 +83,10 @@ export type PlanInput = {
   session?: Session;
   /** Option chains by underlying (regular hours only), for options-v1 entries. */
   optionChains?: Map<string, OptionCandidate[]>;
+  /** CYCLE: ~1 year of closed DAILY bars for SPY/QQQ + the cycle candidates (the cycle detector's input). */
+  barsDaily?: Map<string, Bar[]>;
+  /** CYCLE: option chains (21–35 DTE, near the money) for the week's straddle underlyings, Mondays in regular hours. */
+  straddleChains?: Map<string, OptionCandidate[]>;
 };
 
 export type OptionCandidate = { symbol: string; right: "call" | "put"; strike: number; expiration: string; bid: number; ask: number };
@@ -97,6 +103,25 @@ export function pickOptionContract(chain: OptionCandidate[], right: "call" | "pu
   });
   if (!ok.length) return null;
   return ok.sort((a, b) => Math.abs(a.strike - underlyingPrice) - Math.abs(b.strike - underlyingPrice) || a.expiration.localeCompare(b.expiration))[0];
+}
+
+/** CYCLE straddle: both legs at one strike + expiry, 21–35 DTE (closest to 28), two-sided quotes, spread ≤ 15% each. */
+export const STRADDLE_DTE_MIN = 21;
+export const STRADDLE_DTE_MAX = 35;
+export const STRADDLE_DTE_TARGET = 28;
+
+export function pickStraddle(chain: OptionCandidate[], underlyingPrice: number, now: number): { call: OptionCandidate; put: OptionCandidate } | null {
+  const liquid = (c: OptionCandidate) => {
+    const dte = daysToExpiry(c.symbol, now);
+    return dte !== null && dte >= STRADDLE_DTE_MIN && dte <= STRADDLE_DTE_MAX && c.ask > 0 && c.bid > 0 && ((c.ask - c.bid) / c.ask) * 100 <= OPTION_MAX_SPREAD_PCT;
+  };
+  const puts = new Map(chain.filter((c) => c.right === "put" && liquid(c)).map((c) => [`${c.expiration}|${c.strike}`, c]));
+  const pairs = chain
+    .filter((c) => c.right === "call" && liquid(c) && puts.has(`${c.expiration}|${c.strike}`))
+    .map((call) => ({ call, put: puts.get(`${call.expiration}|${call.strike}`)! }));
+  if (!pairs.length) return null;
+  const dteOff = (c: OptionCandidate) => Math.abs((daysToExpiry(c.symbol, now) ?? 0) - STRADDLE_DTE_TARGET);
+  return pairs.sort((a, b) => dteOff(a.call) - dteOff(b.call) || Math.abs(a.call.strike - underlyingPrice) - Math.abs(b.call.strike - underlyingPrice))[0];
 }
 
 export type PlannedOrder = {
@@ -121,6 +146,8 @@ export type PlannedOrder = {
   limitPrice?: number;
   /** Options: max loss of the position = limit × 100 × contracts (≤ the desk's cap). */
   maxLossUsd?: number;
+  /** CYCLE: both legs of one straddle carry its total debit (≤ STRADDLE_MAX_DEBIT_USD). */
+  straddleDebitUsd?: number;
 };
 
 export type SignalOutcome = {
@@ -187,6 +214,8 @@ export type TickPlan = {
   /** Ghost/short claims cleared this tick (no broker order) and the ledger rows that record them. */
   reconcile: ReconcileAdjustment[];
   reconcileRows: OrderRow[];
+  /** CYCLE's weekly cycle screen (null when no desk runs cycle-straddle-v1). */
+  cycleScan: CycleScan | null;
 };
 
 export function stamp(now: number): string {
@@ -217,7 +246,7 @@ export function deskDayLossLimit(desk: Pick<DeskRow, "risk">): number {
 }
 
 /** Symbols a lane evaluates for ENTRIES this tick (held positions are always evaluated for exits). */
-export function laneUniverse(opts: { desk: string; strategy: StrategyId; spec: CustomSpec | null; coreCrypto: string[]; stocks: string[]; bars: Map<string, Bar[]>; session: Session }): string[] {
+export function laneUniverse(opts: { desk: string; strategy: StrategyId; spec: CustomSpec | null; coreCrypto: string[]; stocks: string[]; bars: Map<string, Bar[]>; session: Session; cycleUnderlyings?: string[] }): string[] {
   const { strategy, coreCrypto, session } = opts;
   const assets = deskAssets(opts.desk);
   const stocks = assets.stocks && session !== "closed" ? opts.stocks : [];
@@ -227,6 +256,8 @@ export function laneUniverse(opts: { desk: string; strategy: StrategyId; spec: C
       return strategyUniverse(strategy, opts.spec);
     case "options-v1":
       return session === "regular" ? OPTIONS_UNIVERSE.filter((u) => opts.bars.has(u)) : [];
+    case "cycle-straddle-v1":
+      return session === "regular" ? (opts.cycleUnderlyings ?? [...CYCLE_BASE_UNDERLYINGS]).filter((u) => opts.bars.has(u)) : [];
     case "scalp-v1":
     case "swing-v1":
       return coreCrypto;
@@ -240,7 +271,7 @@ export function laneUniverse(opts: { desk: string; strategy: StrategyId; spec: C
 /** Coins + spec a desk or test trades. */
 export function deskTrading(strategy: StrategyId, storedSpec: unknown, coreUniverse: string[]) {
   const spec = resolveSpec(strategy, storedSpec);
-  return { spec, universe: strategy === "custom-v1" ? strategyUniverse(strategy, spec) : coreUniverse };
+  return { spec, universe: strategy === "custom-v1" ? strategyUniverse(strategy, spec) : strategy === "cycle-straddle-v1" ? CYCLE_SCREEN : coreUniverse };
 }
 
 const sortExitsFirst = (a: SignalOutcome, b: SignalOutcome) =>
@@ -341,6 +372,9 @@ export function planTick(input: PlanInput): TickPlan {
       .map((o) => `${o.book}|${o.symbol}`),
   );
 
+  // ---- CYCLE's weekly screen: SPY/QQQ + stocks with a real ~15-trading-day cycle on 1y of daily bars.
+  const cycleScan = deskPlans.some((d) => d.lanes.includes("cycle-straddle-v1")) ? scanCycles(input.barsDaily ?? new Map()) : null;
+
   // ---- run strategies
   const outcomes: SignalOutcome[] = [];
   for (const d of deskPlans) {
@@ -363,7 +397,7 @@ export function planTick(input: PlanInput): TickPlan {
       const signals = STRATEGIES[lane].run({
         params: primary ? d.params : effectiveParams(lane, undefined),
         spec: primary ? d.spec : null,
-        universe: primary && lane === "custom-v1" ? d.universe : laneUniverse({ desk: d.id, strategy: lane, spec: d.spec, coreCrypto: input.universe, stocks: input.stockUniverse ?? [], bars: input.bars, session }),
+        universe: primary && lane === "custom-v1" ? d.universe : laneUniverse({ desk: d.id, strategy: lane, spec: d.spec, coreCrypto: input.universe, stocks: input.stockUniverse ?? [], bars: input.bars, session, cycleUnderlyings: cycleScan?.underlyings }),
         bars: input.bars,
         bars15m: input.bars15m,
         positions: d.marked.positions.filter((p) => owner(p) === lane),
@@ -391,6 +425,8 @@ export function planTick(input: PlanInput): TickPlan {
   const limits = effectiveFloorLimits(params);
   const maxOrders = limits.maxOrdersPerTick;
   const maxOpen = limits.maxOpenPositions;
+  /** CYCLE: open straddles per desk (held + planned this tick). */
+  const straddlesOpen = new Map<string, number>();
   for (const o of outcomes) {
     if (o.action === "skipped") continue;
     const d = deskPlans.find((x) => x.id === o.desk)!;
@@ -401,6 +437,57 @@ export function planTick(input: PlanInput): TickPlan {
     };
     if (halted) { skip("Kill switch is on — no orders"); continue; }
     if (sig.side === "buy" && d.entriesBlocked) { skip(d.entriesBlocked); continue; }
+
+    // CYCLE straddle entry: a long call AND a long put, same strike + expiry, both legs or nothing. Long premium only;
+    // the whole debit (call + put) × 100 × contracts ≤ STRADDLE_MAX_DEBIT_USD.
+    if (sig.side === "buy" && sig.optionRight === "straddle") {
+      if (!d.assets.options) { skip("This desk does not trade options"); continue; }
+      if (session !== "regular") { skip("Options trade in regular hours only"); continue; }
+      const under = input.prices.get(sig.symbol);
+      if (!under) { skip(`No price for ${sig.symbol}`); continue; }
+      if (input.staleSymbols?.has(sig.symbol)) { skip(`Market data stale for ${sig.symbol}`); continue; }
+      const maxStraddles = Number(sig.maxOpenStraddles);
+      if (!straddlesOpen.has(d.id)) straddlesOpen.set(d.id, groupStraddles(d.marked.positions.filter((p) => (p.strategy ?? d.strategy) === o.strategy), now).length);
+      if (!(straddlesOpen.get(d.id)! < maxStraddles)) { skip(`Max ${maxStraddles} straddles open`); continue; }
+      const pair = pickStraddle(input.straddleChains?.get(sig.symbol) ?? [], under, now);
+      if (!pair) { skip(`No liquid ATM straddle on ${sig.symbol} (${STRADDLE_DTE_MIN}–${STRADDLE_DTE_MAX} DTE, same strike, spread ≤ ${OPTION_MAX_SPREAD_PCT}%)`); continue; }
+      if (openOrderKeys.has(`${o.book}|${pair.call.symbol}`) || openOrderKeys.has(`${o.book}|${pair.put.symbol}`)) { skip("Previous order for this straddle is still unresolved — waiting for reconcile"); continue; }
+      if (orders.length + 2 > maxOrders) { skip(`Max ${maxOrders} orders per tick reached (a straddle needs 2)`); continue; }
+      if (openPositions + 2 > maxOpen) { skip(`Floor at max ${maxOpen} open positions`); continue; }
+      const sized = sizeStraddle(pair.call.ask, pair.put.ask, buyingPower ?? Number.POSITIVE_INFINITY);
+      if (!sized.ok) { skip(sized.reason); continue; }
+      if (sized.debitUsd > STRADDLE_MAX_DEBIT_USD + 1e-6) { skip("Straddle debit above the max"); continue; } // defensive
+      if (buyingPower !== null) buyingPower -= sized.debitUsd;
+      openPositions += 2;
+      straddlesOpen.set(d.id, straddlesOpen.get(d.id)! + 1);
+      const base = { underlying: sig.symbol, strike: pair.call.strike, expiration: pair.call.expiration, straddleDebitUsd: sized.debitUsd };
+      o.signal = { ...sig, qty: sized.qty, ...base };
+      for (const [leg, limit] of [[pair.call, sized.callLimit], [pair.put, sized.putLimit]] as const) {
+        const legSig: Signal = { ...sig, symbol: leg.symbol, qty: sized.qty, optionRight: leg.right, ...base, maxLossUsd: limit * 100 * sized.qty };
+        orders.push({
+          book: o.book,
+          desk: o.desk,
+          strategy: o.strategy,
+          mode: "paper",
+          symbol: leg.symbol,
+          side: "buy",
+          intent: "entry",
+          qty: sized.qty,
+          refPrice: limit * 100,
+          clientOrderId: clientOrderId(o.strategy, leg.symbol, "buy", now),
+          reason: `${sig.reason} — ${leg.right} leg ${leg.strike} ${leg.expiration}, straddle debit $${sized.debitUsd.toFixed(2)}`,
+          signal: legSig,
+          assetClass: "option",
+          orderType: "limit",
+          timeInForce: "day",
+          extendedHours: false,
+          limitPrice: limit,
+          maxLossUsd: limit * 100 * sized.qty,
+          straddleDebitUsd: sized.debitUsd,
+        });
+      }
+      continue;
+    }
 
     // Options entry: a long call/put on the signal's underlying. Long premium only; sized to the max-loss cap.
     let optionMaxLoss: number | undefined;
@@ -578,5 +665,6 @@ export function planTick(input: PlanInput): TickPlan {
     limits,
     reconcile,
     reconcileRows,
+    cycleScan,
   };
 }

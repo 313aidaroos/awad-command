@@ -9,6 +9,7 @@ export const DESK_STRATEGY: Record<DeskId, StrategyId> = {
   orbit: "swing-v1",
   phantom: "breakout-v1",
   ronin: "custom-v1",
+  cycle: "cycle-straddle-v1",
 };
 
 /**
@@ -22,17 +23,22 @@ export const DESK_LANES: Record<DeskId, StrategyId[]> = {
   orbit: ["options-v1"],
   phantom: ["scalp-v1"],
   ronin: [],
+  cycle: [],
 };
 
-export type DeskAssets = { crypto: true; stocks: boolean; options: boolean };
+export type DeskAssets = { crypto: boolean; stocks: boolean; options: boolean };
 
-/** Asset classes per desk. Crypto everywhere (24/7); stocks on SAMURAI/NEON/PHANTOM; options (long premium) on ORBIT. */
+/**
+ * Asset classes per desk. Crypto on the five original desks (24/7); stocks on SAMURAI/NEON/PHANTOM; options (long
+ * premium) on ORBIT. CYCLE (2026-10-03) trades ONLY options: long straddles on SPY/QQQ/cycle stocks, regular hours.
+ */
 export const DESK_ASSETS: Record<DeskId, DeskAssets> = {
   samurai: { crypto: true, stocks: true, options: false },
   neon: { crypto: true, stocks: true, options: false },
   orbit: { crypto: true, stocks: false, options: true },
   phantom: { crypto: true, stocks: true, options: false },
   ronin: { crypto: true, stocks: false, options: false },
+  cycle: { crypto: false, stocks: false, options: true },
 };
 
 /** Primary first, then the desk's lanes (no duplicates). */
@@ -53,12 +59,14 @@ type Roster = { id: DeskId; name: string; color: string; symbol: string; names: 
 
 /**
  * Every desk's team. The four core desks come from the floor art (model.ts); RONIN, the higher-risk team that
- * invents its own strategies, is not in the art yet (its design comes later), so its roster lives here.
+ * invents its own strategies, and CYCLE (weekly straddles on a ~3-week cycle, 2026-10-03) are not in the art yet,
+ * so their rosters live here.
  * Names are in role order: Scout, Analyst (desk lead), Trader, Risk Officer.
  */
 export const ROSTERS: Roster[] = [
   ...visualDesks.map((d) => ({ id: d.id as DeskId, name: d.name, color: d.color, symbol: d.symbol, names: d.names })),
   { id: "ronin", name: "RONIN", color: "#ffb547", symbol: "浪", names: ["JIN", "KAEDE", "RYU", "TORA"] },
+  { id: "cycle", name: "CYCLE", color: "#ff7ad9", symbol: "環", names: ["TIDE", "LUMA", "KITE", "ONYX"] },
 ];
 
 export function deskRoster(desk: string): Roster | null {

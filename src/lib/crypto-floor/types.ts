@@ -53,14 +53,16 @@ export type StrategyId =
   | "trend-v1"
   | "meanrev-v1"
   | "scalp-v1"
-  | "options-v1";
+  | "options-v1"
+  // 2026-10-03: CYCLE desk (6th) — weekly long ATM straddles on a ~3-week cycle.
+  | "cycle-straddle-v1";
 
 export type ParamValue = number | boolean;
 export type StrategyParams = Record<string, ParamValue>;
 
-export type DeskId = "samurai" | "neon" | "orbit" | "phantom" | "ronin";
+export type DeskId = "samurai" | "neon" | "orbit" | "phantom" | "ronin" | "cycle";
 
-export const DESK_IDS: DeskId[] = ["samurai", "neon", "orbit", "phantom", "ronin"];
+export const DESK_IDS: DeskId[] = ["samurai", "neon", "orbit", "phantom", "ronin", "cycle"];
 
 /**
  * Awad's coins (his Robinhood holdings, 2026-10-02: "have all them watch these and buy more of these").

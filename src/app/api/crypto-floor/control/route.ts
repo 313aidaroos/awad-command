@@ -10,7 +10,7 @@ import { ownerEmail, sameOrigin } from "@/lib/crypto-floor/owner";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const deskId = z.enum(["samurai", "neon", "orbit", "phantom", "ronin"]);
+const deskId = z.enum(["samurai", "neon", "orbit", "phantom", "ronin", "cycle"]);
 const schema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("kill_on"), reason: z.string().max(300).default("") }),
   z.object({ action: z.literal("kill_off") }),

@@ -14,7 +14,7 @@ function bars(symbol: string, closes: number[]): Bar[] {
 const flat = (symbol: string, price: number) => bars(symbol, Array.from({ length: 60 }, () => price));
 
 function desk(id: DeskRow["id"], over: Partial<DeskRow> = {}): DeskRow {
-  const strategy = ({ samurai: "momentum-v1", neon: "dip-v1", orbit: "swing-v1", phantom: "breakout-v1", ronin: "custom-v1" } as const)[id];
+  const strategy = ({ samurai: "momentum-v1", neon: "dip-v1", orbit: "swing-v1", phantom: "breakout-v1", ronin: "custom-v1", cycle: "cycle-straddle-v1" } as const)[id];
   return { id, name: id.toUpperCase(), strategy, enabled: true, capital_usd: 25_000, params: { ...STRATEGIES[strategy].defaults }, version: 1, paused_until: null, pause_reason: null, ...over };
 }
 

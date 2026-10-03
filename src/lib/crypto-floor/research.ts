@@ -2,7 +2,8 @@
  * Team meetings — how every team learns on its own, around the clock.
  *
  * Every hour (cron :20) one team meets: SAMURAI, NEON, ORBIT and PHANTOM three times a day each, RONIN (the
- * higher-risk team that invents its own strategies) every other hour. Once a day (11:20 UTC) the five desk leads
+ * higher-risk team that invents its own strategies) every other hour, CYCLE (weekly straddles) once a day at 21:20 UTC
+ * after the US close (that hour's RONIN slot). Once a day (11:20 UTC) the six desk leads
  * hold an ALL-HANDS: they share what each team learned so lessons cross desks, and write the floor briefing.
  *
  * In a team meeting the four agents (Scout, Analyst/lead, Trader, Risk Officer) review their trades, journal,
@@ -30,6 +31,8 @@ import { DESK_IDS, type DeskId } from "./types";
 export const MEETING_ROTATION: DeskId[] = ["samurai", "ronin", "neon", "ronin", "orbit", "ronin", "phantom", "ronin"];
 /** Daily all-hands of the desk leads (before the 13:00 UTC review + email). Replaces that hour's RONIN slot. */
 export const ALLHANDS_HOUR_UTC = 11;
+/** CYCLE (weekly straddles) meets once a day after the US close (21:20 UTC). Replaces that hour's RONIN slot. */
+export const CYCLE_MEETING_HOUR_UTC = 21;
 export const MEETING_MAX_TURNS = 8;
 /** Stop calling tools after this long and write the minutes (the route has 300s). */
 export const MEETING_BUDGET_MS = 190_000;
@@ -39,6 +42,7 @@ export type MeetingPlan = { kind: "team"; desk: DeskId } | { kind: "allhands" };
 export function scheduledMeeting(now: number): MeetingPlan {
   const h = new Date(now).getUTCHours();
   if (h === ALLHANDS_HOUR_UTC) return { kind: "allhands" };
+  if (h === CYCLE_MEETING_HOUR_UTC) return { kind: "team", desk: "cycle" };
   return { kind: "team", desk: MEETING_ROTATION[h % MEETING_ROTATION.length] };
 }
 
@@ -177,7 +181,7 @@ function teamSystem(desk: DeskId): string {
 function allHandsSystem(): string {
   const leads = DESK_IDS.map((d) => deskLead(d));
   return [
-    `This is the daily ALL-HANDS of THE CRYPTO FLOOR. Present: the five desk leads — ${leads.map((l) => `${l.name} (${l.deskName})`).join(", ")}. KAEDE (RONIN) and HIRO (SAMURAI) alternate as chair; today the chair is whoever opens.`,
+    `This is the daily ALL-HANDS of THE CRYPTO FLOOR. Present: the six desk leads — ${leads.map((l) => `${l.name} (${l.deskName})`).join(", ")}. KAEDE (RONIN) and HIRO (SAMURAI) alternate as chair; today the chair is whoever opens.`,
     "Purpose: cross-training. Each lead reports in two or three sentences what their team learned since yesterday (with numbers), then the group finds lessons that carry to other desks and writes them as notes for those desks (write_note with desk = the team that should use it).",
     Object.values(TEAM_PLAYBOOK).join("\n"),
     `Latest updates: ${TRAINING_UPDATES.join(" | ")}`,

@@ -11,7 +11,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AlpacaClient } from "./alpaca";
 import { runBacktest, type BacktestResult } from "./backtest";
-import { DESK_STRATEGY } from "./desks";
+import { DESK_STRATEGY, deskAssets } from "./desks";
 import { EventLog } from "./events";
 import { HOUR_MS, closedBars } from "./market";
 import { buildBooks, emptyBook, markBook, tradeStats } from "./ledger";
@@ -64,6 +64,14 @@ export class HistoryCache {
 }
 
 /** A desk's candidate settings: params for core desks (inside bounds), a spec for custom-v1 (inside RONIN_LIMITS). */
+/**
+ * The lab replays crypto HOURLY bars (backtest.ts) and shadow tests simulate crypto fills. CYCLE trades option
+ * straddles on stocks, which neither can price, so its settings are not backtested, shadow-tested or adopted here.
+ */
+export function assertLabCanTest(desk: Pick<DeskRow, "name" | "strategy">) {
+  if (desk.strategy === "cycle-straddle-v1") throw new LabError(`${desk.name} trades option straddles on stocks; the lab replays crypto hourly bars only, so it cannot backtest, shadow-test or adopt ${desk.name} settings.`);
+}
+
 export function candidateFor(desk: DeskRow, overrides: Record<string, unknown> | undefined, spec: unknown): { params: StrategyParams; spec: CustomSpec | null; changed: boolean } {
   const current = effectiveParams(desk.strategy, desk.params);
   if (desk.strategy === "custom-v1") {
@@ -92,6 +100,7 @@ export async function backtestDesk(opts: {
   const desks = await loadDesks(opts.db);
   const desk = desks.find((d) => d.id === opts.desk);
   if (!desk) throw new LabError(`Unknown desk ${opts.desk}`);
+  assertLabCanTest(desk);
   const cand = candidateFor(desk, opts.overrides, opts.spec);
   const currentSpec = resolveSpec(desk.strategy, desk.spec);
   const days = Math.max(3, Math.min(MAX_BACKTEST_DAYS, Math.round(opts.days ?? 30)));
@@ -127,6 +136,7 @@ export async function startExperiment(opts: {
   const desks = await loadDesks(opts.db);
   const desk = desks.find((d) => d.id === opts.desk);
   if (!desk) throw new LabError(`Unknown desk ${opts.desk}`);
+  assertLabCanTest(desk);
   const cand = candidateFor(desk, opts.overrides, opts.spec);
   if (!cand.changed) throw new LabError(desk.strategy === "custom-v1" ? "A test needs a strategy spec." : "A test needs at least one changed setting.");
   const v = { params: cand.params };
@@ -327,6 +337,7 @@ export async function adoptChange(opts: {
   const desks = await loadDesks(db);
   const desk = desks.find((d) => d.id === opts.desk);
   if (!desk) throw new LabError(`Unknown desk ${opts.desk}`);
+  assertLabCanTest(desk);
 
   const { data: recent } = await db
     .from("crypto_floor_param_changes")
@@ -455,6 +466,7 @@ export async function setDeskLive(opts: {
 }) {
   const { db, log, desk, on, by } = opts;
   if (on) {
+    if (!deskAssets(desk).crypto) throw new LabError(`${desk.toUpperCase()} trades options on stocks; real money (Coinbase) is crypto only.`);
     if (opts.confirm !== LIVE_CONFIRM_PHRASE) throw new LabError(`Type ${LIVE_CONFIRM_PHRASE} to switch on real-money trading.`);
     if (!opts.coinbase) throw new LabError("Coinbase is not connected. Add COINBASE_API_KEY_NAME and COINBASE_API_PRIVATE_KEY on Vercel first.");
     let perms;

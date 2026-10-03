@@ -14,12 +14,14 @@
  * (alpaca = null) the tick makes no broker call at all, logs "no own account" (once an hour) and writes a heartbeat
  * that the UI, health and the daily email show. Stocks (regular + extended hours) and options (regular hours, long
  * premium) join crypto (24/7). Every tick reconciles the floor's own books against its own broker holdings (no sells).
+ * 2026-10-03 CYCLE desk: ~1 year of daily bars for its cycle screen (every tick while the desk exists) and, on
+ * Mondays in the regular session, 21–35 DTE chains for the week's straddle underlyings it still has room for.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { AlpacaClient, AlpacaHttpError, NO_OWN_ACCOUNT_MESSAGE, formatQty, mapAlpacaStatus, roundQty, type AlpacaOrder } from "./alpaca";
 import { OPTION_UNDERLYINGS, STOCK_UNIVERSE, assetClass, parseOcc, sessionWithClock, type Session } from "./assets";
-import { agentForEvent, deskAssets } from "./desks";
-import { OPTION_DTE_MAX, OPTION_DTE_MIN, planTick, type OptionCandidate, type PlannedOrder, type TickPlan } from "./engine";
+import { agentForEvent, deskAssets, deskLanes } from "./desks";
+import { OPTION_DTE_MAX, OPTION_DTE_MIN, STRADDLE_DTE_MAX, STRADDLE_DTE_MIN, planTick, recentEntriesFor, type OptionCandidate, type PlannedOrder, type TickPlan } from "./engine";
 import { buildBooks } from "./ledger";
 import { floorOwnedOrder } from "./reconcile";
 import { EventLog } from "./events";
@@ -36,7 +38,8 @@ import {
   releaseTickLease,
   writeBaselines,
 } from "./store";
-import { DEFAULT_UNIVERSE, floorUniverse } from "./strategies";
+import { CYCLE_SCREEN, DEFAULT_UNIVERSE, effectiveParams, floorUniverse } from "./strategies";
+import { groupStraddles, isNyMonday, scanCycles } from "./strategy/cycle-straddle-v1";
 import { CoinbaseClient, coinbaseConfig } from "./coinbase";
 import { runLiveStep, type LiveSummary } from "./liveRun";
 import type { Bar, OrderRow, WatchStat } from "./types";
@@ -434,7 +437,10 @@ export async function runTick(deps: TickDeps): Promise<TickResult> {
 
     // Stocks (desks with stocks + the options lane's underlyings). Failure → those symbols are stale, crypto unaffected.
     const wantsStocks = desks.some((d) => d.enabled && (deskAssets(d.id).stocks || deskAssets(d.id).options));
-    const stockSymbols = wantsStocks ? [...new Set<string>([...STOCK_UNIVERSE, ...OPTION_UNDERLYINGS])] : [];
+    // Stock-trading lanes only see STOCK_UNIVERSE + the options underlyings; CYCLE's extra screen names are fetched for
+    // their prices (straddle strikes) but are never offered to a lane that buys shares.
+    const laneStocks = new Set<string>([...STOCK_UNIVERSE, ...OPTION_UNDERLYINGS]);
+    const stockSymbols = wantsStocks ? [...new Set<string>([...laneStocks, ...(desks.some((d) => d.strategy === "cycle-straddle-v1") ? CYCLE_SCREEN : [])])] : [];
     const stockUniverse: string[] = [];
     if (stockSymbols.length) {
       let sBars = new Map<string, Bar[]>();
@@ -453,7 +459,7 @@ export async function runTick(deps: TickDeps): Promise<TickResult> {
         const b = closedBars(sBars.get(s) ?? [], now);
         if (!b.length) continue;
         bars.set(s, b);
-        stockUniverse.push(s);
+        if (laneStocks.has(s)) stockUniverse.push(s);
         const t = sTrades.get(s) ?? null;
         const stat = watchStat(s, b, t);
         watching.push(stat);
@@ -462,6 +468,17 @@ export async function runTick(deps: TickDeps): Promise<TickResult> {
           staleSymbols.add(s);
           staleNotes.push(`${s}: no trade in 30 min during the ${session} session`);
         }
+      }
+    }
+    // CYCLE: ~1 year of closed daily bars for the cycle detector. Failure → only SPY/QQQ qualify (no screen).
+    const cycleDesk = desks.find((d) => deskLanes(d.id, d.strategy).includes("cycle-straddle-v1")) ?? null;
+    const barsDaily = new Map<string, Bar[]>();
+    if (cycleDesk) {
+      try {
+        const raw = await alpaca.stockBars(CYCLE_SCREEN, new Date(now - 400 * 24 * HOUR_MS), "1Day");
+        for (const sym of CYCLE_SCREEN) barsDaily.set(sym, (raw.get(sym) ?? []).filter((b) => Date.parse(b.timestamp) + 24 * HOUR_MS <= now));
+      } catch (err) {
+        staleNotes.push(`cycle screen: daily bars fetch failed (${err instanceof Error ? err.message.slice(0, 80) : "error"})`);
       }
     }
     if (!dataStale && staleNotes.length) dataStaleReason = staleNotes.join("; ");
@@ -486,7 +503,8 @@ export async function runTick(deps: TickDeps): Promise<TickResult> {
 
     // Options: quotes for contracts the floor holds (per-contract price = mid × 100), and chains for new entries.
     const heldOptions = new Set<string>();
-    for (const [id, book] of buildBooks(filledOrders.filter(floorOwnedOrder))) {
+    const ownBooks = buildBooks(filledOrders.filter(floorOwnedOrder));
+    for (const [id, book] of ownBooks) {
       if (id.startsWith("exp:") || id.startsWith("live:")) continue;
       for (const sym of book.positions.keys()) if (assetClass(sym) === "option") heldOptions.add(sym);
     }
@@ -502,7 +520,7 @@ export async function runTick(deps: TickDeps): Promise<TickResult> {
       }
     }
     const optionChains = new Map<string, OptionCandidate[]>();
-    const optionsDeskOn = desks.some((d) => d.enabled && deskAssets(d.id).options && !d.paused_until);
+    const optionsDeskOn = desks.some((d) => d.enabled && deskLanes(d.id, d.strategy).includes("options-v1") && !d.paused_until);
     if (session === "regular" && optionsDeskOn && !params.halted) {
       const ymd = (ms: number) => new Date(ms).toISOString().slice(0, 10);
       for (const u of OPTION_UNDERLYINGS) {
@@ -516,6 +534,32 @@ export async function runTick(deps: TickDeps): Promise<TickResult> {
           }));
         } catch {
           // no options entries on this underlying this tick
+        }
+      }
+    }
+
+    // CYCLE straddle chains: Mondays, regular session, desk on and not paused, while it has room for another straddle,
+    // for every screened underlying it doesn't hold or just bought (the engine opens them in order until full).
+    const straddleChains = new Map<string, OptionCandidate[]>();
+    if (cycleDesk && cycleDesk.enabled && !(cycleDesk.paused_until && Date.parse(cycleDesk.paused_until) > now) && session === "regular" && !params.halted && isNyMonday(now)) {
+      const ymd = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+      const book = ownBooks.get(cycleDesk.id);
+      const legs = [...(book?.positions.values() ?? [])].filter((p) => (p.strategy ?? cycleDesk.strategy) === "cycle-straddle-v1").map((p) => ({ symbol: p.symbol, qty: p.qty, avgEntryPrice: p.avgEntryPrice, currentPrice: p.avgEntryPrice, unrealizedPnl: 0, unrealizedPnlPct: 0, enteredAt: p.openedAt }));
+      const open = groupStraddles(legs, now);
+      const held = new Set(open.map((x) => x.underlying));
+      const recent = new Set(recentEntriesFor(cycleDesk.id, recentOrders, "cycle-straddle-v1", cycleDesk.strategy).filter((e) => Date.parse(e.timestamp) > now - 4 * 24 * HOUR_MS).map((e) => parseOcc(e.symbol)?.underlying ?? e.symbol));
+      const room = Number(effectiveParams("cycle-straddle-v1", cycleDesk.params).maxOpenStraddles) - open.length;
+      const wantChains = room > 0 ? scanCycles(barsDaily).underlyings.filter((u) => !held.has(u) && !recent.has(u) && prices.has(u)) : [];
+      for (const u of wantChains) {
+        const px = prices.get(u)!;
+        try {
+          const snaps = await alpaca.optionChain(u, { expirationGte: ymd(now + STRADDLE_DTE_MIN * 86_400_000), expirationLte: ymd(now + STRADDLE_DTE_MAX * 86_400_000), strikeGte: Math.floor(px * 0.97), strikeLte: Math.ceil(px * 1.03) });
+          straddleChains.set(u, snaps.flatMap((q) => {
+            const occ = parseOcc(q.symbol);
+            return occ ? [{ symbol: q.symbol, right: occ.right, strike: occ.strike, expiration: occ.expiration, bid: q.bid, ask: q.ask }] : [];
+          }));
+        } catch {
+          // no straddle on this underlying this tick (the engine logs "no liquid ATM straddle")
         }
       }
     }
@@ -541,6 +585,8 @@ export async function runTick(deps: TickDeps): Promise<TickResult> {
       bars15m,
       session,
       optionChains,
+      barsDaily,
+      straddleChains,
     });
 
     await writeBaselines(db, day, plan.baselinesToWrite);
@@ -745,6 +791,7 @@ export async function runTick(deps: TickDeps): Promise<TickResult> {
         noOwnAccount: false,
         session: plan.session,
         desks: heartbeatDesks(plan),
+        cycleScan: plan.cycleScan,
         experiments: plan.experiments.map((e) => ({ id: e.id, equity: e.marked.equity, open: e.marked.positions.length })),
         account: { cash: Number(account.cash), equity: Number(account.equity), buyingPower: Number.isFinite(bp) ? bp : null },
         dedicatedAccount: alpaca.dedicated,

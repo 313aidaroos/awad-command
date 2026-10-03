@@ -16,6 +16,7 @@ import { runTrendStrategy } from "./strategy/trend-v1";
 import { runMeanRevStrategy } from "./strategy/meanrev-v1";
 import { runScalpStrategy } from "./strategy/scalp-v1";
 import { runOptionsStrategy } from "./strategy/options-v1";
+import { CYCLE_BASE_UNDERLYINGS, CYCLE_CANDIDATES, runCycleStraddle } from "./strategy/cycle-straddle-v1";
 import { OPTION_UNDERLYINGS } from "./assets";
 import { ROBOT_UNIVERSE, type Bar, type DeskId, type Position, type RecentEntry, type Signal, type StrategyId, type StrategyParams } from "./types";
 
@@ -296,6 +297,23 @@ export const STRATEGIES: Record<StrategyId, StrategyDef> = {
     run: ({ params, universe, bars, positions, recentEntries, now }) =>
       runOptionsStrategy({ underlyings: universe, fastEma: n(params, "fastEma"), slowEma: n(params, "slowEma"), crossLookbackBars: n(params, "crossLookbackBars"), premiumStopPct: n(params, "premiumStopPct"), premiumTakePct: n(params, "premiumTakePct"), maxHoldHours: n(params, "maxHoldHours"), minDteExit: n(params, "minDteExit"), maxOpenPositions: n(params, "maxOpenPositions"), minEntryIntervalHours: n(params, "minEntryIntervalHours") }, bars, positions, recentEntries, now).signals,
   },
+  "cycle-straddle-v1": {
+    id: "cycle-straddle-v1",
+    desk: "cycle",
+    label: "Cycle straddle",
+    summary: "CYCLE (Awad's idea: prices move in a ~3-week cycle): every Monday in the regular session, one long ATM straddle (call + put, same strike, ~4 weeks out) on SPY, QQQ and stocks whose 1-year daily bars show a real ~15-trading-day cycle. Each leg sells on its own at +50%; the rest goes at −50% combined or on trading day 15. Max $500 debit per straddle, 4 open. Long premium only.",
+    defaults: { legTakePct: 50, comboStopPct: -50, timeExitDay: 15, maxOpenStraddles: 4 },
+    // Bounds only let the lab/agents make it SAFER than Awad's spec (smaller, earlier, tighter), never riskier.
+    bounds: {
+      legTakePct: { min: 20, max: 150, label: "Sell a leg at premium + (%)" },
+      comboStopPct: { min: -50, max: -20, label: "Close the straddle at combined (%)" },
+      timeExitDay: { min: 5, max: 15, label: "Time exit on trading day", kind: "integer" },
+      maxOpenStraddles: { min: 1, max: 4, label: "Max open straddles", kind: "integer" },
+    },
+    warmupBars: 0,
+    run: ({ params, universe, positions, recentEntries, now }) =>
+      runCycleStraddle({ underlyings: universe, legTakePct: n(params, "legTakePct"), comboStopPct: n(params, "comboStopPct"), timeExitDay: n(params, "timeExitDay"), maxOpenStraddles: n(params, "maxOpenStraddles") }, positions, recentEntries, now).signals,
+  },
 };
 
 /** Pre-2026-10-02 defaults. A stored value still equal to one of these is treated as untuned (→ new default). */
@@ -322,8 +340,12 @@ export function resolveSpec(strategy: StrategyId, stored: unknown): CustomSpec |
   return v.ok ? v.spec : RONIN_SEED_SPEC;
 }
 
-/** Coins a strategy trades. */
+/** Underlyings CYCLE screens (SPY/QQQ always traded; the rest only when the cycle detector qualifies them). */
+export const CYCLE_SCREEN: string[] = [...CYCLE_BASE_UNDERLYINGS, ...CYCLE_CANDIDATES];
+
+/** Symbols a strategy trades (coins; CYCLE: the option underlyings it screens). */
 export function strategyUniverse(strategy: StrategyId, spec: CustomSpec | null): string[] {
+  if (strategy === "cycle-straddle-v1") return CYCLE_SCREEN;
   return strategy === "custom-v1" ? (spec ?? RONIN_SEED_SPEC).universe : DEFAULT_UNIVERSE;
 }
 
@@ -335,7 +357,10 @@ export function strategyWarmup(strategy: StrategyId, spec: CustomSpec | null): n
 /** Every coin any desk or running test trades (what the tick fetches). Core coins first. */
 export function floorUniverse(items: Array<{ strategy: StrategyId; spec?: unknown }>): string[] {
   const out = new Set<string>(DEFAULT_UNIVERSE);
-  for (const it of items) for (const s of strategyUniverse(it.strategy, resolveSpec(it.strategy, it.spec))) out.add(s);
+  for (const it of items) {
+    if (it.strategy === "cycle-straddle-v1") continue; // stock underlyings, fetched with the stocks (tick.ts)
+    for (const s of strategyUniverse(it.strategy, resolveSpec(it.strategy, it.spec))) out.add(s);
+  }
   return [...out];
 }
 

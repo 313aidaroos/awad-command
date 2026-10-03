@@ -37,7 +37,7 @@ const params: FloorParamsRow = {
   day_paused_until: null, day_pause_reason: null, max_open_positions_total: 12, max_orders_per_tick: 3,
   live_max_total_usd: 100, live_max_trade_usd: 25, live_day_loss_usd: 10, live_paused_until: null, live_pause_reason: null, updated_at: "",
 };
-const STRAT: Record<DeskRow["id"], StrategyId> = { samurai: "momentum-v1", neon: "dip-v1", orbit: "swing-v1", phantom: "breakout-v1", ronin: "custom-v1" };
+const STRAT: Record<DeskRow["id"], StrategyId> = { samurai: "momentum-v1", neon: "dip-v1", orbit: "swing-v1", phantom: "breakout-v1", ronin: "custom-v1", cycle: "cycle-straddle-v1" };
 function desk(id: DeskRow["id"], over: Partial<DeskRow> = {}): DeskRow {
   return { id, name: id.toUpperCase(), strategy: STRAT[id], enabled: true, capital_usd: 25_000, params: { ...(LEGACY_DEFAULTS[STRAT[id]] ?? {}) }, version: 1, paused_until: null, pause_reason: null, live_enabled: false, ...over };
 }
@@ -266,7 +266,7 @@ describe("6. own Alpaca account, no fallback", () => {
 
   it("without keys: no broker call, no order, heartbeat + status say 'no own account', tick doesn't crash", async () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch");
-    const db = fakeDb({ desks: [desk("samurai"), desk("ronin")] });
+    const db = fakeDb({ desks: [desk("samurai"), desk("ronin"), desk("cycle", { params: {} })] });
     const r = await runTick({ db: db.client as never, alpaca: null, tradeMode: "paper", now: () => NOW, sleep: async () => {} });
     expect(r.ok).toBe(true);
     expect(r.noOwnAccount).toBe(true);
@@ -276,7 +276,7 @@ describe("6. own Alpaca account, no fallback", () => {
     const hb = (db.inserted.crypto_floor_events ?? []).find((e) => e.type === "heartbeat") as { payload: Record<string, unknown> } | undefined;
     expect(hb?.payload.noOwnAccount).toBe(true);
     expect(String((hb?.payload as { title?: string }).title ?? "")).toMatch(/NO OWN ACCOUNT/);
-    expect((hb?.payload.desks as unknown[]).length).toBe(2);
+    expect((hb?.payload.desks as unknown[]).length).toBe(3);
     const sys = (db.inserted.crypto_floor_events ?? []).find((e) => e.type === "system") as { payload: Record<string, unknown> } | undefined;
     expect(sys?.payload.noOwnAccount).toBe(true);
   });
