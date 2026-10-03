@@ -1,3 +1,4 @@
+import { friendlyAiError } from "@/lib/aiError";
 import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -216,15 +217,17 @@ export async function POST(request: Request) {
       .eq("id", requestId);
     if (save.error) throw new Error("Reply storage failed");
     return NextResponse.json({ response }, { headers });
-  } catch {
+  } catch (err) {
     await db
       .from("boardroom_turns")
       .update({ status: "failed" })
       .eq("id", requestId);
     return NextResponse.json(
       {
-        error:
+        error: friendlyAiError(
+          err,
           "The meeting was saved, but the council could not return a briefing. Refresh and try again.",
+        ),
       },
       { status: 502, headers },
     );

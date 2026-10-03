@@ -1,3 +1,4 @@
+import { friendlyAiError } from "@/lib/aiError";
 import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -172,15 +173,17 @@ export async function POST(request: Request) {
       .eq("id", requestId);
     if (save.error) throw new Error("Reply storage failed");
     return NextResponse.json({ reply }, { headers });
-  } catch {
+  } catch (err) {
     await db
       .from("office_turns")
       .update({ status: "failed" })
       .eq("id", requestId);
     return NextResponse.json(
       {
-        error:
+        error: friendlyAiError(
+          err,
           "Your message was saved, but the AI provider could not return a reply. Refresh and try again.",
+        ),
       },
       { status: 502, headers },
     );

@@ -11,6 +11,7 @@
  * a meeting row and a 'meeting' note. Agents never place orders, never touch real money, the kill switch or
  * desk on/off. A desk trading real money only proposes changes to Awad.
  */
+import { friendlyAiError } from "@/lib/aiError";
 import type Anthropic from "@anthropic-ai/sdk";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
@@ -356,6 +357,6 @@ export async function runMeeting(opts: { db: SupabaseClient; alpaca: AlpacaClien
     });
     return done({ ok: true, meetingId, summary });
   } catch (err) {
-    return fail(err instanceof Error ? err.message : String(err));
+    return fail(friendlyAiError(err, err instanceof Error ? err.message : String(err)));
   }
 }

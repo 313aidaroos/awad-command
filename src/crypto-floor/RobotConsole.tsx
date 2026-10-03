@@ -182,6 +182,11 @@ export function LiveBox({
         </span>
       </header>
 
+      {robot.meetings.slice(0, 3).some((m) => m.status === "failed" && /credit/i.test(m.error ?? "")) && (
+        <p className="rc-error" style={{ margin: "0 0 12px", fontSize: 14 }}>
+          AI credits are used up: team meetings and &quot;talk to the lead&quot; are paused (trading keeps running). Top up at console.anthropic.com → Plans &amp; Billing.
+        </p>
+      )}
       <div className="lb-teams" aria-label="Teams right now">
         {robot.desks.map((d) => {
           const st = teamStatus(robot, d);

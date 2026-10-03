@@ -1,3 +1,4 @@
+import { friendlyAiError } from "@/lib/aiError";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { runAgentChat } from "@/lib/crypto-floor/agentChat";
@@ -68,7 +69,7 @@ export async function POST(request: Request) {
     const r = await runAgentChat({ db, alpaca, thread: parsed.data.thread, agentName: parsed.data.agent, message: parsed.data.message, requestId: parsed.data.requestId });
     return NextResponse.json(r, { headers });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Chat failed";
+    const message = friendlyAiError(err, err instanceof Error ? err.message : "Chat failed");
     return NextResponse.json({ error: message }, { status: err instanceof LabError ? 503 : 502, headers });
   }
 }
